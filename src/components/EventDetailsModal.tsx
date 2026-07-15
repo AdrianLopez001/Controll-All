@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { X, FileText, Shield, AlertCircle } from "lucide-react";
+import { 
+  X, FileText, Shield, AlertCircle, DollarSign, MapPin, Navigation, Tag, Calendar, Truck
+} from "lucide-react";
 import type { Project, Employee, WarehouseItem } from "../types";
 
 interface EventDetailsModalProps {
@@ -17,7 +19,9 @@ export default function EventDetailsModal({
   onClose,
   onUpdateEvent
 }: EventDetailsModalProps) {
-  const [activeTab, setActiveTab] = useState<"checklist" | "tools" | "staff" | "travel" | "docs">("checklist");
+  const [activeTab, setActiveTab] = useState<
+    "checklist" | "tools" | "staff" | "travel" | "docs" | "costs" | "route"
+  >("checklist");
   
   // Local modifications state
   const [localEvent, setLocalEvent] = useState<Project>({ ...event });
@@ -54,7 +58,6 @@ export default function EventDetailsModal({
     const existingIndex = updatedTools.findIndex(t => t.id === itemId);
 
     if (qty <= 0) {
-      // Remove item
       updatedTools = updatedTools.filter(t => t.id !== itemId);
     } else {
       if (existingIndex > -1) {
@@ -85,6 +88,10 @@ export default function EventDetailsModal({
     } else {
       const emp = allEmployees.find(e => e.id === empId);
       if (emp) {
+        // Validation check: Check if worker has doc pending or lacks cert
+        if (emp.documentStatus === "pending") {
+          alert(`Atenção: Os documentos gerais de ${emp.name} estão pendentes no RH. Homologue o profissional antes.`);
+        }
         updatedStaff.push({
           id: emp.id,
           name: emp.name,
@@ -119,14 +126,35 @@ export default function EventDetailsModal({
     });
   };
 
+  // 6. Costs Edit Handlers
+  const handleCostChange = (category: keyof typeof localEvent.centroCusto, val: number) => {
+    const newCC = {
+      ...localEvent.centroCusto,
+      [category]: val
+    };
+    const totalCost = Object.values(newCC).reduce((a, b) => a + b, 0);
+    handleUpdate({
+      ...localEvent,
+      centroCusto: newCC,
+      custoRealizado: totalCost
+    });
+  };
+
+  // Calculations for costs tab
+  const totalCost = Object.values(localEvent.centroCusto || {}).reduce((a, b) => a + b, 0);
+  const netProfit = localEvent.valorContratado - totalCost;
+  const marginPercent = localEvent.valorContratado > 0 ? (netProfit / localEvent.valorContratado) * 100 : 0;
+
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "800px" }}>
+        
         {/* Modal Header */}
         <div className="modal-header">
           <div className="modal-title-box">
+            <span style={{ fontSize: "10px", fontWeight: "700", color: "var(--accent-secondary)", fontFamily: "monospace" }}>CÓDIGO: {localEvent.codigo}</span>
             <h3 className="modal-title">{localEvent.name}</h3>
-            <span className="modal-subtitle">Cliente: {localEvent.client} | Data de Início: {localEvent.startDate}</span>
+            <span className="modal-subtitle">Cliente: {localEvent.client} | Responsável: {localEvent.responsavel}</span>
           </div>
           <button className="modal-close" onClick={onClose}>
             <X size={20} />
@@ -134,41 +162,18 @@ export default function EventDetailsModal({
         </div>
 
         {/* Modal Navigation Tabs */}
-        <div className="modal-tabs">
-          <button 
-            className={`modal-tab ${activeTab === "checklist" ? "active" : ""}`}
-            onClick={() => setActiveTab("checklist")}
-          >
-            Checklist
-          </button>
-          <button 
-            className={`modal-tab ${activeTab === "tools" ? "active" : ""}`}
-            onClick={() => setActiveTab("tools")}
-          >
-            Ferramentas e Móveis
-          </button>
-          <button 
-            className={`modal-tab ${activeTab === "staff" ? "active" : ""}`}
-            onClick={() => setActiveTab("staff")}
-          >
-            Escala de Equipe
-          </button>
-          <button 
-            className={`modal-tab ${activeTab === "travel" ? "active" : ""}`}
-            onClick={() => setActiveTab("travel")}
-          >
-            Hospedagem &amp; Vôos
-          </button>
-          <button 
-            className={`modal-tab ${activeTab === "docs" ? "active" : ""}`}
-            onClick={() => setActiveTab("docs")}
-          >
-            Docs de Liberação
-          </button>
+        <div className="modal-tabs" style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
+          <button className={`modal-tab ${activeTab === "checklist" ? "active" : ""}`} onClick={() => setActiveTab("checklist")}>Checklist</button>
+          <button className={`modal-tab ${activeTab === "tools" ? "active" : ""}`} onClick={() => setActiveTab("tools")}>Ferramentas &amp; WMS</button>
+          <button className={`modal-tab ${activeTab === "staff" ? "active" : ""}`} onClick={() => setActiveTab("staff")}>Escala de Equipe</button>
+          <button className={`modal-tab ${activeTab === "travel" ? "active" : ""}`} onClick={() => setActiveTab("travel")}>Logística Viagem</button>
+          <button className={`modal-tab ${activeTab === "docs" ? "active" : ""}`} onClick={() => setActiveTab("docs")}>Docs Pavilhão</button>
+          <button className={`modal-tab ${activeTab === "costs" ? "active" : ""}`} onClick={() => setActiveTab("costs")}>Centro de Custos</button>
+          <button className={`modal-tab ${activeTab === "route" ? "active" : ""}`} onClick={() => setActiveTab("route")}>Mapa &amp; Rota</button>
         </div>
 
         {/* Modal Body */}
-        <div className="modal-body">
+        <div className="modal-body" style={{ minHeight: "400px" }}>
           
           {/* TAB 1: CHECKLIST */}
           {activeTab === "checklist" && (
@@ -195,15 +200,16 @@ export default function EventDetailsModal({
           {activeTab === "tools" && (
             <div>
               <span className="text-xs text-muted semibold uppercase mb-20" style={{ display: "block" }}>
-                Planilha de Alocação de Materiais e Mobiliário
+                Alocação de Materiais e Mobiliário do Depósito (Disponibilidade WMS)
               </span>
-              <table className="sheet-table">
+              <table className="sheet-table" style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Tipo</th>
-                    <th>Estoque Geral</th>
-                    <th style={{ width: "120px", textAlign: "center" }}>Alocado</th>
+                  <tr style={{ borderBottom: "1px solid var(--border)", textAlign: "left" }}>
+                    <th style={{ padding: "8px" }}>Item</th>
+                    <th style={{ padding: "8px" }}>Tipo</th>
+                    <th style={{ padding: "8px" }}>Posição Física</th>
+                    <th style={{ padding: "8px", textAlign: "center" }}>Disponível</th>
+                    <th style={{ padding: "8px", textAlign: "center", width: "120px" }}>Alocado</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -212,22 +218,32 @@ export default function EventDetailsModal({
                     const currentQty = assigned ? assigned.allocatedQty : 0;
                     
                     return (
-                      <tr key={item.id} className="sheet-row">
-                        <td className="semibold">{item.name}</td>
-                        <td>
+                      <tr key={item.id} className="sheet-row" style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td className="semibold" style={{ padding: "8px" }}>{item.name}</td>
+                        <td style={{ padding: "8px" }}>
                           <span className={`badge ${item.type === "tool" ? "badge-pt" : "badge-en"}`}>
                             {item.type === "tool" ? "Ferramenta" : "Móvel"}
                           </span>
                         </td>
-                        <td className="text-muted">{item.stock} unidades</td>
-                        <td style={{ textAlign: "center" }}>
+                        <td style={{ padding: "8px", fontSize: "11px", color: "var(--text-muted)", fontFamily: "monospace" }}>
+                          Galpão {item.localizacaoFisica.galpao} • Corredor {item.localizacaoFisica.corredor} • Prat. {item.localizacaoFisica.prateleira}
+                        </td>
+                        <td style={{ padding: "8px", textAlign: "center", color: "var(--text-secondary)" }}>{item.stock} un</td>
+                        <td style={{ padding: "8px", textAlign: "center" }}>
                           <input 
                             type="number" 
                             min="0" 
-                            max={item.stock}
+                            max={item.stock + currentQty} // Allow allocating up to physical stock
                             value={currentQty} 
                             onChange={(e) => handleToolQtyChange(item.id, parseInt(e.target.value) || 0)}
                             className="input-qty"
+                            style={{
+                              width: "60px",
+                              padding: "4px 8px",
+                              border: "1px solid var(--border)",
+                              borderRadius: "4px",
+                              textAlign: "center"
+                            }}
                           />
                         </td>
                       </tr>
@@ -242,16 +258,16 @@ export default function EventDetailsModal({
           {activeTab === "staff" && (
             <div>
               <span className="text-xs text-muted semibold uppercase mb-20" style={{ display: "block" }}>
-                Escalar Profissionais para Montagem / Coordenação
+                Escalar Profissionais (Sinalização de NRs e Pendências)
               </span>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {allEmployees.map((emp) => {
                   const isChecked = localEvent.assignedEmployees.some(e => e.id === emp.id);
                   return (
-                    <div key={emp.id} className="staff-row">
-                      <div className="staff-row-info">
-                        <div className="staff-row-avatar">
-                          {emp.name.substring(0, 2).toUpperCase()}
+                    <div key={emp.id} className="staff-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "1px solid var(--border)", borderRadius: "12px", background: "var(--bg-card)" }}>
+                      <div className="staff-row-info" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div className="staff-row-avatar" style={{ width: "36px", height: "36px", borderRadius: "50%", background: "var(--accent-glow)", color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700" }}>
+                          {emp.foto || emp.name.substring(0, 1)}
                         </div>
                         <div>
                           <strong className="text-sm" style={{ display: "block" }}>{emp.name}</strong>
@@ -260,24 +276,23 @@ export default function EventDetailsModal({
                       </div>
                       
                       <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-                        {/* Safety certifications status */}
-                        <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px" }}>
-                          {emp.hasSafetyCert ? (
-                            <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "var(--success)" }}>
-                              <Shield size={12} />
-                              <span>NR-35 / NR-18 Ativa</span>
-                            </div>
+                        {/* NRs certifications status */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px", fontSize: "11px" }}>
+                          {emp.nr35Vencimento ? (
+                            <span style={{ color: "var(--success-text)", fontWeight: "600" }}>✓ NR-35 OK ({emp.nr35Vencimento.substring(0,4)})</span>
                           ) : (
-                            <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "var(--danger)" }}>
-                              <AlertCircle size={12} />
-                              <span>Sem Certificação</span>
-                            </div>
+                            <span style={{ color: "var(--text-muted)" }}>NR-35 N/A</span>
+                          )}
+                          {emp.nr10Vencimento ? (
+                            <span style={{ color: "var(--success-text)", fontWeight: "600" }}>✓ NR-10 OK ({emp.nr10Vencimento.substring(0,4)})</span>
+                          ) : (
+                            <span style={{ color: "var(--text-muted)" }}>NR-10 N/A</span>
                           )}
                         </div>
 
                         {/* Document completion status */}
-                        <div style={{ fontSize: "12px", display: "flex", alignItems: "center" }}>
-                          <span className="status-dot" style={{ background: emp.documentStatus === "complete" ? "var(--success)" : "var(--warning)" }}></span>
+                        <div style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}>
+                          <span className="status-dot" style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: emp.documentStatus === "complete" ? "var(--success-text)" : "var(--warning)" }}></span>
                           <span className="text-muted">Docs {emp.documentStatus === "complete" ? "OK" : "Pendente"}</span>
                         </div>
 
@@ -285,7 +300,7 @@ export default function EventDetailsModal({
                         <button 
                           className={isChecked ? "btn-danger text-xs" : "btn-primary text-xs"}
                           onClick={() => toggleEmployee(emp.id)}
-                          style={{ padding: "4px 10px" }}
+                          style={{ padding: "4px 10px", borderRadius: "8px" }}
                         >
                           {isChecked ? "Remover" : "Escalar"}
                         </button>
@@ -299,31 +314,34 @@ export default function EventDetailsModal({
 
           {/* TAB 4: TRAVEL */}
           {activeTab === "travel" && (
-            <div className="form-grid">
-              <div className="field" style={{ gridColumn: "span 2" }}>
-                <label>Nome do Hotel / Acomodação</label>
+            <div className="form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              <div style={{ gridColumn: "span 2" }}>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Nome do Hotel / Acomodação da Equipe</label>
                 <input 
                   type="text" 
                   value={localEvent.hotelName || ""} 
                   onChange={(e) => handleTravelChange("hotelName", e.target.value)}
                   placeholder="Ex: Ibis Budget Center Paulista" 
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }}
                 />
               </div>
-              <div className="field">
-                <label>Data de Check-In</label>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Data de Check-In</label>
                 <input 
                   type="date" 
                   value={localEvent.hotelCheckin || ""} 
                   onChange={(e) => handleTravelChange("hotelCheckin", e.target.value)}
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }}
                 />
               </div>
-              <div className="field" style={{ gridColumn: "span 2" }}>
-                <label>Detalhes das Passagens Aéreas (Vôos, Cias e Horários)</label>
+              <div style={{ gridColumn: "span 2" }}>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Detalhes das Passagens Aéreas (Localizadores, Voos, Horários)</label>
                 <textarea 
                   rows={4}
                   value={localEvent.flightDetails || ""} 
                   onChange={(e) => handleTravelChange("flightDetails", e.target.value)}
                   placeholder="Ex: Latam LA3341 (NAT -> GRU) - 22/08 às 14:00 - Localizadores: ADFLK, GDLJK..."
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)" }}
                 />
               </div>
             </div>
@@ -333,15 +351,15 @@ export default function EventDetailsModal({
           {activeTab === "docs" && (
             <div>
               <span className="text-xs text-muted semibold uppercase mb-20" style={{ display: "block" }}>
-                Documentos Exigidos pela Organização para Liberação da Montagem
+                Documentos Obrigatórios exigidos para Credenciamento e Montagem
               </span>
               
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {localEvent.docs.map((doc) => (
-                  <div key={doc.id} className="checklist-item">
+                  <div key={doc.id} className="checklist-item" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "1px solid var(--border)", borderRadius: "12px", background: "#fff" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <FileText size={16} className="text-muted" />
-                      <strong className="text-sm">{doc.name}</strong>
+                      <strong className="text-sm" style={{ color: "var(--text-primary)" }}>{doc.name}</strong>
                     </div>
                     
                     <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -349,12 +367,12 @@ export default function EventDetailsModal({
                         Status:{" "}
                         {doc.status === "pending" && <span style={{ color: "var(--warning)", fontWeight: 600 }}>Pendente</span>}
                         {doc.status === "uploaded" && <span style={{ color: "var(--accent)", fontWeight: 600 }}>Aguardando Avaliação</span>}
-                        {doc.status === "approved" && <span style={{ color: "var(--success)", fontWeight: 600 }}>✓ Aprovado e Liberado</span>}
+                        {doc.status === "approved" && <span style={{ color: "var(--success-text)", fontWeight: 600 }}>✓ Aprovado e Liberado</span>}
                       </span>
                       
                       <button 
                         className="btn-secondary text-xs"
-                        style={{ padding: "4px 8px" }}
+                        style={{ padding: "4px 8px", borderRadius: "6px" }}
                         onClick={() => simulateDocUpload(doc.id)}
                       >
                         {doc.status === "pending" && "Subir Arquivo"}
@@ -366,11 +384,150 @@ export default function EventDetailsModal({
                 ))}
               </div>
               
-              <div className="dropzone mt-20">
-                <span className="text-xs" style={{ display: "block", marginBottom: "4px" }}>
-                  Arraste outros documentos complementares aqui (ex: ART, RRT, Comprovante de taxas)
+              <div className="dropzone" style={{ border: "2px dashed var(--border)", padding: "20px", borderRadius: "12px", textAlign: "center", marginTop: "20px", cursor: "pointer" }}>
+                <span className="text-xs" style={{ display: "block", marginBottom: "4px", fontWeight: "600" }}>
+                  Arraste arquivos complementares adicionais aqui (Termos, ARTs, RRTs)
                 </span>
-                <span className="text-xs text-muted">Limite de 10MB por arquivo • Apenas PDF</span>
+                <span className="text-xs text-muted">Limite de 10MB por arquivo • Apenas formato PDF</span>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 6: COSTS CENTER */}
+          {activeTab === "costs" && (
+            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px" }}>
+              {/* Manual/Previsto entry values */}
+              <div style={{ backgroundColor: "var(--bg-main)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-secondary)", display: "block", marginBottom: "8px" }}>ESTIMAR ORÇAMENTO (CATEGORIAS)</span>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto", paddingRight: "4px" }}>
+                  {Object.keys(localEvent.centroCusto || {}).map((catKey) => {
+                    const typedKey = catKey as keyof typeof localEvent.centroCusto;
+                    const label = 
+                      typedKey === "madeiraMdf" ? "Madeira e MDF" :
+                      typedKey === "vidrosVidraçaria" ? "Vidros / Vidraçaria" :
+                      typedKey === "iluminacaoEletrica" ? "Iluminação / Elétrica" :
+                      typedKey === "mobiliarioAlugado" ? "Mobiliário Alugado" :
+                      typedKey === "fretes" ? "Fretes e Carga" :
+                      typedKey === "combustivelPedagios" ? "Combustível / Pedágio" :
+                      typedKey === "hospedagemPassagens" ? "Hospedagem / Voos" :
+                      typedKey === "equipePropria" ? "Equipe Própria" :
+                      typedKey === "terceirizados" ? "Terceirizados (Diária)" : "Taxas do Organizador";
+                    
+                    return (
+                      <div key={catKey} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px" }}>
+                        <span style={{ color: "var(--text-primary)", fontWeight: "500" }}>{label}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          <span style={{ color: "var(--text-muted)" }}>R$</span>
+                          <input 
+                            type="number" 
+                            value={localEvent.centroCusto[typedKey] || 0}
+                            onChange={(e) => handleCostChange(typedKey, parseFloat(e.target.value) || 0)}
+                            style={{ width: "80px", padding: "4px 6px", border: "1px solid var(--border)", borderRadius: "4px", textAlign: "right" }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Consolidation values metrics */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase" }}>CONTRATO DO ESTANDE</span>
+                  <strong style={{ fontSize: "20px", color: "var(--accent)" }}>R$ {localEvent.valorContratado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+                </div>
+
+                <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase" }}>CUSTOS TOTAIS ESTIMADOS</span>
+                  <strong style={{ fontSize: "18px", color: "var(--accent-secondary)" }}>R$ {totalCost.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+                </div>
+
+                <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase" }}>LUCRO LÍQUIDO PREVISTO</span>
+                  <strong style={{ fontSize: "18px", color: netProfit >= 0 ? "var(--success-text)" : "var(--danger)" }}>
+                    R$ {netProfit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </strong>
+                  <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Margem: {marginPercent.toFixed(1)}%</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 7: MAP & ROUTE */}
+          {activeTab === "route" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", backgroundColor: "var(--bg-card)", display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                <MapPin size={24} style={{ color: "var(--accent-secondary)", flexShrink: 0, marginTop: "4px" }} />
+                <div style={{ flexGrow: 1 }}>
+                  <strong style={{ display: "block", fontSize: "14px", color: "var(--text-primary)" }}>Endereço de Entrega Técnica:</strong>
+                  <span style={{ fontSize: "13px", color: "var(--text-secondary)", display: "block", marginTop: "2px" }}>{localEvent.mapsRoute.endereco}</span>
+                  <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)", fontFamily: "monospace", marginTop: "4px" }}>
+                    Coordenadas: Lat {localEvent.mapsRoute.latitude} • Long {localEvent.mapsRoute.longitude}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "12px", backgroundColor: "var(--bg-card)" }}>
+                  <Navigation size={22} style={{ color: "var(--accent)" }} />
+                  <div>
+                    <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)" }}>Distância do Depósito JC:</span>
+                    <strong style={{ fontSize: "15px", color: "var(--text-primary)" }}>{localEvent.mapsRoute.distanciaKm} km</strong>
+                  </div>
+                </div>
+
+                <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "12px", backgroundColor: "var(--bg-card)" }}>
+                  <Calendar size={22} style={{ color: "var(--success-text)" }} />
+                  <div>
+                    <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)" }}>Tempo de Rota Estimado:</span>
+                    <strong style={{ fontSize: "15px", color: "var(--text-primary)" }}>{localEvent.mapsRoute.tempoEstimado}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mock maps visualization */}
+              <div 
+                style={{ 
+                  height: "220px", 
+                  borderRadius: "16px", 
+                  border: "1px solid var(--border)", 
+                  backgroundColor: "#e3f2fd", 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  backgroundImage: "radial-gradient(circle, #b3e5fc 10%, transparent 10.5%), radial-gradient(circle, #b3e5fc 10%, transparent 10.5%)",
+                  backgroundSize: "20px 20px",
+                  backgroundPosition: "0 0, 10px 10px",
+                  position: "relative"
+                }}
+              >
+                <div style={{ backgroundColor: "rgba(255, 255, 255, 0.9)", border: "1px solid var(--accent)", padding: "12px 18px", borderRadius: "100px", display: "flex", alignItems: "center", gap: "8px", boxShadow: "var(--shadow-md)" }}>
+                  <Navigation size={16} style={{ color: "var(--accent)" }} />
+                  <span style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-primary)" }}>Rota de Pavilhão Ativa</span>
+                </div>
+                
+                <a 
+                  href={localEvent.mapsRoute.linkMaps} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  style={{
+                    position: "absolute",
+                    bottom: "12px",
+                    right: "12px",
+                    backgroundColor: "var(--bg-sidebar)",
+                    color: "#fff",
+                    textDecoration: "none",
+                    padding: "6px 12px",
+                    borderRadius: "6px",
+                    fontSize: "11px",
+                    fontWeight: "600"
+                  }}
+                >
+                  Abrir no Google Maps ↗
+                </a>
               </div>
             </div>
           )}

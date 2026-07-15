@@ -1,5 +1,8 @@
 import { useState, type FormEvent } from "react";
-import { Plus, Users, Shield, ShieldAlert, CheckCircle, AlertTriangle, UserCheck } from "lucide-react";
+import { 
+  Plus, Users, Shield, ShieldAlert, CheckCircle, AlertTriangle, UserCheck, 
+  X, FileText, Upload, Calendar, DollarSign, Key, Trash2 
+} from "lucide-react";
 import type { Employee } from "../types";
 
 interface EmployeesProps {
@@ -7,18 +10,88 @@ interface EmployeesProps {
   onAddEmployee: (name: string, role: string, hasSafetyCert: boolean) => void;
   onToggleDocStatus: (id: string) => void;
   onToggleSafetyCert: (id: string) => void;
+  onUpdateEmployee: (updated: Employee) => void;
 }
 
 export default function Employees({
   employees,
   onAddEmployee,
   onToggleDocStatus,
-  onToggleSafetyCert
+  onToggleSafetyCert,
+  onUpdateEmployee
 }: EmployeesProps) {
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
   const [hasSafetyCert, setHasSafetyCert] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
+  const [selectedEmp, setSelectedEmp] = useState<Employee | null>(null);
+
+  // Edit employee local states
+  const [editCpf, setEditCpf] = useState("");
+  const [editRg, setEditRg] = useState("");
+  const [editCnh, setEditCnh] = useState("");
+  const [editPix, setEditPix] = useState("");
+  const [editSalario, setEditSalario] = useState(0);
+  const [editNr10, setEditNr10] = useState("");
+  const [editNr35, setEditNr35] = useState("");
+
+  const handleOpenDetails = (emp: Employee) => {
+    setSelectedEmp(emp);
+    setEditCpf(emp.cpf || "");
+    setEditRg(emp.rg || "");
+    setEditCnh(emp.cnh || "");
+    setEditPix(emp.pixKey || "");
+    setEditSalario(emp.salario || 0);
+    setEditNr10(emp.nr10Vencimento || "");
+    setEditNr35(emp.nr35Vencimento || "");
+  };
+
+  const handleSaveChanges = () => {
+    if (!selectedEmp) return;
+    const updated: Employee = {
+      ...selectedEmp,
+      cpf: editCpf,
+      rg: editRg,
+      cnh: editCnh,
+      pixKey: editPix,
+      salario: editSalario,
+      nr10Vencimento: editNr10,
+      nr35Vencimento: editNr35,
+      hasSafetyCert: editNr35 !== "" // sync standard cert boolean
+    };
+    onUpdateEmployee(updated);
+    setSelectedEmp(updated);
+    alert("Dados do colaborador atualizados com sucesso!");
+  };
+
+  const handleSimulateUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedEmp || !e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    
+    const newAnexo = {
+      id: `anx-${Date.now()}`,
+      name: file.name,
+      date: new Date().toISOString().split("T")[0]
+    };
+
+    const updated: Employee = {
+      ...selectedEmp,
+      anexos: [...(selectedEmp.anexos || []), newAnexo]
+    };
+
+    onUpdateEmployee(updated);
+    setSelectedEmp(updated);
+  };
+
+  const handleDeleteAnexo = (anexoId: string) => {
+    if (!selectedEmp) return;
+    const updated: Employee = {
+      ...selectedEmp,
+      anexos: (selectedEmp.anexos || []).filter(a => a.id !== anexoId)
+    };
+    onUpdateEmployee(updated);
+    setSelectedEmp(updated);
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -35,7 +108,7 @@ export default function Employees({
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "24px" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "24px", padding: "10px" }}>
       {/* Left Column: Staff Directory List */}
       <div className="section-box" style={{ height: "auto" }}>
         <div className="section-box-header">
@@ -48,10 +121,15 @@ export default function Employees({
 
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {employees.map((emp) => (
-            <div key={emp.id} className="staff-row">
+            <div 
+              key={emp.id} 
+              className="staff-row" 
+              onClick={() => handleOpenDetails(emp)}
+              style={{ cursor: "pointer", transition: "var(--transition)" }}
+            >
               <div className="staff-row-info">
                 <div className="staff-row-avatar">
-                  {emp.name.substring(0, 2).toUpperCase()}
+                  {emp.foto || emp.name.substring(0, 2).toUpperCase()}
                 </div>
                 <div>
                   <strong className="text-sm" style={{ display: "block" }}>{emp.name}</strong>
@@ -59,7 +137,7 @@ export default function Employees({
                 </div>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "24px" }} onClick={(e) => e.stopPropagation()}>
                 {/* Safety Certificate NR-35/NR-18 Toggle */}
                 <div 
                   onClick={() => onToggleSafetyCert(emp.id)} 
@@ -68,14 +146,14 @@ export default function Employees({
                   style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px" }}
                 >
                   {emp.hasSafetyCert ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "var(--success)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "var(--success-text)" }}>
                       <Shield size={14} />
-                      <span className="semibold">NR-35 / NR-18 Ativa</span>
+                      <span className="semibold">NR-35 Ativa</span>
                     </div>
                   ) : (
                     <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "var(--danger)" }}>
                       <ShieldAlert size={14} />
-                      <span className="semibold">NR Expirada / Nenhuma</span>
+                      <span className="semibold">Sem Certificação</span>
                     </div>
                   )}
                 </div>
@@ -87,9 +165,9 @@ export default function Employees({
                   title="Clique para alterar status de documentos"
                   style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}
                 >
-                  <span className="status-dot" style={{ background: emp.documentStatus === "complete" ? "var(--success)" : "var(--warning)" }}></span>
+                  <span className="status-dot" style={{ background: emp.documentStatus === "complete" ? "var(--success-text)" : "var(--warning)" }}></span>
                   <span className="text-muted">Docs: </span>
-                  <strong style={{ color: emp.documentStatus === "complete" ? "var(--success)" : "var(--warning)" }}>
+                  <strong style={{ color: emp.documentStatus === "complete" ? "var(--success-text)" : "var(--warning)" }}>
                     {emp.documentStatus === "complete" ? "Completos" : "Pendentes"}
                   </strong>
                 </div>
@@ -109,7 +187,7 @@ export default function Employees({
         </div>
 
         {successMsg && (
-          <div style={{ padding: "10px", borderRadius: "8px", background: "var(--success-glow)", border: "1px solid var(--success)", color: "var(--success)", fontSize: "12px", marginBottom: "16px", display: "flex", alignItems: "center", gap: "6px" }}>
+          <div style={{ padding: "10px", borderRadius: "8px", background: "var(--success-glow)", border: "1px solid var(--success)", color: "var(--success-text)", fontSize: "12px", marginBottom: "16px", display: "flex", alignItems: "center", gap: "6px" }}>
             <CheckCircle size={14} />
             <span>{successMsg}</span>
           </div>
@@ -124,6 +202,7 @@ export default function Employees({
               onChange={(e) => setName(e.target.value)} 
               placeholder="Ex: João Silva de Souza" 
               required
+              style={{ color: "var(--text-primary)" }}
             />
           </div>
           <div className="field">
@@ -132,6 +211,7 @@ export default function Employees({
               value={role} 
               onChange={(e) => setRole(e.target.value)} 
               required
+              style={{ color: "var(--text-primary)" }}
             >
               <option value="">Selecione a função...</option>
               <option value="Montador de Estande">Montador de Estande</option>
@@ -152,7 +232,7 @@ export default function Employees({
                 {hasSafetyCert && "✓"}
               </div>
               <span className="semibold text-xs" style={{ color: "var(--text-secondary)" }}>
-                Possui Treinamento Ativo de NR-35 (Trabalho em Altura) / NR-18?
+                Possui Treinamento Ativo de NR-35?
               </span>
             </div>
           </div>
@@ -172,6 +252,147 @@ export default function Employees({
           </p>
         </div>
       </div>
+
+      {/* Modal Detalhes do Colaborador */}
+      {selectedEmp && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setSelectedEmp(null)}>
+          <div 
+            style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "90%", maxWidth: "700px", maxHeight: "90vh", overflowY: "auto", boxShadow: "var(--shadow-lg)", display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "20px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Left side: details form */}
+            <div>
+              <div style={{ display: "flex", justifySpaceBetween: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: "600", color: "var(--accent)" }}>Ficha Cadastral do RH</h3>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "10px" }}>
+                  <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--accent)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: "bold" }}>
+                    {selectedEmp.foto || selectedEmp.name.substring(0, 1)}
+                  </div>
+                  <div>
+                    <strong style={{ fontSize: "14px", display: "block" }}>{selectedEmp.name}</strong>
+                    <span style={{ color: "var(--text-secondary)" }}>{selectedEmp.role}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <div>
+                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>CPF</label>
+                    <input type="text" value={editCpf} onChange={(e) => setEditCpf(e.target.value)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>RG</label>
+                    <input type="text" value={editRg} onChange={(e) => setEditRg(e.target.value)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <div>
+                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>CNH</label>
+                    <input type="text" value={editCnh} onChange={(e) => setEditCnh(e.target.value)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Chave Pix</label>
+                    <input type="text" value={editPix} onChange={(e) => setEditPix(e.target.value)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <div>
+                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Vencimento NR-10</label>
+                    <input type="date" value={editNr10} onChange={(e) => setEditNr10(e.target.value)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Vencimento NR-35</label>
+                    <input type="date" value={editNr35} onChange={(e) => setEditNr35(e.target.value)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Salário Base / Diária (R$)</label>
+                  <input type="number" value={editSalario} onChange={(e) => setEditSalario(parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
+                </div>
+
+                <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+                  <button type="button" className="btn-primary" onClick={handleSaveChanges} style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "6px", flexGrow: 1, justifyContent: "center" }}>Salvar Alterações</button>
+                  <button type="button" className="btn-secondary" onClick={() => setSelectedEmp(null)} style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "6px" }}>Fechar</button>
+                </div>
+              </div>
+
+              {/* Active Asset Logs */}
+              <div style={{ marginTop: "16px", borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
+                <strong style={{ fontSize: "11px", color: "var(--text-secondary)", display: "block", marginBottom: "8px" }}>LOGS DE ATIVOS &amp; DINHEIRO</strong>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "110px", overflowY: "auto" }}>
+                  {selectedEmp.historicoAtivos && selectedEmp.historicoAtivos.length > 0 ? (
+                    selectedEmp.historicoAtivos.map(h => (
+                      <div key={h.id} style={{ fontSize: "10px", background: "var(--bg-main)", padding: "6px 10px", borderRadius: "6px" }}>
+                        <span style={{ display: "block", fontWeight: "600" }}>{h.descricao}</span>
+                        <span style={{ color: "var(--text-muted)" }}>Data: {h.date} | Responsável: {h.responsavel}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <span style={{ fontSize: "10px", color: "var(--text-muted)", fontStyle: "italic" }}>Sem registros de saídas.</span>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Right side: uploads & attachments */}
+            <div style={{ borderLeft: "1px solid var(--border)", paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <strong style={{ fontSize: "12px", color: "var(--text-primary)" }}>Documentos &amp; Contratos (PDF)</strong>
+              </div>
+
+              {/* Simulate File upload */}
+              <div style={{ border: "2px dashed var(--border)", padding: "16px", borderRadius: "10px", textAlign: "center", position: "relative", cursor: "pointer", backgroundColor: "var(--bg-card-hover)" }}>
+                <Upload size={20} className="text-muted" style={{ margin: "0 auto 6px auto" }} />
+                <span style={{ fontSize: "11px", fontWeight: "600", display: "block" }}>Anexar Contrato / ASO</span>
+                <span style={{ fontSize: "9px", color: "var(--text-muted)" }}>Selecione um arquivo PDF</span>
+                <input 
+                  type="file" 
+                  accept="application/pdf"
+                  onChange={handleSimulateUpload}
+                  style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0, cursor: "pointer" }} 
+                />
+              </div>
+
+              {/* Attached files list */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", flexGrow: 1, overflowY: "auto", maxHeight: "250px" }}>
+                {selectedEmp.anexos && selectedEmp.anexos.length > 0 ? (
+                  selectedEmp.anexos.map(anx => (
+                    <div key={anx.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", backgroundColor: "#fff" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
+                        <FileText size={14} style={{ color: "var(--accent-secondary)", flexShrink: 0 }} />
+                        <span 
+                          style={{ fontSize: "11px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", color: "var(--accent)" }}
+                          title="Simular visualização/download"
+                          onClick={() => alert(`Simulando download do arquivo: ${anx.name}`)}
+                        >
+                          {anx.name}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => handleDeleteAnexo(anx.id)}
+                        style={{ border: "none", background: "none", color: "var(--danger)", cursor: "pointer" }}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ border: "1px dashed var(--border)", borderRadius: "8px", padding: "16px", textAlign: "center", color: "var(--text-muted)", fontSize: "11px" }}>
+                    Nenhum documento anexado
+                  </div>
+                )}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
