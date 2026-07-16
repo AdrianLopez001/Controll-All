@@ -46,6 +46,27 @@ export interface ProjectDoc {
   status: "pending" | "approved" | "uploaded";
 }
 
+export interface ConventionCenterRules {
+  nome: string;
+  taxaEnergia: number;
+  taxaLimpeza: number;
+  limiteAltura: string;
+  artObrigatoria: boolean;
+  brigadistaObrigatorio: boolean;
+  seguroObrigatorio: boolean;
+  estacionamento: number;
+  contatoGestor: string;
+}
+
+export interface ProductionSectors {
+  marcenaria: "pendente" | "em_andamento" | "concluido";
+  pintura: "pendente" | "em_andamento" | "concluido";
+  eletrica: "pendente" | "em_andamento" | "concluido";
+  comunicacaoVisual: "pendente" | "em_andamento" | "concluido";
+  vidros: "pendente" | "em_andamento" | "concluido";
+  limpeza: "pendente" | "em_andamento" | "concluido";
+}
+
 export interface Project {
   id: string;
   codigo: string;
@@ -74,6 +95,11 @@ export interface Project {
   custoRealizado: number;
   centroCusto: CentroDeCusto;
   mapsRoute: EventoMapsRoute;
+  
+  // JC Eventos 3.0 expanded properties
+  centroConvencoes?: string;
+  regrasCentro?: ConventionCenterRules;
+  producao?: ProductionSectors;
 }
 
 export interface AtivoHistorico {

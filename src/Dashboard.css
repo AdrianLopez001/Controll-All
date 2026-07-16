@@ -5,6 +5,7 @@
   --bg-card: #FFFFFF;           /* Branco */
   --bg-card-hover: #faf6f7;     /* Light pink hover */
   --bg-sidebar: #293B8F;        /* Azul Institucional JC Eventos */
+  --bg-header: rgba(255, 255, 255, 0.9);
   
   --border: #E8E8E8;            /* Cinza Claro */
   --border-hover: #d2d2d2;
@@ -36,6 +37,36 @@
   --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --font: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-title: 'Poppins', sans-serif;
+}
+
+body.dark-mode {
+  --bg-main: #121214;           /* Dark slate grey background */
+  --bg-card: #1d1d22;           /* Dark card background */
+  --bg-card-hover: #26262d;     /* Hover state card background */
+  --bg-sidebar: #0f1016;        /* Very dark sidebar background */
+  --bg-header: rgba(29, 29, 34, 0.9); /* Dark glassmorphism header */
+  
+  --border: #2b2b33;            /* Dark mode border */
+  --border-hover: #3d3d49;
+  
+  --accent: #4c63d2;            /* Brighter blue for better contrast */
+  --accent-secondary: #e06d53;  /* Brighter terracotta */
+  --accent-glow: #1a1b2b;       /* Dark tint glow */
+  --accent-hover: #5d75e3;
+  
+  --text-primary: #f1f1f5;      /* Lighter text for high readability */
+  --text-secondary: #a0a0ab;    /* Zinc secondary text */
+  --text-muted: #70707b;
+  
+  --success: #203f38;           /* Forest teal dark mode success */
+  --success-text: #8de3d2;      /* Lighter success text */
+  --success-glow: #12221e;
+  
+  --warning: #ad503d;           /* Muted terracotta warning */
+  --warning-glow: #311b17;
+  
+  --danger: #9c2e2e;
+  --danger-glow: #2d1313;
 }
 
 * {
@@ -230,7 +261,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--bg-header);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -433,7 +464,7 @@ body {
   justify-content: space-between;
   padding: 14px 16px;
   border-radius: 12px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border);
   transition: var(--transition);
   cursor: pointer;
@@ -638,7 +669,7 @@ body {
 }
 
 .modal-content {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 28px; /* M3 standard 28px */
   width: 90%;
@@ -756,7 +787,7 @@ body {
 }
 
 .field input, .field select, .field textarea {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 14px;
@@ -785,7 +816,7 @@ body {
   justify-content: space-between;
   padding: 12px 16px;
   border-radius: 10px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border);
 }
 
@@ -859,7 +890,7 @@ body {
 
 .input-qty {
   width: 70px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 4px 8px;
@@ -890,7 +921,7 @@ body {
   padding: 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   margin-bottom: 8px;
 }
 
@@ -915,7 +946,7 @@ body {
 
 /* Travel Details Styling */
 .travel-card {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 16px;
@@ -940,7 +971,7 @@ body {
   cursor: pointer;
   transition: var(--transition);
   color: var(--text-secondary);
-  background-color: #f8f9fa;
+  background-color: var(--bg-card-hover);
 }
 
 .dropzone:hover {
@@ -961,7 +992,7 @@ body {
 .invoice-log-item {
   padding: 12px 16px;
   border-radius: 10px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border);
   display: flex;
   align-items: center;

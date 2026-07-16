@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   LayoutDashboard, Briefcase, Archive, Users, LogOut, 
-  Building2, DollarSign, Truck, Bot, Shield 
+  Building2, DollarSign, Truck, Bot, Shield, Sun, Moon
 } from "lucide-react";
 import "./Dashboard.css";
 
@@ -484,11 +484,26 @@ export default function App() {
   const [warehouseItems, setWarehouseItems] = useState<WarehouseItem[]>(INITIAL_WAREHOUSE);
   const [invoiceLogs, setInvoiceLogs] = useState<InvoiceLog[]>(INITIAL_INVOICES);
   const [leads, setLeads] = useState<LeadCRM[]>(INITIAL_LEADS);
-  const [vehicles] = useState<VeiculoLogistica[]>(INITIAL_VEHICLES);
+  const [vehicles, setVehicles] = useState<VeiculoLogistica[]>(INITIAL_VEHICLES);
   const [auditLogs, setAuditLogs] = useState<AuditoriaLog[]>(INITIAL_AUDIT_LOGS);
 
   const [clientes, setClientes] = useState(INITIAL_CLIENTS);
-  const [fornecedores] = useState(INITIAL_SUPPLIERS);
+  const [fornecedores, setFornecedores] = useState(INITIAL_SUPPLIERS);
+
+  // Dark Mode State & Synchronization
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    return localStorage.getItem("darkMode") === "true";
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add("dark-mode");
+      localStorage.setItem("darkMode", "true");
+    } else {
+      document.body.classList.remove("dark-mode");
+      localStorage.setItem("darkMode", "false");
+    }
+  }, [darkMode]);
   
   // Selected event details modal controller
   const [selectedEvent, setSelectedEvent] = useState<Project | null>(null);
@@ -778,7 +793,6 @@ export default function App() {
   };
 
   // ── Calculations for Overview KPIs ──
-  const activeEventsCount = events.filter(e => e.phase === "during").length;
   const scheduledCount = events.reduce((acc, curr) => acc + curr.assignedEmployees.length, 0);
   const lowStockCount = warehouseItems.filter(item => item.stock <= item.stockMinimo).length;
   const pendingDocsCount = events
@@ -902,9 +916,30 @@ export default function App() {
             {activeTab === "ia" && "AI Copilot Operacional"}
             {activeTab === "auditoria" && "Trilha de Segurança e Auditoria Geral"}
           </h2>
-          <div className="header-actions">
+          <div className="header-actions" style={{ display: "flex", alignItems: "center" }}>
+            <button 
+              onClick={() => setDarkMode(prev => !prev)}
+              style={{
+                background: "var(--bg-card-hover)",
+                border: "1px solid var(--border)",
+                borderRadius: "50%",
+                width: "36px",
+                height: "36px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                color: "var(--text-primary)",
+                transition: "var(--transition)",
+                marginRight: "12px",
+                outline: "none"
+              }}
+              title={darkMode ? "Mudar para Modo Claro" : "Mudar para Modo Escuro"}
+            >
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
             <span className="text-xs text-muted" style={{ fontWeight: 600 }}>
-              Status Operacional: <span style={{ color: "var(--accent-secondary)" }}>Evoluído 2.0 (Online)</span>
+              Status Operacional: <span style={{ color: "var(--accent-secondary)" }}>Evoluído 3.0 (Online)</span>
             </span>
           </div>
         </header>
@@ -989,6 +1024,7 @@ export default function App() {
               employees={employees}
               warehouseItems={warehouseItems}
               invoices={invoiceLogs}
+              onAddEvent={addEvent}
             />
           )}
 

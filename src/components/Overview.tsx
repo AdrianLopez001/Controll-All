@@ -94,6 +94,95 @@ export default function Overview({
         </div>
       </div>
 
+      {/* Alertas Inteligentes (Módulo 5) */}
+      <div className="alerts-board" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", marginBottom: "24px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>
+          <AlertTriangle size={18} style={{ color: "var(--warning)" }} />
+          <h3 style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-primary)", margin: 0 }}>Painel de Alertas Inteligentes (Compliance &amp; Prazos)</h3>
+        </div>
+        
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
+          {/* Alert 1: ART / Docs Pendentes */}
+          {pendingDocsCount > 0 ? (
+            <div style={{ border: "1px solid rgba(220, 53, 69, 0.2)", background: "rgba(220, 53, 69, 0.05)", padding: "12px 14px", borderRadius: "12px", display: "flex", alignItems: "flex-start", gap: "10px" }}>
+              <AlertTriangle size={16} style={{ color: "var(--danger)", flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <strong style={{ display: "block", fontSize: "12.5px", color: "var(--danger)" }}>Documentação Pendente</strong>
+                <span style={{ fontSize: "11.5px", color: "var(--text-secondary)", display: "block", marginTop: "2px" }}>Existem {pendingDocsCount} documento(s) com upload pendente no pavilhão.</span>
+              </div>
+            </div>
+          ) : (
+            <div style={{ border: "1px solid rgba(40, 167, 69, 0.2)", background: "rgba(40, 167, 69, 0.05)", padding: "12px 14px", borderRadius: "12px", display: "flex", alignItems: "flex-start", gap: "10px" }}>
+              <CheckCircle2 size={16} style={{ color: "var(--success)", flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <strong style={{ display: "block", fontSize: "12.5px", color: "var(--success-text)" }}>Documentos em Conformidade</strong>
+                <span style={{ fontSize: "11.5px", color: "var(--text-secondary)", display: "block", marginTop: "2px" }}>Todos os termos e ARTs de montagem foram homologados.</span>
+              </div>
+            </div>
+          )}
+
+          {/* Alert 2: Estoque Crítico */}
+          {lowStockItemsCount > 0 ? (
+            <div style={{ border: "1px solid rgba(255, 193, 7, 0.2)", background: "rgba(255, 193, 7, 0.05)", padding: "12px 14px", borderRadius: "12px", display: "flex", alignItems: "flex-start", gap: "10px" }}>
+              <AlertTriangle size={16} style={{ color: "var(--warning)", flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <strong style={{ display: "block", fontSize: "12.5px", color: "var(--warning)" }}>Estoque Abaixo do Mínimo</strong>
+                <span style={{ fontSize: "11.5px", color: "var(--text-secondary)", display: "block", marginTop: "2px" }}>{lowStockItemsCount} ferramenta(s) ou mobília(s) atingiram nível crítico.</span>
+              </div>
+            </div>
+          ) : (
+            <div style={{ border: "1px solid rgba(40, 167, 69, 0.2)", background: "rgba(40, 167, 69, 0.05)", padding: "12px 14px", borderRadius: "12px", display: "flex", alignItems: "flex-start", gap: "10px" }}>
+              <CheckCircle2 size={16} style={{ color: "var(--success)", flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <strong style={{ display: "block", fontSize: "12.5px", color: "var(--success-text)" }}>Estoque Saudável</strong>
+                <span style={{ fontSize: "11.5px", color: "var(--text-secondary)", display: "block", marginTop: "2px" }}>Nenhum item do galpão está abaixo do nível crítico.</span>
+              </div>
+            </div>
+          )}
+
+          {/* Alert 3: Proximidade de data de montagem */}
+          {events.some(e => {
+            const daysLeft = Math.ceil((new Date(e.startDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+            return daysLeft >= 0 && daysLeft <= 5 && e.phase !== "post";
+          }) ? (
+            <div style={{ border: "1px solid rgba(99, 102, 241, 0.2)", background: "rgba(99, 102, 241, 0.05)", padding: "12px 14px", borderRadius: "12px", display: "flex", alignItems: "flex-start", gap: "10px" }}>
+              <Calendar size={16} style={{ color: "var(--accent)", flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <strong style={{ display: "block", fontSize: "12.5px", color: "var(--accent)" }}>Montagem Imediata (Próximos Dias)</strong>
+                <span style={{ fontSize: "11.5px", color: "var(--text-secondary)", display: "block", marginTop: "2px" }}>Há eventos agendados com início nos próximos 5 dias. Revise a carga de frete.</span>
+              </div>
+            </div>
+          ) : (
+            <div style={{ border: "1px solid rgba(40, 167, 69, 0.2)", background: "rgba(40, 167, 69, 0.05)", padding: "12px 14px", borderRadius: "12px", display: "flex", alignItems: "flex-start", gap: "10px" }}>
+              <CheckCircle2 size={16} style={{ color: "var(--success)", flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <strong style={{ display: "block", fontSize: "12.5px", color: "var(--success-text)" }}>Cronograma Sob Controle</strong>
+                <span style={{ fontSize: "11.5px", color: "var(--text-secondary)", display: "block", marginTop: "2px" }}>Nenhuma montagem urgente de última hora agendada.</span>
+              </div>
+            </div>
+          )}
+
+          {/* Alert 4: Contas a Receber / Pendências Financeiras */}
+          {events.some(e => e.valorPendente > 0) ? (
+            <div style={{ border: "1px solid rgba(255, 193, 7, 0.2)", background: "rgba(255, 193, 7, 0.05)", padding: "12px 14px", borderRadius: "12px", display: "flex", alignItems: "flex-start", gap: "10px" }}>
+              <TrendingUp size={16} style={{ color: "var(--warning)", flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <strong style={{ display: "block", fontSize: "12.5px", color: "var(--warning)" }}>Saldos Contratuais Pendentes</strong>
+                <span style={{ fontSize: "11.5px", color: "var(--text-secondary)", display: "block", marginTop: "2px" }}>Existem parcelas em aberto de clientes a serem cobradas.</span>
+              </div>
+            </div>
+          ) : (
+            <div style={{ border: "1px solid rgba(40, 167, 69, 0.2)", background: "rgba(40, 167, 69, 0.05)", padding: "12px 14px", borderRadius: "12px", display: "flex", alignItems: "flex-start", gap: "10px" }}>
+              <CheckCircle2 size={16} style={{ color: "var(--success)", flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <strong style={{ display: "block", fontSize: "12.5px", color: "var(--success-text)" }}>Faturamento Liquidado</strong>
+                <span style={{ fontSize: "11.5px", color: "var(--text-secondary)", display: "block", marginTop: "2px" }}>Todos os contratos ativos foram 100% quitados pelos clientes.</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Overview Sections Grid */}
       <div className="overview-sections-grid">
         {/* Left Section - Recent Events */}

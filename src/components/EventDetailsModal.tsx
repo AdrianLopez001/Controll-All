@@ -2,7 +2,54 @@ import { useState } from "react";
 import { 
   X, FileText, Shield, AlertCircle, DollarSign, MapPin, Navigation, Tag, Calendar, Truck
 } from "lucide-react";
-import type { Project, Employee, WarehouseItem } from "../types";
+import type { Project, Employee, WarehouseItem, ProductionSectors, ConventionCenterRules } from "../types";
+
+export const CONVENTION_CENTERS: ConventionCenterRules[] = [
+  {
+    nome: "Distrito Anhembi (SP)",
+    taxaEnergia: 1500,
+    taxaLimpeza: 800,
+    limiteAltura: "6.0m",
+    artObrigatoria: true,
+    brigadistaObrigatorio: false,
+    seguroObrigatorio: true,
+    estacionamento: 80,
+    contatoGestor: "Almir Silva (11) 98888-7711"
+  },
+  {
+    nome: "Expo Center Norte (SP)",
+    taxaEnergia: 2000,
+    taxaLimpeza: 950,
+    limiteAltura: "5.5m",
+    artObrigatoria: true,
+    brigadistaObrigatorio: true,
+    seguroObrigatorio: true,
+    estacionamento: 100,
+    contatoGestor: "Regina Costa (11) 97777-6622"
+  },
+  {
+    nome: "Riocentro (RJ)",
+    taxaEnergia: 1800,
+    taxaLimpeza: 1100,
+    limiteAltura: "7.0m",
+    artObrigatoria: true,
+    brigadistaObrigatorio: true,
+    seguroObrigatorio: true,
+    estacionamento: 70,
+    contatoGestor: "Luiz Pires (21) 96666-5533"
+  },
+  {
+    nome: "Centro de Convenções de Natal (RN)",
+    taxaEnergia: 1200,
+    taxaLimpeza: 600,
+    limiteAltura: "5.0m",
+    artObrigatoria: true,
+    brigadistaObrigatorio: true,
+    seguroObrigatorio: false,
+    estacionamento: 30,
+    contatoGestor: "Jussara Melo (84) 95555-4444"
+  }
+];
 
 interface EventDetailsModalProps {
   event: Project;
@@ -20,7 +67,7 @@ export default function EventDetailsModal({
   onUpdateEvent
 }: EventDetailsModalProps) {
   const [activeTab, setActiveTab] = useState<
-    "checklist" | "tools" | "staff" | "travel" | "docs" | "costs" | "route"
+    "checklist" | "tools" | "staff" | "travel" | "docs" | "costs" | "route" | "producao" | "regras"
   >("checklist");
   
   // Local modifications state
@@ -140,6 +187,55 @@ export default function EventDetailsModal({
     });
   };
 
+  // 7. Production Sectors handler (Módulo 8)
+  const handleProductionChange = (sector: keyof ProductionSectors, status: "pendente" | "em_andamento" | "concluido") => {
+    const defaultProducao = localEvent.producao || {
+      marcenaria: "pendente",
+      pintura: "pendente",
+      eletrica: "pendente",
+      comunicacaoVisual: "pendente",
+      vidros: "pendente",
+      limpeza: "pendente"
+    };
+    const updatedProducao = {
+      ...defaultProducao,
+      [sector]: status
+    };
+    handleUpdate({
+      ...localEvent,
+      producao: updatedProducao
+    });
+  };
+
+  // 8. Convention center template rules auto-fill handler (Módulo 4)
+  const handleCenterChange = (centerName: string) => {
+    const rules = CONVENTION_CENTERS.find(c => c.nome === centerName) || {
+      nome: centerName,
+      taxaEnergia: 0,
+      taxaLimpeza: 0,
+      limiteAltura: "N/A",
+      artObrigatoria: false,
+      brigadistaObrigatorio: false,
+      seguroObrigatorio: false,
+      estacionamento: 0,
+      contatoGestor: ""
+    };
+    
+    const newCC = {
+      ...localEvent.centroCusto,
+      taxasOrganizador: rules.taxaEnergia + rules.taxaLimpeza
+    };
+    const totalCost = Object.values(newCC).reduce((a, b) => a + b, 0);
+
+    handleUpdate({
+      ...localEvent,
+      centroConvencoes: centerName,
+      regrasCentro: rules,
+      centroCusto: newCC,
+      custoRealizado: totalCost
+    });
+  };
+
   // Calculations for costs tab
   const totalCost = Object.values(localEvent.centroCusto || {}).reduce((a, b) => a + b, 0);
   const netProfit = localEvent.valorContratado - totalCost;
@@ -162,8 +258,10 @@ export default function EventDetailsModal({
         </div>
 
         {/* Modal Navigation Tabs */}
-        <div className="modal-tabs" style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
+        <div className="modal-tabs" style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "4px" }}>
           <button className={`modal-tab ${activeTab === "checklist" ? "active" : ""}`} onClick={() => setActiveTab("checklist")}>Checklist</button>
+          <button className={`modal-tab ${activeTab === "producao" ? "active" : ""}`} onClick={() => setActiveTab("producao")}>Produção</button>
+          <button className={`modal-tab ${activeTab === "regras" ? "active" : ""}`} onClick={() => setActiveTab("regras")}>Centro Convenções</button>
           <button className={`modal-tab ${activeTab === "tools" ? "active" : ""}`} onClick={() => setActiveTab("tools")}>Ferramentas &amp; WMS</button>
           <button className={`modal-tab ${activeTab === "staff" ? "active" : ""}`} onClick={() => setActiveTab("staff")}>Escala de Equipe</button>
           <button className={`modal-tab ${activeTab === "travel" ? "active" : ""}`} onClick={() => setActiveTab("travel")}>Logística Viagem</button>
@@ -193,6 +291,135 @@ export default function EventDetailsModal({
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* TAB: PRODUÇÃO */}
+          {activeTab === "producao" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <span className="text-xs text-muted semibold uppercase mb-20" style={{ display: "block" }}>
+                Gestão e Acompanhamento da Produção por Setor
+              </span>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                {(["marcenaria", "pintura", "eletrica", "comunicacaoVisual", "vidros", "limpeza"] as const).map((sector) => {
+                  const defaultProducao = localEvent.producao || {
+                    marcenaria: "pendente",
+                    pintura: "pendente",
+                    eletrica: "pendente",
+                    comunicacaoVisual: "pendente",
+                    vidros: "pendente",
+                    limpeza: "pendente"
+                  };
+                  const currentStatus = defaultProducao[sector] || "pendente";
+                  const label = 
+                    sector === "marcenaria" ? "🪚 Marcenaria" :
+                    sector === "pintura" ? "🎨 Pintura & Acabamento" :
+                    sector === "eletrica" ? "⚡ Elétrica & Iluminação" :
+                    sector === "comunicacaoVisual" ? "🖼️ Comunicação Visual" :
+                    sector === "vidros" ? "🪟 Vidraçaria & Vidros" : "🧹 Limpeza Técnica";
+
+                  return (
+                    <div key={sector} style={{ border: "1px solid var(--border)", padding: "12px 16px", borderRadius: "12px", backgroundColor: "var(--bg-card)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>{label}</span>
+                      <select 
+                        value={currentStatus} 
+                        onChange={(e) => handleProductionChange(sector, e.target.value as any)}
+                        style={{ padding: "6px 10px", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px", background: "var(--bg-card)", color: "var(--text-primary)", outline: "none" }}
+                      >
+                        <option value="pendente">🔴 Pendente</option>
+                        <option value="em_andamento">🟡 Em Produção</option>
+                        <option value="concluido">🟢 Concluído</option>
+                      </select>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: REGRAS DO PAVILHÃO */}
+          {activeTab === "regras" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <span className="text-xs text-muted semibold uppercase mb-20" style={{ display: "block" }}>
+                Cadastro e Regras Específicas do Pavilhão / Centro de Convenções
+              </span>
+
+              <div className="field">
+                <label>Centro de Convenções</label>
+                <select 
+                  value={localEvent.centroConvencoes || ""} 
+                  onChange={(e) => handleCenterChange(e.target.value)}
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", color: "var(--text-primary)" }}
+                >
+                  <option value="">-- Selecione o Pavilhão --</option>
+                  {CONVENTION_CENTERS.map((c) => (
+                    <option key={c.nome} value={c.nome}>{c.nome}</option>
+                  ))}
+                </select>
+              </div>
+
+              {localEvent.centroConvencoes ? (
+                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px", marginTop: "10px" }}>
+                  {/* Regras detalhadas */}
+                  <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px", backgroundColor: "var(--bg-card)", display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <h5 style={{ fontSize: "14px", fontWeight: "600", color: "var(--accent-secondary)", borderBottom: "1px solid var(--border)", paddingBottom: "6px" }}>Regras e Exigências Técnicas</h5>
+                    
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "12.5px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>Taxa de Energia Organizador:</span>
+                        <strong>R$ {localEvent.regrasCentro?.taxaEnergia.toLocaleString("pt-BR")}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>Taxa de Limpeza Pavilhão:</span>
+                        <strong>R$ {localEvent.regrasCentro?.taxaLimpeza.toLocaleString("pt-BR")}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>Limite de Altura Máxima:</span>
+                        <strong>{localEvent.regrasCentro?.limiteAltura}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>Estacionamento (Diária Caminhão):</span>
+                        <strong>R$ {localEvent.regrasCentro?.estacionamento.toLocaleString("pt-BR")}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>ART de Montagem Obrigatória:</span>
+                        <strong style={{ color: localEvent.regrasCentro?.artObrigatoria ? "var(--warning)" : "var(--text-secondary)" }}>
+                          {localEvent.regrasCentro?.artObrigatoria ? "Sim (Exigido)" : "Não"}
+                        </strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>Seguro Obra Obrigatório:</span>
+                        <strong style={{ color: localEvent.regrasCentro?.seguroObrigatorio ? "var(--warning)" : "var(--text-secondary)" }}>
+                          {localEvent.regrasCentro?.seguroObrigatorio ? "Sim (Exigido)" : "Não"}
+                        </strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>Brigadista de Stand Exigido:</span>
+                        <strong style={{ color: localEvent.regrasCentro?.brigadistaObrigatorio ? "var(--warning)" : "var(--text-secondary)" }}>
+                          {localEvent.regrasCentro?.brigadistaObrigatorio ? "Sim (Exigido)" : "Não"}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Gestor e Contato */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px", backgroundColor: "var(--bg-card)" }}>
+                      <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Gestão do Pavilhão</span>
+                      <strong style={{ display: "block", fontSize: "14px", marginTop: "4px", color: "var(--text-primary)" }}>{localEvent.regrasCentro?.contatoGestor || "Não informado"}</strong>
+                    </div>
+
+                    <div style={{ padding: "14px", borderRadius: "12px", backgroundColor: "var(--accent-glow)", border: "1px solid rgba(41, 59, 143, 0.15)", fontSize: "11px", color: "var(--text-secondary)" }}>
+                      💡 <strong>Impacto Financeiro Automatizado:</strong> Ao selecionar este Centro de Convenções, as taxas de energia e limpeza (<strong>R$ {(localEvent.regrasCentro?.taxaEnergia || 0) + (localEvent.regrasCentro?.taxaLimpeza || 0)}</strong>) foram incluídas automaticamente na linha de "Taxas do Organizador" do seu Centro de Custos.
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: "40px", border: "1px dashed var(--border)", borderRadius: "12px", textAlign: "center", color: "var(--text-muted)", fontSize: "12px" }}>
+                  Por favor, selecione um pavilhão no menu acima para carregar as regras automáticas da feira.
+                </div>
+              )}
             </div>
           )}
 
@@ -356,7 +583,7 @@ export default function EventDetailsModal({
               
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {localEvent.docs.map((doc) => (
-                  <div key={doc.id} className="checklist-item" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "1px solid var(--border)", borderRadius: "12px", background: "#fff" }}>
+                   <div key={doc.id} className="checklist-item" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "1px solid var(--border)", borderRadius: "12px", background: "var(--bg-card)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <FileText size={16} className="text-muted" />
                       <strong className="text-sm" style={{ color: "var(--text-primary)" }}>{doc.name}</strong>
@@ -434,17 +661,17 @@ export default function EventDetailsModal({
 
               {/* Consolidation values metrics */}
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
                   <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase" }}>CONTRATO DO ESTANDE</span>
                   <strong style={{ fontSize: "20px", color: "var(--accent)" }}>R$ {localEvent.valorContratado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
                 </div>
 
-                <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
                   <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase" }}>CUSTOS TOTAIS ESTIMADOS</span>
                   <strong style={{ fontSize: "18px", color: "var(--accent-secondary)" }}>R$ {totalCost.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
                 </div>
 
-                <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
                   <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase" }}>LUCRO LÍQUIDO PREVISTO</span>
                   <strong style={{ fontSize: "18px", color: netProfit >= 0 ? "var(--success-text)" : "var(--danger)" }}>
                     R$ {netProfit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}

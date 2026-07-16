@@ -109,7 +109,7 @@ export default function Logistics({
       
       {/* Metrics Row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
-        <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifySpaceBetween: "space-between", boxShadow: "var(--shadow-sm)" }}>
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
           <div>
             <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Veículos da Frota</span>
             <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--accent)", marginTop: "4px" }}>{vehicles.length}</h3>
@@ -119,7 +119,7 @@ export default function Logistics({
           </div>
         </div>
 
-        <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifySpaceBetween: "space-between", boxShadow: "var(--shadow-sm)" }}>
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
           <div>
             <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Hospedagens Ativas</span>
             <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--success-text)", marginTop: "4px" }}>{events.filter(e => e.hotelName).length}</h3>
@@ -129,7 +129,7 @@ export default function Logistics({
           </div>
         </div>
 
-        <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifySpaceBetween: "space-between", boxShadow: "var(--shadow-sm)" }}>
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
           <div>
             <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Vôos Cadastrados</span>
             <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--warning)", marginTop: "4px" }}>{events.filter(e => e.flightDetails).length}</h3>
@@ -143,7 +143,7 @@ export default function Logistics({
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "24px" }}>
         
         {/* Left Side: Vehicles Fleet */}
-        <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)" }}>
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>
             <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>Controle de Frota / Veículos</h4>
             <button className="btn-primary text-xs" style={{ padding: "4px 10px" }} onClick={() => setIsAddVehicleOpen(true)}>
@@ -197,7 +197,7 @@ export default function Logistics({
         </div>
 
         {/* Right Side: Travel arrangements cards */}
-        <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)" }}>
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)" }}>
           <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>Passagens &amp; Hospedagens da Equipe</h4>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -243,7 +243,7 @@ export default function Logistics({
       {/* Modal Add Vehicle */}
       {isAddVehicleOpen && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "450px", boxShadow: "var(--shadow-lg)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "450px", boxShadow: "var(--shadow-lg)" }}>
             <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>Adicionar Novo Veículo</h3>
             <form onSubmit={handleAddVehicleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "12px" }}>
               <div>
@@ -285,7 +285,7 @@ export default function Logistics({
       {selectedVehicle && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setSelectedVehicle(null)}>
           <div 
-            style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "450px", boxShadow: "var(--shadow-lg)" }}
+            style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "450px", boxShadow: "var(--shadow-lg)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>Editar Veículo Operacional</h3>
@@ -329,7 +329,7 @@ export default function Logistics({
       {selectedEventTravel && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setSelectedEventTravel(null)}>
           <div 
-            style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "500px", boxShadow: "var(--shadow-lg)" }}
+            style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "500px", boxShadow: "var(--shadow-lg)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>Editar Viagem: {selectedEventTravel.name}</h3>

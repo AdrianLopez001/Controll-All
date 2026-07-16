@@ -33,7 +33,9 @@ export default function WmsModule({
 
   const filteredItems = items.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || item.codigo.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === "all" ? true : item.type === categoryFilter;
+    const matchesCategory = categoryFilter === "all"
+      ? true
+      : (categoryFilter === "ferramenta" ? item.type === "tool" : item.type === "furniture");
     return matchesSearch && matchesCategory;
   });
 
@@ -162,19 +164,19 @@ export default function WmsModule({
           
           {/* Stock Metrics summary */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
-            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifySpaceBetween: "space-between", boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
               <div>
                 <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Total de Itens Físicos</span>
                 <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--accent)", marginTop: "4px" }}>{totalItemsCount} un</h3>
               </div>
             </div>
-            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifySpaceBetween: "space-between", boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
               <div>
                 <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Ferramentas Disponíveis</span>
                 <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--text-primary)", marginTop: "4px" }}>{toolItemsCount} un</h3>
               </div>
             </div>
-            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifySpaceBetween: "space-between", boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
               <div>
                 <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Mobiliários no Galpão</span>
                 <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--text-primary)", marginTop: "4px" }}>{furnitureItemsCount} un</h3>
@@ -222,7 +224,7 @@ export default function WmsModule({
               </div>
 
               {/* List Table */}
-              <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+              <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
                   <thead>
                     <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
@@ -249,7 +251,7 @@ export default function WmsModule({
                           <strong style={{ display: "block", fontSize: "13px" }}>{item.name}</strong>
                         </td>
                         <td style={{ padding: "12px 16px", fontSize: "12px", color: "var(--text-secondary)" }}>
-                          {item.type === "ferramenta" ? "🛠️ Ferramenta" : "🛋️ Mobiliário"}
+                          {item.type === "tool" ? "🛠️ Ferramenta" : "🛋️ Mobiliário"}
                         </td>
                         <td style={{ padding: "12px 16px", textAlign: "center" }}>
                           <span style={{ fontWeight: "700", color: item.stock <= item.stockMinimo ? "var(--danger)" : "var(--text-primary)" }}>{item.stock}</span>
@@ -269,7 +271,7 @@ export default function WmsModule({
             {/* Detailed placement & physical hierarchy drawer */}
             <div>
               {selectedItem ? (
-                <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", display: "flex", flexDirection: "column", gap: "20px", boxShadow: "var(--shadow-sm)" }}>
+                <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", display: "flex", flexDirection: "column", gap: "20px", boxShadow: "var(--shadow-sm)" }}>
                   {/* Header card details */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid var(--border)", paddingBottom: "16px" }}>
                     <div>
@@ -279,7 +281,7 @@ export default function WmsModule({
                     </div>
                     
                     {/* Simulate QR Code view */}
-                    <div style={{ border: "1px solid var(--border)", padding: "6px", borderRadius: "8px", textAlign: "center", backgroundColor: "#fff" }} title="Scan QR Code">
+                    <div style={{ border: "1px solid var(--border)", padding: "6px", borderRadius: "8px", textAlign: "center", backgroundColor: "var(--bg-card)" }} title="Scan QR Code">
                       <QrCode size={40} style={{ color: "var(--text-primary)" }} />
                       <span style={{ display: "block", fontSize: "9px", fontFamily: "monospace", color: "var(--text-muted)", marginTop: "2px" }}>{selectedItem.qrCode}</span>
                     </div>
@@ -379,7 +381,7 @@ export default function WmsModule({
             </button>
           </div>
 
-          <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
@@ -441,7 +443,7 @@ export default function WmsModule({
       {/* Modal Nova Locação */}
       {isLocacaoModalOpen && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "480px", boxShadow: "var(--shadow-lg)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "480px", boxShadow: "var(--shadow-lg)" }}>
             <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>Registrar Saída para Locação</h3>
             
             <form onSubmit={handleRegisterLocacao} style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "12px" }}>

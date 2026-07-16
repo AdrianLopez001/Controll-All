@@ -315,7 +315,7 @@ export default function Financial({
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           {/* Metrics grid */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
-            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
               <div>
                 <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Receitas Acumuladas</span>
                 <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--accent)", marginTop: "4px" }}>R$ {totalReceitas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h3>
@@ -325,7 +325,7 @@ export default function Financial({
               </div>
             </div>
 
-            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
               <div>
                 <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Despesas Acumuladas</span>
                 <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--accent-secondary)", marginTop: "4px" }}>R$ {totalDespesas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h3>
@@ -335,7 +335,7 @@ export default function Financial({
               </div>
             </div>
 
-            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
               <div>
                 <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Saldo Líquido</span>
                 <h3 style={{ fontSize: "22px", fontWeight: "700", color: saldoTotal >= 0 ? "var(--success-text)" : "var(--danger)", marginTop: "4px" }}>R$ {saldoTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h3>
@@ -355,7 +355,7 @@ export default function Financial({
           </div>
 
           {/* Transactions listing table */}
-          <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
@@ -444,7 +444,7 @@ export default function Financial({
           {selectedEvent ? (
             <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "24px" }}>
               {/* Detailed Category Table */}
-              <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
                 <h5 style={{ fontSize: "14px", fontWeight: "600", borderBottom: "1px solid var(--border)", paddingBottom: "10px", color: "var(--text-primary)" }}>Detalhamento por Linha de Despesa</h5>
                 
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -498,7 +498,7 @@ export default function Financial({
 
               {/* Profitability gauges and ranking list */}
               <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "var(--shadow-sm)" }}>
+                <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "var(--shadow-sm)" }}>
                   <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Margem de Lucro Bruto</span>
                   <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
                     <h3 style={{ fontSize: "28px", fontWeight: "800", color: lucroRealizado >= 0 ? "var(--success-text)" : "var(--danger)" }}>
@@ -525,7 +525,7 @@ export default function Financial({
                 </div>
 
                 {/* Profitability Ranking Table */}
-                <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "var(--shadow-sm)" }}>
+                <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "var(--shadow-sm)" }}>
                   <h5 style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>Ranking de Lucratividade</h5>
                   
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -558,7 +558,7 @@ export default function Financial({
       {activeSubTab === "caixinha" && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "24px" }}>
           {/* Left Form launch */}
-          <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)", height: "fit-content" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)", height: "fit-content" }}>
             <h5 style={{ fontSize: "14px", fontWeight: "600", color: "var(--accent)", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>Adiantamento / Vale Obra</h5>
             
             <form onSubmit={handleAddCaixinha} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -616,7 +616,7 @@ export default function Financial({
           </div>
 
           {/* Right ledger lists */}
-          <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)" }}>
             <h5 style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" }}>Livro Diário de Despesas de Campo</h5>
             
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -655,7 +655,7 @@ export default function Financial({
       {/* Modal Lançar Movimentação (Creation) */}
       {isInvoiceModalOpen && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "500px", boxShadow: "var(--shadow-lg)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "500px", boxShadow: "var(--shadow-lg)" }}>
             <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", fontFamily: "var(--font-title)", color: "var(--accent)" }}>Lançar Transação Financeira</h3>
             
             <form onSubmit={handleInvoiceSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -792,12 +792,12 @@ export default function Financial({
       {selectedInvoice && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setSelectedInvoice(null)}>
           <div 
-            style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "90%", maxWidth: "700px", maxHeight: "90vh", overflowY: "auto", boxShadow: "var(--shadow-lg)", display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "20px" }}
+            style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "90%", maxWidth: "700px", maxHeight: "90vh", overflowY: "auto", boxShadow: "var(--shadow-lg)", display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "20px" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left Column: Form Edits */}
             <div>
-              <div style={{ display: "flex", justifySpaceBetween: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: "600", color: "var(--accent)" }}>Editar Transação Financeira</h3>
               </div>
 
@@ -891,7 +891,7 @@ export default function Financial({
               <div>
                 <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Boleto PDF</label>
                 {selectedInvoice.pdfBoleto ? (
-                  <div style={{ display: "flex", alignItems: "center", justifySpaceBetween: "space-between", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", backgroundColor: "var(--bg-main)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", backgroundColor: "var(--bg-main)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
                       <FileText size={14} style={{ color: "var(--accent-secondary)" }} />
                       <span style={{ fontSize: "11px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{selectedInvoice.pdfBoleto}</span>
@@ -911,7 +911,7 @@ export default function Financial({
               <div>
                 <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Nota Fiscal NFe (PDF / XML)</label>
                 {selectedInvoice.pdfNFe ? (
-                  <div style={{ display: "flex", alignItems: "center", justifySpaceBetween: "space-between", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", backgroundColor: "var(--bg-main)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", backgroundColor: "var(--bg-main)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
                       <FileText size={14} style={{ color: "var(--success-text)" }} />
                       <span style={{ fontSize: "11px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{selectedInvoice.pdfNFe}</span>
@@ -939,7 +939,7 @@ export default function Financial({
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px", overflowY: "auto", maxHeight: "100px" }}>
                   {selectedInvoice.anexos && selectedInvoice.anexos.length > 0 ? (
                     selectedInvoice.anexos.map(anx => (
-                      <div key={anx.id} style={{ display: "flex", justifySpaceBetween: "space-between", alignItems: "center", padding: "6px 8px", border: "1px solid var(--border)", borderRadius: "6px", background: "#fff", fontSize: "10px" }}>
+                      <div key={anx.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", border: "1px solid var(--border)", borderRadius: "6px", background: "var(--bg-card)", fontSize: "10px" }}>
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexGrow: 1 }}>{anx.name}</span>
                         <button onClick={() => handleDeleteAnexo(anx.id)} style={{ border: "none", background: "none", color: "var(--danger)", cursor: "pointer", marginLeft: "6px" }}><Trash2 size={10} /></button>
                       </div>

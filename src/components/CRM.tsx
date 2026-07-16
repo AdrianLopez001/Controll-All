@@ -403,7 +403,7 @@ export default function CRM({
                         {stage !== "prospect" && (
                           <button 
                             onClick={() => onUpdateLeadEstagio(lead.id, stage === "negociacao" ? "prospect" : stage === "fechado" ? "negociacao" : "negociacao")}
-                            style={{ flexGrow: 1, padding: "4px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--border)", background: "#fff", cursor: "pointer", color: "var(--text-primary)" }}
+                            style={{ flexGrow: 1, padding: "4px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--border)", background: "var(--bg-card)", cursor: "pointer", color: "var(--text-primary)" }}
                           >
                             ◄ Recuar
                           </button>
@@ -524,7 +524,7 @@ export default function CRM({
       {/* Modal Novo Lead */}
       {isModalOpen && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "500px", boxShadow: "var(--shadow-lg)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "500px", boxShadow: "var(--shadow-lg)" }}>
             <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", fontFamily: "var(--font-title)", color: "var(--accent)" }}>Novo Lead Comercial</h3>
             
             <form onSubmit={handleSubmitLead} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -583,7 +583,7 @@ export default function CRM({
       {/* Modal Novo Cliente */}
       {isClientModalOpen && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "450px", boxShadow: "var(--shadow-lg)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "450px", boxShadow: "var(--shadow-lg)" }}>
             <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>Cadastrar Novo Cliente</h3>
             <form onSubmit={handleAddClientSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <div>
@@ -610,7 +610,7 @@ export default function CRM({
       {/* Modal Novo Fornecedor */}
       {isSupplierModalOpen && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "450px", boxShadow: "var(--shadow-lg)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "450px", boxShadow: "var(--shadow-lg)" }}>
             <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>Cadastrar Novo Fornecedor</h3>
             <form onSubmit={handleAddSupplierSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <div>
@@ -638,7 +638,7 @@ export default function CRM({
       {selectedClientIndex !== null && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setSelectedClientIndex(null)}>
           <div 
-            style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "90%", maxWidth: "750px", maxHeight: "90vh", overflowY: "auto", boxShadow: "var(--shadow-lg)", display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "20px" }}
+            style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "90%", maxWidth: "750px", maxHeight: "90vh", overflowY: "auto", boxShadow: "var(--shadow-lg)", display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "20px" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left Column: Form & Project details */}
@@ -712,7 +712,7 @@ export default function CRM({
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", flexGrow: 1, overflowY: "auto", maxHeight: "250px" }}>
                 {clientes[selectedClientIndex].anexos && clientes[selectedClientIndex].anexos!.length > 0 ? (
                   clientes[selectedClientIndex].anexos!.map(anx => (
-                    <div key={anx.id} style={{ display: "flex", justifySpaceBetween: "space-between", alignItems: "center", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", backgroundColor: "#fff" }}>
+                    <div key={anx.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", backgroundColor: "var(--bg-card)" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
                         <FileText size={14} style={{ color: "var(--accent-secondary)", flexShrink: 0 }} />
                         <span 
@@ -744,7 +744,7 @@ export default function CRM({
       {selectedSupplierIndex !== null && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setSelectedSupplierIndex(null)}>
           <div 
-            style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "450px", boxShadow: "var(--shadow-lg)" }}
+            style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "450px", boxShadow: "var(--shadow-lg)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>Editar Fornecedor Homologado</h3>
