@@ -38,6 +38,7 @@ export interface CentroDeCusto {
   equipePropria: number;
   terceirizados: number;
   taxasOrganizador: number;
+  fornecedoresDespesas?: { [categoria: string]: string };
 }
 
 export interface ProjectDoc {
@@ -100,6 +101,14 @@ export interface Project {
   centroConvencoes?: string;
   regrasCentro?: ConventionCenterRules;
   producao?: ProductionSectors;
+  romaneioChecked?: { [itemId: string]: boolean };
+  cronogramaTurnos?: {
+    dia1Manha: boolean;
+    dia1Tarde: boolean;
+    dia2Manha: boolean;
+    dia2Tarde: boolean;
+  };
+  devolucoesAlugados?: { [itemId: string]: "pendente" | "devolvido" | "avariado" };
 }
 
 export interface AtivoHistorico {

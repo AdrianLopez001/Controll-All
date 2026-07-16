@@ -30,6 +30,26 @@ export default function Overview({
     .filter(e => e.phase !== "post")
     .slice(0, 4);
 
+  // Check if any event has pending ART approaching deadline (deadline is 5 days before montagem)
+  const pendingArts = events.filter(e => {
+    if (!e.regrasCentro?.artObrigatoria || !e.dataMontagem) return false;
+    const artDoc = e.docs.find(d => d.id === "d2");
+    const isApproved = artDoc?.status === "approved";
+    if (isApproved) return false;
+    
+    const montagemDate = new Date(e.dataMontagem);
+    const deadlineDate = new Date(montagemDate.getTime() - 5 * 24 * 60 * 60 * 1000);
+    const currentDate = new Date();
+    
+    deadlineDate.setHours(0,0,0,0);
+    currentDate.setHours(0,0,0,0);
+    
+    const diffTime = deadlineDate.getTime() - currentDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays <= 3;
+  });
+
   return (
     <div className="overview-container">
       {/* Metrics Grid */}
@@ -102,6 +122,35 @@ export default function Overview({
         </div>
         
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
+          {/* Alert 0: ART Deadline Alerts */}
+          {pendingArts.map(e => {
+            if (!e.dataMontagem) return null;
+            const montagemDate = new Date(e.dataMontagem);
+            const deadlineDate = new Date(montagemDate.getTime() - 5 * 24 * 60 * 60 * 1000);
+            const currentDate = new Date();
+            deadlineDate.setHours(0,0,0,0);
+            currentDate.setHours(0,0,0,0);
+            const diffTime = deadlineDate.getTime() - currentDate.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const isOverdue = diffDays < 0;
+            
+            const alertColor = isOverdue ? "var(--danger)" : "var(--warning)";
+            const alertBg = isOverdue ? "rgba(220, 53, 69, 0.05)" : "rgba(255, 193, 7, 0.05)";
+            const borderCol = isOverdue ? "rgba(220, 53, 69, 0.2)" : "rgba(255, 193, 7, 0.2)";
+            
+            return (
+              <div key={`art-alert-${e.id}`} style={{ border: `1px solid ${borderCol}`, background: alertBg, padding: "12px 14px", borderRadius: "12px", display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                <AlertTriangle size={16} style={{ color: alertColor, flexShrink: 0, marginTop: "2px" }} />
+                <div>
+                  <strong style={{ display: "block", fontSize: "12.5px", color: alertColor }}>Prazo de ART Crítico!</strong>
+                  <span style={{ fontSize: "11.5px", color: "var(--text-secondary)", display: "block", marginTop: "2px" }}>
+                    A ART para <strong>{e.name}</strong> deve ser enviada até <strong>{deadlineDate.toLocaleDateString("pt-BR")}</strong> ({isOverdue ? "ATRASADA!" : diffDays === 0 ? "HOJE!" : `faltam ${diffDays} dia(s)`}).
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+
           {/* Alert 1: ART / Docs Pendentes */}
           {pendingDocsCount > 0 ? (
             <div style={{ border: "1px solid rgba(220, 53, 69, 0.2)", background: "rgba(220, 53, 69, 0.05)", padding: "12px 14px", borderRadius: "12px", display: "flex", alignItems: "flex-start", gap: "10px" }}>

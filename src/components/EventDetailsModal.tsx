@@ -55,6 +55,7 @@ interface EventDetailsModalProps {
   event: Project;
   allEmployees: Employee[];
   allWarehouseItems: WarehouseItem[];
+  allEvents: Project[];
   onClose: () => void;
   onUpdateEvent: (updatedEvent: Project) => void;
 }
@@ -63,6 +64,7 @@ export default function EventDetailsModal({
   event,
   allEmployees,
   allWarehouseItems,
+  allEvents,
   onClose,
   onUpdateEvent
 }: EventDetailsModalProps) {
@@ -76,6 +78,45 @@ export default function EventDetailsModal({
   const handleUpdate = (updated: Project) => {
     setLocalEvent(updated);
     onUpdateEvent(updated);
+  };
+
+  // Date overlap check: (startA <= endB) && (endA >= startB)
+  const isDateOverlapping = (startA: string, endA: string, startB: string, endB: string) => {
+    return (startA <= endB) && (endA >= startB);
+  };
+
+  // Get other overlapping projects
+  const overlappingEvents = allEvents.filter(e => 
+    e.id !== localEvent.id && 
+    isDateOverlapping(e.startDate, e.endDate, localEvent.startDate, localEvent.endDate)
+  );
+
+  // Get total reserved quantity of an item in other overlapping events
+  const getReservedInOtherEvents = (itemId: string) => {
+    return overlappingEvents.reduce((sum, evt) => {
+      const assigned = evt.assignedTools.find(t => t.id === itemId);
+      return sum + (assigned ? assigned.allocatedQty : 0);
+    }, 0);
+  };
+
+  // Calculate ART limit date and countdown
+  const getArtDeadlineInfo = () => {
+    if (!localEvent.dataMontagem) return null;
+    const montagemDate = new Date(localEvent.dataMontagem);
+    // Limit is 5 days before montagem
+    const deadlineDate = new Date(montagemDate.getTime() - 5 * 24 * 60 * 60 * 1000);
+    const currentDate = new Date();
+    
+    deadlineDate.setHours(0,0,0,0);
+    currentDate.setHours(0,0,0,0);
+    
+    const diffTime = deadlineDate.getTime() - currentDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return {
+      diffDays,
+      formattedDeadline: deadlineDate.toLocaleDateString("pt-BR")
+    };
   };
 
   // 1. Checklist Handlers
@@ -103,6 +144,14 @@ export default function EventDetailsModal({
 
     let updatedTools = [...localEvent.assignedTools];
     const existingIndex = updatedTools.findIndex(t => t.id === itemId);
+    const currentQty = existingIndex > -1 ? updatedTools[existingIndex].allocatedQty : 0;
+    const otherReserved = getReservedInOtherEvents(itemId);
+    const maxAvailable = item.stock + currentQty - otherReserved;
+
+    if (qty > maxAvailable) {
+      alert(`⚠️ Erro de Reserva WMS: Estoque insuficiente! Existem ${otherReserved} unidade(s) reservada(s) em outros stands neste mesmo período. Máximo disponível para este stand: ${maxAvailable}.`);
+      return;
+    }
 
     if (qty <= 0) {
       updatedTools = updatedTools.filter(t => t.id !== itemId);
@@ -179,7 +228,10 @@ export default function EventDetailsModal({
       ...localEvent.centroCusto,
       [category]: val
     };
-    const totalCost = Object.values(newCC).reduce((a, b) => a + b, 0);
+    const totalCost = Object.entries(newCC).reduce((acc, [key, v]) => {
+      if (key === "fornecedoresDespesas") return acc;
+      return acc + (typeof v === "number" ? v : 0);
+    }, 0);
     handleUpdate({
       ...localEvent,
       centroCusto: newCC,
@@ -225,7 +277,10 @@ export default function EventDetailsModal({
       ...localEvent.centroCusto,
       taxasOrganizador: rules.taxaEnergia + rules.taxaLimpeza
     };
-    const totalCost = Object.values(newCC).reduce((a, b) => a + b, 0);
+    const totalCost = Object.entries(newCC).reduce((acc, [key, v]) => {
+      if (key === "fornecedoresDespesas") return acc;
+      return acc + (typeof v === "number" ? v : 0);
+    }, 0);
 
     handleUpdate({
       ...localEvent,
@@ -237,7 +292,10 @@ export default function EventDetailsModal({
   };
 
   // Calculations for costs tab
-  const totalCost = Object.values(localEvent.centroCusto || {}).reduce((a, b) => a + b, 0);
+  const totalCost = Object.entries(localEvent.centroCusto || {}).reduce((acc, [key, v]) => {
+    if (key === "fornecedoresDespesas") return acc;
+    return acc + (typeof v === "number" ? v : 0);
+  }, 0);
   const netProfit = localEvent.valorContratado - totalCost;
   const marginPercent = localEvent.valorContratado > 0 ? (netProfit / localEvent.valorContratado) * 100 : 0;
 
@@ -335,6 +393,80 @@ export default function EventDetailsModal({
                   );
                 })}
               </div>
+
+              {/* Cronograma Físico da Feira (Turnos de Montagem) */}
+              <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "2px dashed var(--border)" }}>
+                <h4 style={{ fontSize: "14px", fontWeight: "600", color: "var(--accent)", marginBottom: "8px" }}>
+                  ⏳ Cronograma Físico da Feira (Turnos de Montagem)
+                </h4>
+                <p className="text-xs text-muted" style={{ marginBottom: "12px" }}>
+                  Monitore a evolução das etapas críticas da montagem durante os dias oficiais de acesso.
+                </p>
+                
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  {[
+                    { key: "dia1Manha", label: "Dia 1 - Manhã", desc: "Estruturas & Paredes de MDF" },
+                    { key: "dia1Tarde", label: "Dia 1 - Tarde", desc: "Nivelamento, Massa & Pintura" },
+                    { key: "dia2Manha", label: "Dia 2 - Manhã", desc: "Elétrica, Iluminação & Comunicação Visual" },
+                    { key: "dia2Tarde", label: "Dia 2 - Tarde", desc: "Montagem de Mobiliário & Limpeza Fina" }
+                  ].map((turno) => {
+                    const defaultTurnos = localEvent.cronogramaTurnos || {
+                      dia1Manha: false,
+                      dia1Tarde: false,
+                      dia2Manha: false,
+                      dia2Tarde: false
+                    };
+                    const isChecked = !!defaultTurnos[turno.key as keyof typeof defaultTurnos];
+                    
+                    return (
+                      <div 
+                        key={turno.key}
+                        onClick={() => {
+                          const updatedTurnos = {
+                            ...defaultTurnos,
+                            [turno.key]: !isChecked
+                          };
+                          handleUpdate({
+                            ...localEvent,
+                            cronogramaTurnos: updatedTurnos
+                          });
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          padding: "12px",
+                          border: "1px solid var(--border)",
+                          borderRadius: "10px",
+                          backgroundColor: isChecked ? "var(--success-glow)" : "var(--bg-card)",
+                          cursor: "pointer",
+                          transition: "var(--transition)"
+                        }}
+                      >
+                        <div style={{
+                          width: "18px",
+                          height: "18px",
+                          border: "2px solid var(--border)",
+                          borderRadius: "4px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "11px",
+                          fontWeight: "bold",
+                          color: "var(--success-text)",
+                          backgroundColor: isChecked ? "var(--success-glow)" : "transparent"
+                        }}>
+                          {isChecked && "✓"}
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ fontSize: "12px", fontWeight: "600", color: isChecked ? "var(--success-text)" : "var(--text-primary)" }}>{turno.label}</span>
+                          <span style={{ fontSize: "10.5px", color: "var(--text-secondary)" }}>{turno.desc}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
@@ -413,6 +545,40 @@ export default function EventDetailsModal({
                     <div style={{ padding: "14px", borderRadius: "12px", backgroundColor: "var(--accent-glow)", border: "1px solid rgba(41, 59, 143, 0.15)", fontSize: "11px", color: "var(--text-secondary)" }}>
                       💡 <strong>Impacto Financeiro Automatizado:</strong> Ao selecionar este Centro de Convenções, as taxas de energia e limpeza (<strong>R$ {(localEvent.regrasCentro?.taxaEnergia || 0) + (localEvent.regrasCentro?.taxaLimpeza || 0)}</strong>) foram incluídas automaticamente na linha de "Taxas do Organizador" do seu Centro de Custos.
                     </div>
+
+                    {(() => {
+                      const deadline = getArtDeadlineInfo();
+                      if (!deadline || !localEvent.regrasCentro?.artObrigatoria) return null;
+                      const artDoc = localEvent.docs.find(d => d.id === "d2");
+                      const isArtApproved = artDoc?.status === "approved";
+                      if (isArtApproved) {
+                        return (
+                          <div style={{ padding: "14px", borderRadius: "12px", backgroundColor: "var(--success-glow)", border: "1px solid var(--success-text)", fontSize: "11.5px", color: "var(--success-text)", marginTop: "10px" }}>
+                            🟢 <strong>ART Homologada:</strong> O documento técnico foi aprovado pelo pavilhão!
+                          </div>
+                        );
+                      }
+                      
+                      const isOverdue = deadline.diffDays < 0;
+                      const alertColor = isOverdue ? "var(--danger)" : deadline.diffDays <= 3 ? "var(--warning)" : "var(--text-primary)";
+                      const alertBg = isOverdue ? "rgba(220, 53, 69, 0.1)" : deadline.diffDays <= 3 ? "rgba(255, 193, 7, 0.1)" : "var(--bg-card)";
+                      const borderCol = isOverdue ? "var(--danger)" : deadline.diffDays <= 3 ? "var(--warning)" : "var(--border)";
+                      
+                      return (
+                        <div style={{ padding: "14px", borderRadius: "12px", backgroundColor: alertBg, border: `1px solid ${borderCol}`, fontSize: "11.5px", color: alertColor, marginTop: "10px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <div>
+                            ⏰ <strong>Controle de Prazo de ART:</strong>
+                          </div>
+                          <div style={{ fontSize: "11px" }}>
+                            {isOverdue ? (
+                              <span>A data limite para envio da ART expirou em <strong>{deadline.formattedDeadline}</strong>! Envie urgente.</span>
+                            ) : (
+                              <span>O prazo limite de envio da ART para a feira é <strong>{deadline.formattedDeadline}</strong> ({deadline.diffDays === 0 ? "hoje!" : `faltam ${deadline.diffDays} dia(s)`}).</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               ) : (
@@ -435,7 +601,8 @@ export default function EventDetailsModal({
                     <th style={{ padding: "8px" }}>Item</th>
                     <th style={{ padding: "8px" }}>Tipo</th>
                     <th style={{ padding: "8px" }}>Posição Física</th>
-                    <th style={{ padding: "8px", textAlign: "center" }}>Disponível</th>
+                    <th style={{ padding: "8px", textAlign: "center" }}>Estoque Total</th>
+                    <th style={{ padding: "8px", textAlign: "center" }}>Reservado Outros</th>
                     <th style={{ padding: "8px", textAlign: "center", width: "120px" }}>Alocado</th>
                   </tr>
                 </thead>
@@ -443,6 +610,8 @@ export default function EventDetailsModal({
                   {allWarehouseItems.map((item) => {
                     const assigned = localEvent.assignedTools.find(t => t.id === item.id);
                     const currentQty = assigned ? assigned.allocatedQty : 0;
+                    const otherReserved = getReservedInOtherEvents(item.id);
+                    const maxAvailable = item.stock + currentQty - otherReserved;
                     
                     return (
                       <tr key={item.id} className="sheet-row" style={{ borderBottom: "1px solid var(--border)" }}>
@@ -457,27 +626,170 @@ export default function EventDetailsModal({
                         </td>
                         <td style={{ padding: "8px", textAlign: "center", color: "var(--text-secondary)" }}>{item.stock} un</td>
                         <td style={{ padding: "8px", textAlign: "center" }}>
-                          <input 
-                            type="number" 
-                            min="0" 
-                            max={item.stock + currentQty} // Allow allocating up to physical stock
-                            value={currentQty} 
-                            onChange={(e) => handleToolQtyChange(item.id, parseInt(e.target.value) || 0)}
-                            className="input-qty"
-                            style={{
-                              width: "60px",
-                              padding: "4px 8px",
-                              border: "1px solid var(--border)",
-                              borderRadius: "4px",
-                              textAlign: "center"
-                            }}
-                          />
+                          {otherReserved > 0 ? (
+                            <span style={{ fontSize: "11px", color: "var(--warning)", fontWeight: "600" }}>{otherReserved} un</span>
+                          ) : (
+                            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>0</span>
+                          )}
+                        </td>
+                        <td style={{ padding: "8px", textAlign: "center" }}>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
+                            <input 
+                              type="number" 
+                              min="0" 
+                              max={maxAvailable} // Limit to date-based available stock
+                              value={currentQty} 
+                              onChange={(e) => handleToolQtyChange(item.id, parseInt(e.target.value) || 0)}
+                              className="input-qty"
+                              style={{
+                                width: "60px",
+                                padding: "4px 8px",
+                                border: "1px solid var(--border)",
+                                borderRadius: "4px",
+                                textAlign: "center"
+                              }}
+                            />
+                            <span style={{ fontSize: "9px", color: "var(--text-muted)" }}>Máx disp: {maxAvailable}</span>
+                          </div>
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
+
+              {/* Romaneio de Carga (Checklist do Caminhão) */}
+              {localEvent.assignedTools.length > 0 && (
+                <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "2px dashed var(--border)" }}>
+                  <h4 style={{ fontSize: "14px", fontWeight: "600", color: "var(--accent)", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <Truck size={16} /> Romaneio de Carregamento (Conferência de Carga)
+                  </h4>
+                  <p className="text-xs text-muted" style={{ marginBottom: "12px" }}>
+                    Marque os itens conforme eles forem colocados fisicamente no caminhão para transporte até o pavilhão.
+                  </p>
+                  
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "10px" }}>
+                    {localEvent.assignedTools.map((t) => {
+                      const isChecked = !!(localEvent.romaneioChecked && localEvent.romaneioChecked[t.id]);
+                      return (
+                        <div 
+                          key={t.id} 
+                          onClick={() => {
+                            const currentChecked = localEvent.romaneioChecked || {};
+                            const updatedChecked = {
+                              ...currentChecked,
+                              [t.id]: !isChecked
+                            };
+                            handleUpdate({
+                              ...localEvent,
+                              romaneioChecked: updatedChecked
+                            });
+                          }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            padding: "10px 12px",
+                            border: "1px solid var(--border)",
+                            borderRadius: "8px",
+                            backgroundColor: isChecked ? "var(--success-glow)" : "var(--bg-card)",
+                            cursor: "pointer",
+                            transition: "var(--transition)"
+                          }}
+                        >
+                          <div style={{
+                            width: "18px",
+                            height: "18px",
+                            border: "2px solid var(--border)",
+                            borderRadius: "4px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "11px",
+                            fontWeight: "bold",
+                            color: "var(--success-text)",
+                            backgroundColor: isChecked ? "var(--success-glow)" : "transparent"
+                          }}>
+                            {isChecked && "✓"}
+                          </div>
+                          <span style={{ fontSize: "12.5px", textDecoration: isChecked ? "line-through" : "none", color: isChecked ? "var(--success-text)" : "var(--text-primary)" }}>
+                            <strong>{t.allocatedQty} un</strong> - {t.name}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Devolução de Mobiliário Alugado (Pós-Feira / Desmontagem) */}
+              {localEvent.phase === "post" && localEvent.assignedTools.filter(t => t.type === "furniture").length > 0 && (
+                <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "2px dashed var(--border)" }}>
+                  <h4 style={{ fontSize: "14px", fontWeight: "600", color: "var(--warning)", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+                    🔄 Controle de Devolução de Itens Alugados
+                  </h4>
+                  <p className="text-xs text-muted" style={{ marginBottom: "12px" }}>
+                    Gerencie o retorno do mobiliário alugado de terceiros ao término da desmontagem.
+                  </p>
+                  
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "10px" }}>
+                    {localEvent.assignedTools
+                      .filter(t => t.type === "furniture")
+                      .map((t) => {
+                        const currentStatus = (localEvent.devolucoesAlugados && localEvent.devolucoesAlugados[t.id]) || "pendente";
+                        
+                        return (
+                          <div 
+                            key={`return-${t.id}`}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              padding: "10px 12px",
+                              border: "1px solid var(--border)",
+                              borderRadius: "8px",
+                              backgroundColor: "var(--bg-card)"
+                            }}
+                          >
+                            <span style={{ fontSize: "12px", color: "var(--text-primary)" }}>
+                              <strong>{t.allocatedQty}x</strong> {t.name}
+                            </span>
+                            <select
+                              value={currentStatus}
+                              onChange={(e) => {
+                                const currentDevolucoes = localEvent.devolucoesAlugados || {};
+                                const updatedDevolucoes = {
+                                  ...currentDevolucoes,
+                                  [t.id]: e.target.value as any
+                                };
+                                handleUpdate({
+                                  ...localEvent,
+                                  devolucoesAlugados: updatedDevolucoes
+                                });
+                              }}
+                              style={{
+                                padding: "4px 8px",
+                                border: "1px solid var(--border)",
+                                borderRadius: "6px",
+                                fontSize: "11px",
+                                background: "var(--bg-card)",
+                                color: 
+                                  currentStatus === "devolvido" ? "var(--success-text)" :
+                                  currentStatus === "avariado" ? "var(--danger)" : "var(--text-secondary)",
+                                fontWeight: "600",
+                                outline: "none"
+                              }}
+                            >
+                              <option value="pendente">🔴 Pendente</option>
+                              <option value="devolvido">🟢 Devolvido</option>
+                              <option value="avariado">⚠️ Avariado</option>
+                            </select>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -628,8 +940,10 @@ export default function EventDetailsModal({
                 <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-secondary)", display: "block", marginBottom: "8px" }}>ESTIMAR ORÇAMENTO (CATEGORIAS)</span>
                 
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto", paddingRight: "4px" }}>
-                  {Object.keys(localEvent.centroCusto || {}).map((catKey) => {
-                    const typedKey = catKey as keyof typeof localEvent.centroCusto;
+                  {Object.keys(localEvent.centroCusto || {})
+                    .filter(k => k !== "fornecedoresDespesas")
+                    .map((catKey) => {
+                      const typedKey = catKey as keyof typeof localEvent.centroCusto;
                     const label = 
                       typedKey === "madeiraMdf" ? "Madeira e MDF" :
                       typedKey === "vidrosVidraçaria" ? "Vidros / Vidraçaria" :
@@ -648,7 +962,7 @@ export default function EventDetailsModal({
                           <span style={{ color: "var(--text-muted)" }}>R$</span>
                           <input 
                             type="number" 
-                            value={localEvent.centroCusto[typedKey] || 0}
+                            value={(localEvent.centroCusto[typedKey] as number) || 0}
                             onChange={(e) => handleCostChange(typedKey, parseFloat(e.target.value) || 0)}
                             style={{ width: "80px", padding: "4px 6px", border: "1px solid var(--border)", borderRadius: "4px", textAlign: "right" }}
                           />

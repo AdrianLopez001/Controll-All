@@ -8,12 +8,14 @@ import type { InvoiceLog, Project } from "../types";
 interface FinancialProps {
   invoices: InvoiceLog[];
   events: Project[];
+  fornecedores: { name: string; email: string; servico: string }[];
   onAddInvoice: (invoice: Omit<InvoiceLog, "id" | "date">) => void;
   onUpdateInvoice: (updated: InvoiceLog) => void;
+  onUpdateEvent: (updated: Project) => void;
 }
 
 export default function Financial({ 
-  invoices, events, onAddInvoice, onUpdateInvoice 
+  invoices, events, fornecedores, onAddInvoice, onUpdateInvoice, onUpdateEvent 
 }: FinancialProps) {
   const [activeSubTab, setActiveSubTab] = useState<"fluxo" | "centro_custo" | "caixinha">("fluxo");
   const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.id || "");
@@ -236,6 +238,52 @@ export default function Financial({
   const lucroRealizado = receitaContratada - totalCustoEvento;
   const margemLucro = receitaContratada > 0 ? (lucroRealizado / receitaContratada) * 100 : 0;
 
+  const categoriesList = [
+    { key: "madeiraMdf", label: "Madeira & MDF" },
+    { key: "vidrosVidraçaria", label: "Vidros & Vidraçaria" },
+    { key: "iluminacaoEletrica", label: "Iluminação & Elétrica" },
+    { key: "mobiliarioAlugado", label: "Mobiliário Alugado" },
+    { key: "fretes", label: "Fretes & Transportes" },
+    { key: "combustivelPedagios", label: "Combustível & Pedágios" },
+    { key: "hospedagemPassagens", label: "Hospedagem & Passagens" },
+    { key: "equipePropria", label: "Mão de Obra Própria" },
+    { key: "terceirizados", label: "Diárias de Terceirizados" },
+    { key: "taxasOrganizador", label: "Taxas do Organizador" }
+  ] as const;
+
+  const handleAssignSupplier = (category: string, supplierName: string) => {
+    if (!selectedEvent) return;
+    const currentFornecedores = selectedEvent.centroCusto.fornecedoresDespesas || {};
+    const updatedFornecedores = {
+      ...currentFornecedores,
+      [category]: supplierName
+    };
+    onUpdateEvent({
+      ...selectedEvent,
+      centroCusto: {
+        ...selectedEvent.centroCusto,
+        fornecedoresDespesas: updatedFornecedores
+      }
+    });
+  };
+
+  const getAccountsPayableBySupplier = () => {
+    const payables: { [supplierName: string]: number } = {};
+    if (!selectedEvent) return [];
+    
+    categoriesList.forEach((cat) => {
+      const supplierName = selectedEvent.centroCusto.fornecedoresDespesas?.[cat.key];
+      if (supplierName) {
+        const costVal = dynamicCosts[cat.key] || 0;
+        payables[supplierName] = (payables[supplierName] || 0) + costVal;
+      }
+    });
+    
+    return Object.entries(payables).map(([name, total]) => ({ name, total }));
+  };
+
+  const supplierPayables = getAccountsPayableBySupplier();
+
   // Most profitable events ranking
   const getEventProfitSummary = (evt: Project) => {
     const evtInvs = invoices.filter(i => i.eventoId === evt.id);
@@ -426,7 +474,7 @@ export default function Financial({
               <select 
                 value={selectedEventId}
                 onChange={(e) => setSelectedEventId(e.target.value)}
-                style={{ padding: "8px 16px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)", fontSize: "14px", fontWeight: "600", color: "var(--text-primary)", minWidth: "300px" }}
+                style={{ padding: "8px 16px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)", fontSize: "14px", fontWeight: "600", color: "var(--text-primary)", backgroundColor: "var(--bg-card)", minWidth: "300px" }}
               >
                 {events.map(evt => (
                   <option key={evt.id} value={evt.id}>{evt.name} ({evt.client})</option>
@@ -448,52 +496,60 @@ export default function Financial({
                 <h5 style={{ fontSize: "14px", fontWeight: "600", borderBottom: "1px solid var(--border)", paddingBottom: "10px", color: "var(--text-primary)" }}>Detalhamento por Linha de Despesa</h5>
                 
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Madeira &amp; MDF</span>
-                    <strong>R$ {dynamicCosts.madeiraMdf.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Vidros &amp; Vidraçaria</span>
-                    <strong>R$ {dynamicCosts.vidrosVidraçaria.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Iluminação &amp; Elétrica</span>
-                    <strong>R$ {dynamicCosts.iluminacaoEletrica.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Mobiliário Alugado</span>
-                    <strong>R$ {dynamicCosts.mobiliarioAlugado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Fretes &amp; Transportes</span>
-                    <strong>R$ {dynamicCosts.fretes.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Combustível &amp; Pedágios</span>
-                    <strong>R$ {dynamicCosts.combustivelPedagios.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Hospedagem &amp; Passagens</span>
-                    <strong>R$ {dynamicCosts.hospedagemPassagens.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Mão de Obra Própria</span>
-                    <strong>R$ {dynamicCosts.equipePropria.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Diárias de Terceirizados</span>
-                    <strong>R$ {dynamicCosts.terceirizados.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Taxas do Organizador</span>
-                    <strong>R$ {dynamicCosts.taxasOrganizador.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
+                  {categoriesList.map((cat) => {
+                    const costVal = dynamicCosts[cat.key] || 0;
+                    const assignedSupplier = selectedEvent.centroCusto.fornecedoresDespesas?.[cat.key] || "";
+                    
+                    return (
+                      <div key={cat.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px", padding: "8px 0", borderBottom: "1px dashed var(--border)", gap: "12px" }}>
+                        <span style={{ fontWeight: "500" }}>{cat.label}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <select
+                            value={assignedSupplier}
+                            onChange={(e) => handleAssignSupplier(cat.key, e.target.value)}
+                            style={{
+                              padding: "4px 8px",
+                              border: "1px solid var(--border)",
+                              borderRadius: "6px",
+                              fontSize: "11px",
+                              background: "var(--bg-card)",
+                              color: "var(--text-secondary)",
+                              outline: "none",
+                              maxWidth: "160px"
+                            }}
+                          >
+                            <option value="">-- Sem Fornecedor --</option>
+                            {fornecedores.map(s => (
+                              <option key={s.name} value={s.name}>{s.name}</option>
+                            ))}
+                          </select>
+                          <strong style={{ whiteSpace: "nowrap" }}>R$ {costVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", fontSize: "15px", paddingTop: "12px", borderTop: "2px solid var(--border)", color: "var(--text-primary)" }}>
                   <span>Custo Total Realizado:</span>
                   <span>R$ {totalCustoEvento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                 </div>
+
+                {supplierPayables.length > 0 && (
+                  <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "2px dashed var(--border)" }}>
+                    <h6 style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      Contas a Pagar do Estande (Consolidado por Fornecedor)
+                    </h6>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      {supplierPayables.map((sp) => (
+                        <div key={sp.name} style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "var(--text-primary)", backgroundColor: "var(--bg-main)", padding: "6px 12px", borderRadius: "6px" }}>
+                          <span>🤝 {sp.name}</span>
+                          <strong style={{ color: "var(--accent-secondary)" }}>R$ {sp.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Profitability gauges and ranking list */}

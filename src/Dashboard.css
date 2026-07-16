@@ -1054,3 +1054,14 @@ body {
 .pointer {
   cursor: pointer;
 }
+
+/* Global Form Input and Select styles for theme compatibility */
+select, input, textarea {
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+select option {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}

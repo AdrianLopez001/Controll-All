@@ -29,6 +29,14 @@ export default function CRM({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClientIndex, setSelectedClientIndex] = useState<number | null>(null);
   const [selectedSupplierIndex, setSelectedSupplierIndex] = useState<number | null>(null);
+  const [expandedLeadIds, setExpandedLeadIds] = useState<{ [leadId: string]: boolean }>({});
+
+  const toggleLeadExpand = (leadId: string) => {
+    setExpandedLeadIds(prev => ({
+      ...prev,
+      [leadId]: !prev[leadId]
+    }));
+  };
 
   // New Client / Supplier quick form triggers
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
@@ -371,63 +379,81 @@ export default function CRM({
                     Nenhum lead nesta fase
                   </div>
                 ) : (
-                  getLeadsByEstagio(stage).map(lead => (
-                    <div 
-                      key={lead.id} 
-                      style={{
-                        backgroundColor: "var(--bg-card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "12px",
-                        padding: "16px",
-                        boxShadow: "var(--shadow-sm)",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "10px"
-                      }}
-                    >
-                      <div>
-                        <strong style={{ display: "block", fontSize: "14px", color: "var(--text-primary)" }}>{lead.empresa}</strong>
-                        <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{lead.contato} ({lead.cargo})</span>
-                      </div>
+                  getLeadsByEstagio(stage).map(lead => {
+                    const isExpanded = !!expandedLeadIds[lead.id];
+                    return (
+                      <div 
+                        key={lead.id} 
+                        onClick={() => toggleLeadExpand(lead.id)}
+                        style={{
+                          backgroundColor: "var(--bg-card)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "12px",
+                          padding: "16px",
+                          boxShadow: "var(--shadow-sm)",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "10px",
+                          cursor: "pointer",
+                          transition: "var(--transition)"
+                        }}
+                      >
+                        <div>
+                          <strong style={{ display: "block", fontSize: "14px", color: "var(--text-primary)" }}>{lead.empresa}</strong>
+                          <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{lead.contato} ({lead.cargo})</span>
+                          {!isExpanded && (
+                            <span style={{ display: "block", fontSize: "10px", color: "var(--accent)", marginTop: "4px", fontWeight: "600" }}>
+                              🖱️ Clique para ver detalhes
+                            </span>
+                          )}
+                        </div>
 
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", color: "var(--text-muted)", borderTop: "1px solid var(--border)", paddingTop: "8px" }}>
-                        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><Mail size={12} /> {lead.email}</span>
-                        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><Phone size={12} /> {lead.telefone}</span>
-                        <span style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-primary)", fontWeight: "500", marginTop: "2px" }}>
-                          <DollarSign size={12} /> R$ {lead.valorEstimado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                        </span>
-                      </div>
+                        {isExpanded && (
+                          <div 
+                            onClick={(e) => e.stopPropagation()} // Prevent collapse on content click
+                            style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+                          >
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", color: "var(--text-muted)", borderTop: "1px solid var(--border)", paddingTop: "8px" }}>
+                              <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><Mail size={12} /> {lead.email}</span>
+                              <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><Phone size={12} /> {lead.telefone}</span>
+                              <span style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-primary)", fontWeight: "500", marginTop: "2px" }}>
+                                <DollarSign size={12} /> R$ {lead.valorEstimado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                              </span>
+                            </div>
 
-                      {/* Ações de movimentação */}
-                      <div style={{ display: "flex", gap: "6px", marginTop: "4px", borderTop: "1px solid var(--border)", paddingTop: "8px" }}>
-                        {stage !== "prospect" && (
-                          <button 
-                            onClick={() => onUpdateLeadEstagio(lead.id, stage === "negociacao" ? "prospect" : stage === "fechado" ? "negociacao" : "negociacao")}
-                            style={{ flexGrow: 1, padding: "4px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--border)", background: "var(--bg-card)", cursor: "pointer", color: "var(--text-primary)" }}
-                          >
-                            ◄ Recuar
-                          </button>
-                        )}
-                        {stage !== "fechado" && stage !== "perdido" && (
-                          <button 
-                            onClick={() => onUpdateLeadEstagio(lead.id, stage === "prospect" ? "negociacao" : "fechado")}
-                            style={{ flexGrow: 1, padding: "4px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--border)", background: "var(--accent-glow)", color: "var(--accent)", cursor: "pointer", fontWeight: 600 }}
-                          >
-                            Avançar ►
-                          </button>
-                        )}
-                        {stage !== "perdido" && stage !== "fechado" && (
-                          <button 
-                            onClick={() => onUpdateLeadEstagio(lead.id, "perdido")}
-                            style={{ padding: "4px 8px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--border)", background: "var(--danger-glow)", color: "var(--danger)", cursor: "pointer" }}
-                            title="Perdido"
-                          >
-                            ✕
-                          </button>
+                            {/* Ações de movimentação */}
+                            <div style={{ display: "flex", gap: "6px", marginTop: "4px", borderTop: "1px solid var(--border)", paddingTop: "8px" }}>
+                              {stage !== "prospect" && (
+                                <button 
+                                  onClick={() => onUpdateLeadEstagio(lead.id, stage === "negociacao" ? "prospect" : stage === "fechado" ? "negociacao" : "negociacao")}
+                                  style={{ flexGrow: 1, padding: "4px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--border)", background: "var(--bg-card)", cursor: "pointer", color: "var(--text-primary)" }}
+                                >
+                                  ◄ Recuar
+                                </button>
+                              )}
+                              {stage !== "fechado" && stage !== "perdido" && (
+                                <button 
+                                  onClick={() => onUpdateLeadEstagio(lead.id, stage === "prospect" ? "negociacao" : "fechado")}
+                                  style={{ flexGrow: 1, padding: "4px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--border)", background: "var(--accent-glow)", color: "var(--accent)", cursor: "pointer", fontWeight: 600 }}
+                                >
+                                  Avançar ►
+                                </button>
+                              )}
+                              {stage !== "perdido" && stage !== "fechado" && (
+                                <button 
+                                  onClick={() => onUpdateLeadEstagio(lead.id, "perdido")}
+                                  style={{ padding: "4px 8px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--border)", background: "var(--danger-glow)", color: "var(--danger)", cursor: "pointer" }}
+                                  title="Perdido"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>

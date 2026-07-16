@@ -108,7 +108,18 @@ const INITIAL_EVENTS: Project[] = [
       hospedagemPassagens: 2400.00,
       equipePropria: 1200.00,
       terceirizados: 1000.00,
-      taxasOrganizador: 0
+      taxasOrganizador: 0,
+      fornecedoresDespesas: {
+        madeiraMdf: "Madeiras Pinheiro",
+        iluminacaoEletrica: "Elétrica Luz",
+        mobiliarioAlugado: "Locadora Real"
+      }
+    },
+    cronogramaTurnos: {
+      dia1Manha: true,
+      dia1Tarde: true,
+      dia2Manha: true,
+      dia2Tarde: false
     },
     mapsRoute: {
       endereco: "Distrito Anhembi, Av. Olavo Fontoura, 1209 - Santana, São Paulo - SP",
@@ -167,7 +178,16 @@ const INITIAL_EVENTS: Project[] = [
       hospedagemPassagens: 2200.00,
       equipePropria: 0,
       terceirizados: 0,
-      taxasOrganizador: 0
+      taxasOrganizador: 0,
+      fornecedoresDespesas: {
+        madeiraMdf: "Madeiras Pinheiro"
+      }
+    },
+    cronogramaTurnos: {
+      dia1Manha: false,
+      dia1Tarde: false,
+      dia2Manha: false,
+      dia2Tarde: false
     },
     mapsRoute: {
       endereco: "Expo Center Norte, Rua José Bernardo Pinto, 333 - Vila Guilherme, São Paulo - SP",
@@ -203,7 +223,11 @@ const INITIAL_EVENTS: Project[] = [
     assignedEmployees: [
       { id: "emp-3", name: "Claudio Barbosa Silva", role: "Eletricista Operacional", documentStatus: "complete" }
     ],
-    assignedTools: [],
+    assignedTools: [
+      { id: "item-5", name: "Cadeira Estofada Office Preta", type: "furniture", allocatedQty: 10 },
+      { id: "item-6", name: "Mesa Lateral Redonda de Vidro", type: "furniture", allocatedQty: 2 },
+      { id: "item-7", name: "Banqueta Regulável Bistrô Cromada", type: "furniture", allocatedQty: 8 }
+    ],
     hotelName: "Hotel Windsor Barra",
     hotelCheckin: "2026-06-14",
     flightDetails: "Gol G3-1209 - NAT -> GIG - Localizador: GHJ441",
@@ -228,7 +252,25 @@ const INITIAL_EVENTS: Project[] = [
       hospedagemPassagens: 11400.00,
       equipePropria: 6800.00,
       terceirizados: 3600.00,
-      taxasOrganizador: 2500.00
+      taxasOrganizador: 2500.00,
+      fornecedoresDespesas: {
+        madeiraMdf: "Madeiras Pinheiro",
+        vidrosVidraçaria: "Vidraçaria Cristal",
+        iluminacaoEletrica: "Elétrica Luz",
+        mobiliarioAlugado: "Locadora Real",
+        fretes: "Fretes & Carretos Rápidos"
+      }
+    },
+    cronogramaTurnos: {
+      dia1Manha: true,
+      dia1Tarde: true,
+      dia2Manha: true,
+      dia2Tarde: true
+    },
+    devolucoesAlugados: {
+      "item-5": "devolvido",
+      "item-6": "avariado",
+      "item-7": "pendente"
     },
     mapsRoute: {
       endereco: "Riocentro, Av. Salvador Allende, 6555 - Barra da Tijuca, Rio de Janeiro - RJ",
@@ -348,7 +390,10 @@ const INITIAL_WAREHOUSE: WarehouseItem[] = [
     valorLocacao: 15.00,
     stockMinimo: 5,
     origem: "proprio",
-    localizacaoFisica: { galpao: "A", corredor: "01", rua: "A", prateleira: "03", andar: "B", posicao: "02" }
+    localizacaoFisica: { galpao: "A", corredor: "01", rua: "A", prateleira: "03", andar: "B", posicao: "02" },
+    locacoesDetalhadas: [
+      { id: "loc-1", responsavel: "Construtora Alfa S.A.", dataSaida: "2026-07-10", dataRetorno: "2026-07-20", dias: 10, valor: 150.00, status: "ativa" }
+    ]
   },
   { 
     id: "item-2", 
@@ -420,7 +465,10 @@ const INITIAL_WAREHOUSE: WarehouseItem[] = [
     valorLocacao: 15.00,
     stockMinimo: 8,
     origem: "alugado",
-    localizacaoFisica: { galpao: "C", corredor: "10", rua: "F", prateleira: "02", andar: "D", posicao: "05" }
+    localizacaoFisica: { galpao: "C", corredor: "10", rua: "F", prateleira: "02", andar: "D", posicao: "05" },
+    locacoesDetalhadas: [
+      { id: "loc-2", responsavel: "Agência Click Eventos", dataSaida: "2026-07-12", dataRetorno: "2026-07-17", dias: 5, valor: 75.00, status: "ativa" }
+    ]
   },
   { 
     id: "item-6", 
@@ -456,7 +504,10 @@ const INITIAL_WAREHOUSE: WarehouseItem[] = [
     valorLocacao: 12.00,
     stockMinimo: 5,
     origem: "proprio",
-    localizacaoFisica: { galpao: "C", corredor: "11", rua: "G", prateleira: "01", andar: "B", posicao: "01" }
+    localizacaoFisica: { galpao: "C", corredor: "11", rua: "G", prateleira: "01", andar: "B", posicao: "01" },
+    locacoesDetalhadas: [
+      { id: "loc-3", responsavel: "Promoções Rio Ltda", dataSaida: "2026-07-14", dataRetorno: "2026-07-19", dias: 5, valor: 60.00, status: "ativa" }
+    ]
   }
 ];
 
@@ -1003,8 +1054,10 @@ export default function App() {
             <Financial 
               invoices={invoiceLogs}
               events={events}
+              fornecedores={fornecedores}
               onAddInvoice={addInvoice}
               onUpdateInvoice={updateInvoice}
+              onUpdateEvent={updateEvent}
             />
           )}
 
@@ -1042,6 +1095,7 @@ export default function App() {
           event={selectedEvent}
           allEmployees={employees}
           allWarehouseItems={warehouseItems}
+          allEvents={events}
           onClose={() => setSelectedEvent(null)}
           onUpdateEvent={updateEventDetails}
         />
