@@ -9,6 +9,7 @@ interface IAAssistantProps {
   employees: Employee[];
   warehouseItems: WarehouseItem[];
   invoices: InvoiceLog[];
+  onAddEvent?: (name: string, client: string, startDate: string) => void;
 }
 
 interface Message {
@@ -18,10 +19,10 @@ interface Message {
 }
 
 export default function IAAssistant({ 
-  events, employees, warehouseItems, invoices 
+  events, employees, warehouseItems, invoices, onAddEvent
 }: IAAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([
-    { sender: "bot", text: "Olá! Sou o Assistente Inteligente da JC Eventos. Posso resumir eventos, listar pendências de documentos, sugerir equipes ou responder dúvidas sobre estoque e financeiro. O que gostaria de analisar hoje?", timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }
+    { sender: "bot", text: "Olá! Sou o Assistente Inteligente da JC Eventos. Posso resumir eventos, listar pendências de documentos, sugerir equipes ou responder dúvidas sobre estoque e financeiro. Experimente me pedir para gerar um stand para odontologia! O que gostaria de analisar hoje?", timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }
   ]);
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -125,12 +126,47 @@ export default function IAAssistant({
         }).join("\n");
     }
 
+    // 6. Generate stand briefing / checklist (Módulo 20)
+    if (q.includes("odontologia") || q.includes("odonto") || q.includes("odontologico") || q.includes("odontológico") || q.includes("gerar")) {
+      return `### IA Copilot - Briefing & Planejamento de Stand Gerado (JC Eventos)
+
+**Cliente:** Clinica OdontoModern S/A
+**Estande:** Concept Stand Odonto (27m²)
+**Feira:** Dental Expo 2026
+
+**1. Briefing Inicial:**
+Estande contemporâneo de 27m² com foco em linhas orgânicas, acabamento laqueado branco, vitrines integradas de acrílico iluminadas para aparelhos odontológicos de alta tecnologia e fachada proeminente com perfis de LED de alta intensidade.
+
+**2. Estimativa de Materiais (Módulo 19 - Inteligência de Custos):**
+• 14 Chapas MDF Brancas (15mm)
+• 180 Parafusos Autotarrachantes
+• 8 Perfis de Alumínio LED
+• 6 Refletores Direcionais LED
+• 6h de Pintura e Lixamento
+• 12h de Montagem em Pavilhão
+
+**3. Sugestão de Equipe Operacional:**
+• Carlos Henrique Lima (Carpinteiro Montador)
+• Claudio Barbosa Silva (Eletricista Operacional)
+
+**4. Minuta de Cronograma:**
+• Dia 1 (Montagem): Ajuste do piso elevado, passagem de fiação elétrica e elevação das paredes de MDF.
+• Dia 2 (Montagem): Pintura de retoque, comunicação visual, fixação de LEDs e posicionamento da mobília.
+• Dia 3 (Feira): Entrega técnica, termo de liberação assinado e início da feira.
+
+**5. Custos Estimados:** R$ 38.000,00
+**Proposta Comercial Recomendada:** R$ 95.000,00 (Margem: 60%)
+
+[CRIAR_PROJETO]`;
+    }
+
     // Default reply fallback
     return `Compreendo. Posso ajudar você a analisar a operação da JC Eventos. Tente me perguntar coisas como:
 • *"Quais ferramentas estão abaixo do estoque mínimo?"*
 • *"Qual é o estande mais lucrativo cadastrado?"*
 • *"Quais eventos estão sem equipe escalada?"*
 • *"Quais documentos estão pendentes de aprovação?"*
+• *"Gerar briefing de stand moderno de 27m²"*
 • *"Resumir Estande Heineken"* (ou outro projeto)`;
   };
 
@@ -145,11 +181,24 @@ export default function IAAssistant({
     setInputText(question);
   };
 
+  const handleCreateProjectFromIA = () => {
+    if (onAddEvent) {
+      onAddEvent("Estande OdontoModern - Dental Expo 2026", "Clinica OdontoModern S/A", "2026-08-15");
+      const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      setMessages(prev => [
+        ...prev, 
+        { sender: "bot", text: "✅ Estande 'Estande OdontoModern - Dental Expo 2026' criado e adicionado com sucesso ao Quadro de Projetos e Kanban!", timestamp }
+      ]);
+    } else {
+      alert("Ação de criação não disponível.");
+    }
+  };
+
   return (
     <div className="ia-assistant-wrapper" style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "24px", height: "calc(100vh - 180px)", padding: "10px" }}>
       
       {/* Left chat layout window */}
-      <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+      <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
         
         {/* Chat Header */}
         <div style={{ backgroundColor: "var(--bg-sidebar)", padding: "16px 20px", display: "flex", alignItems: "center", gap: "10px", color: "#fff" }}>
@@ -187,7 +236,18 @@ export default function IAAssistant({
                   whiteSpace: "pre-line"
                 }}
               >
-                {msg.text}
+                {msg.text.replace("[CRIAR_PROJETO]", "")}
+                {msg.text.includes("[CRIAR_PROJETO]") && (
+                  <div style={{ marginTop: "12.5px" }}>
+                    <button 
+                      onClick={handleCreateProjectFromIA}
+                      className="btn-primary"
+                      style={{ fontSize: "11px", padding: "6px 14px", borderRadius: "100px", background: "var(--accent-secondary)" }}
+                    >
+                      🚀 Criar Projeto Automaticamente
+                    </button>
+                  </div>
+                )}
               </div>
               <span style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px", padding: "0 4px" }}>{msg.timestamp}</span>
             </div>
@@ -209,7 +269,7 @@ export default function IAAssistant({
               borderRadius: "100px",
               fontFamily: "var(--font)",
               fontSize: "13px",
-              backgroundColor: "#fff",
+              backgroundColor: "var(--bg-card)",
               color: "var(--text-primary)"
             }}
           />
@@ -235,7 +295,7 @@ export default function IAAssistant({
       {/* Right Suggested Questions sidebar helper */}
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         
-        <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "var(--shadow-sm)" }}>
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "var(--shadow-sm)" }}>
           <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "6px", textTransform: "uppercase" }}>
             <Sparkles size={14} style={{ color: "var(--accent-secondary)" }} />
             Perguntas Sugeridas
@@ -244,8 +304,16 @@ export default function IAAssistant({
           
           <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
             <button 
+              onClick={() => setSuggestedQuestion("Gerar briefing de stand moderno de 27m²")}
+              style={{ padding: "10px 12px", textAlign: "left", fontSize: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", color: "var(--text-primary)" }}
+            >
+              <Sparkles size={12} className="text-muted" style={{ color: "var(--accent-secondary)" }} />
+              <span>Gerar briefing de stand moderno de 27m²</span>
+            </button>
+
+            <button 
               onClick={() => setSuggestedQuestion("Quais ferramentas estão abaixo do estoque mínimo?")}
-              style={{ padding: "10px 12px", textAlign: "left", fontSize: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+              style={{ padding: "10px 12px", textAlign: "left", fontSize: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", color: "var(--text-primary)" }}
             >
               <MessageSquare size={12} className="text-muted" />
               <span>Verificar ferramentas abaixo do estoque mínimo</span>
@@ -253,7 +321,7 @@ export default function IAAssistant({
 
             <button 
               onClick={() => setSuggestedQuestion("Quais eventos estão sem equipe escalada?")}
-              style={{ padding: "10px 12px", textAlign: "left", fontSize: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+              style={{ padding: "10px 12px", textAlign: "left", fontSize: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", color: "var(--text-primary)" }}
             >
               <MessageSquare size={12} className="text-muted" />
               <span>Verificar eventos sem equipe escalada</span>
@@ -261,7 +329,7 @@ export default function IAAssistant({
 
             <button 
               onClick={() => setSuggestedQuestion("Qual é o estande mais lucrativo cadastrado?")}
-              style={{ padding: "10px 12px", textAlign: "left", fontSize: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+              style={{ padding: "10px 12px", textAlign: "left", fontSize: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", color: "var(--text-primary)" }}
             >
               <MessageSquare size={12} className="text-muted" />
               <span>Verificar estande mais lucrativo</span>
@@ -269,23 +337,15 @@ export default function IAAssistant({
 
             <button 
               onClick={() => setSuggestedQuestion("Quais documentos estão pendentes de aprovação?")}
-              style={{ padding: "10px 12px", textAlign: "left", fontSize: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+              style={{ padding: "10px 12px", textAlign: "left", fontSize: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", color: "var(--text-primary)" }}
             >
               <MessageSquare size={12} className="text-muted" />
               <span>Quais documentos estão pendentes?</span>
             </button>
-
-            <button 
-              onClick={() => setSuggestedQuestion("Resumir Estande Heineken")}
-              style={{ padding: "10px 12px", textAlign: "left", fontSize: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
-            >
-              <MessageSquare size={12} className="text-muted" />
-              <span>Resumir Estande Heineken</span>
-            </button>
           </div>
         </div>
 
-        <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "10px", boxShadow: "var(--shadow-sm)", fontSize: "11px", color: "var(--text-muted)" }}>
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "10px", boxShadow: "var(--shadow-sm)", fontSize: "11px", color: "var(--text-muted)" }}>
           <strong style={{ color: "var(--text-primary)" }}>Como a IA responde?</strong>
           <span>O assistente lê em tempo real o estado de memória do seu React app. Qualquer modificação que você fizer na equipe, estoque ou faturas será refletida na resposta da IA imediatamente!</span>
         </div>

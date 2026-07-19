@@ -2,7 +2,7 @@ import {
   Briefcase, Users, Archive,
   AlertTriangle, TrendingUp,
   DollarSign, ArrowDown, CheckSquare, MapPin,
-  Clock, Building2, ChevronRight
+  Clock, Building2, ChevronRight, Calendar
 } from "lucide-react";
 import type { Project, InvoiceLog } from "../types";
 
@@ -148,6 +148,26 @@ export default function Overview({
     },
   ];
 
+  // Check if any event has pending ART approaching deadline (deadline is 5 days before montagem)
+  const pendingArts = events.filter(e => {
+    if (!e.regrasCentro?.artObrigatoria || !e.dataMontagem) return false;
+    const artDoc = e.docs.find(d => d.id === "d2");
+    const isApproved = artDoc?.status === "approved";
+    if (isApproved) return false;
+    
+    const montagemDate = new Date(e.dataMontagem);
+    const deadlineDate = new Date(montagemDate.getTime() - 5 * 24 * 60 * 60 * 1000);
+    const currentDate = new Date();
+    
+    deadlineDate.setHours(0,0,0,0);
+    currentDate.setHours(0,0,0,0);
+    
+    const diffTime = deadlineDate.getTime() - currentDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays <= 3;
+  });
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "10px" }}>
 
@@ -207,7 +227,8 @@ export default function Overview({
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <h3 style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-primary)", margin: 0 }}>
-              Projetos em Andamento
+              <Calendar size={16} style={{ color: "var(--accent)", marginRight: "8px" }} />
+              Próximas Montagens e Eventos
             </h3>
             <button
               onClick={() => onNavigateToTab("kanban")}

@@ -8,12 +8,14 @@ import type { InvoiceLog, Project, NotaFiscal, BoletoAdministrativo } from "../t
 interface FinancialProps {
   invoices: InvoiceLog[];
   events: Project[];
+  fornecedores: { name: string; email: string; servico: string }[];
   onAddInvoice: (invoice: Omit<InvoiceLog, "id" | "date">) => void;
   onUpdateInvoice: (updated: InvoiceLog) => void;
+  onUpdateEvent: (updated: Project) => void;
 }
 
 export default function Financial({ 
-  invoices, events, onAddInvoice, onUpdateInvoice 
+  invoices, events, fornecedores, onAddInvoice, onUpdateInvoice, onUpdateEvent 
 }: FinancialProps) {
   const [activeSubTab, setActiveSubTab] = useState<"fluxo" | "pagar" | "receber" | "boletos" | "nfe" | "centro_custo" | "caixinha">("fluxo");
   const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.id || "");
@@ -396,6 +398,52 @@ export default function Financial({
   const lucroRealizado = receitaContratada - totalCustoEvento;
   const margemLucro = receitaContratada > 0 ? (lucroRealizado / receitaContratada) * 100 : 0;
 
+  const categoriesList = [
+    { key: "madeiraMdf", label: "Madeira & MDF" },
+    { key: "vidrosVidraçaria", label: "Vidros & Vidraçaria" },
+    { key: "iluminacaoEletrica", label: "Iluminação & Elétrica" },
+    { key: "mobiliarioAlugado", label: "Mobiliário Alugado" },
+    { key: "fretes", label: "Fretes & Transportes" },
+    { key: "combustivelPedagios", label: "Combustível & Pedágios" },
+    { key: "hospedagemPassagens", label: "Hospedagem & Passagens" },
+    { key: "equipePropria", label: "Mão de Obra Própria" },
+    { key: "terceirizados", label: "Diárias de Terceirizados" },
+    { key: "taxasOrganizador", label: "Taxas do Organizador" }
+  ] as const;
+
+  const handleAssignSupplier = (category: string, supplierName: string) => {
+    if (!selectedEvent) return;
+    const currentFornecedores = selectedEvent.centroCusto.fornecedoresDespesas || {};
+    const updatedFornecedores = {
+      ...currentFornecedores,
+      [category]: supplierName
+    };
+    onUpdateEvent({
+      ...selectedEvent,
+      centroCusto: {
+        ...selectedEvent.centroCusto,
+        fornecedoresDespesas: updatedFornecedores
+      }
+    });
+  };
+
+  const getAccountsPayableBySupplier = () => {
+    const payables: { [supplierName: string]: number } = {};
+    if (!selectedEvent) return [];
+    
+    categoriesList.forEach((cat) => {
+      const supplierName = selectedEvent.centroCusto.fornecedoresDespesas?.[cat.key];
+      if (supplierName) {
+        const costVal = dynamicCosts[cat.key] || 0;
+        payables[supplierName] = (payables[supplierName] || 0) + costVal;
+      }
+    });
+    
+    return Object.entries(payables).map(([name, total]) => ({ name, total }));
+  };
+
+  const supplierPayables = getAccountsPayableBySupplier();
+
   // Most profitable events ranking
   const getEventProfitSummary = (evt: Project) => {
     const evtInvs = invoices.filter(i => i.eventoId === evt.id);
@@ -550,7 +598,7 @@ export default function Financial({
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           {/* Metrics grid */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
-            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
               <div>
                 <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Receitas Acumuladas</span>
                 <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--accent)", marginTop: "4px" }}>R$ {totalReceitas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h3>
@@ -560,7 +608,7 @@ export default function Financial({
               </div>
             </div>
 
-            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
               <div>
                 <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Despesas Acumuladas</span>
                 <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--accent-secondary)", marginTop: "4px" }}>R$ {totalDespesas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h3>
@@ -570,7 +618,7 @@ export default function Financial({
               </div>
             </div>
 
-            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
               <div>
                 <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Saldo Líquido</span>
                 <h3 style={{ fontSize: "22px", fontWeight: "700", color: saldoTotal >= 0 ? "var(--success-text)" : "var(--danger)", marginTop: "4px" }}>R$ {saldoTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h3>
@@ -590,7 +638,7 @@ export default function Financial({
           </div>
 
           {/* Transactions listing table */}
-          <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
@@ -963,7 +1011,7 @@ export default function Financial({
               <select 
                 value={selectedEventId}
                 onChange={(e) => setSelectedEventId(e.target.value)}
-                style={{ padding: "8px 16px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)", fontSize: "14px", fontWeight: "600", color: "var(--text-primary)", minWidth: "300px" }}
+                style={{ padding: "8px 16px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)", fontSize: "14px", fontWeight: "600", color: "var(--text-primary)", backgroundColor: "var(--bg-card)", minWidth: "300px" }}
               >
                 {events.map(evt => (
                   <option key={evt.id} value={evt.id}>{evt.name} ({evt.client})</option>
@@ -981,61 +1029,69 @@ export default function Financial({
           {selectedEvent ? (
             <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "24px" }}>
               {/* Detailed Category Table */}
-              <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
                 <h5 style={{ fontSize: "14px", fontWeight: "600", borderBottom: "1px solid var(--border)", paddingBottom: "10px", color: "var(--text-primary)" }}>Detalhamento por Linha de Despesa</h5>
                 
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Madeira &amp; MDF</span>
-                    <strong>R$ {dynamicCosts.madeiraMdf.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Vidros &amp; Vidraçaria</span>
-                    <strong>R$ {dynamicCosts.vidrosVidraçaria.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Iluminação &amp; Elétrica</span>
-                    <strong>R$ {dynamicCosts.iluminacaoEletrica.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Mobiliário Alugado</span>
-                    <strong>R$ {dynamicCosts.mobiliarioAlugado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Fretes &amp; Transportes</span>
-                    <strong>R$ {dynamicCosts.fretes.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Combustível &amp; Pedágios</span>
-                    <strong>R$ {dynamicCosts.combustivelPedagios.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Hospedagem &amp; Passagens</span>
-                    <strong>R$ {dynamicCosts.hospedagemPassagens.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Mão de Obra Própria</span>
-                    <strong>R$ {dynamicCosts.equipePropria.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Diárias de Terceirizados</span>
-                    <strong>R$ {dynamicCosts.terceirizados.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
-                    <span>Taxas do Organizador</span>
-                    <strong>R$ {dynamicCosts.taxasOrganizador.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                  </div>
+                  {categoriesList.map((cat) => {
+                    const costVal = dynamicCosts[cat.key] || 0;
+                    const assignedSupplier = selectedEvent.centroCusto.fornecedoresDespesas?.[cat.key] || "";
+                    
+                    return (
+                      <div key={cat.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px", padding: "8px 0", borderBottom: "1px dashed var(--border)", gap: "12px" }}>
+                        <span style={{ fontWeight: "500" }}>{cat.label}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <select
+                            value={assignedSupplier}
+                            onChange={(e) => handleAssignSupplier(cat.key, e.target.value)}
+                            style={{
+                              padding: "4px 8px",
+                              border: "1px solid var(--border)",
+                              borderRadius: "6px",
+                              fontSize: "11px",
+                              background: "var(--bg-card)",
+                              color: "var(--text-secondary)",
+                              outline: "none",
+                              maxWidth: "160px"
+                            }}
+                          >
+                            <option value="">-- Sem Fornecedor --</option>
+                            {fornecedores.map(s => (
+                              <option key={s.name} value={s.name}>{s.name}</option>
+                            ))}
+                          </select>
+                          <strong style={{ whiteSpace: "nowrap" }}>R$ {costVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", fontSize: "15px", paddingTop: "12px", borderTop: "2px solid var(--border)", color: "var(--text-primary)" }}>
                   <span>Custo Total Realizado:</span>
                   <span>R$ {totalCustoEvento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                 </div>
+
+                {supplierPayables.length > 0 && (
+                  <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "2px dashed var(--border)" }}>
+                    <h6 style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      Contas a Pagar do Estande (Consolidado por Fornecedor)
+                    </h6>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      {supplierPayables.map((sp) => (
+                        <div key={sp.name} style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "var(--text-primary)", backgroundColor: "var(--bg-main)", padding: "6px 12px", borderRadius: "6px" }}>
+                          <span>🤝 {sp.name}</span>
+                          <strong style={{ color: "var(--accent-secondary)" }}>R$ {sp.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Profitability gauges and ranking list */}
               <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "var(--shadow-sm)" }}>
+                <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "var(--shadow-sm)" }}>
                   <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Margem de Lucro Bruto</span>
                   <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
                     <h3 style={{ fontSize: "28px", fontWeight: "800", color: lucroRealizado >= 0 ? "var(--success-text)" : "var(--danger)" }}>
@@ -1062,7 +1118,7 @@ export default function Financial({
                 </div>
 
                 {/* Profitability Ranking Table */}
-                <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "var(--shadow-sm)" }}>
+                <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "var(--shadow-sm)" }}>
                   <h5 style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>Ranking de Lucratividade</h5>
                   
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -1095,7 +1151,7 @@ export default function Financial({
       {activeSubTab === "caixinha" && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "24px" }}>
           {/* Left Form launch */}
-          <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)", height: "fit-content" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)", height: "fit-content" }}>
             <h5 style={{ fontSize: "14px", fontWeight: "600", color: "var(--accent)", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>Adiantamento / Vale Obra</h5>
             
             <form onSubmit={handleAddCaixinha} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -1153,7 +1209,7 @@ export default function Financial({
           </div>
 
           {/* Right ledger lists */}
-          <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)" }}>
             <h5 style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" }}>Livro Diário de Despesas de Campo</h5>
             
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -1192,7 +1248,7 @@ export default function Financial({
       {/* Modal Lançar Movimentação (Creation) */}
       {isInvoiceModalOpen && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "500px", boxShadow: "var(--shadow-lg)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "500px", boxShadow: "var(--shadow-lg)" }}>
             <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", fontFamily: "var(--font-title)", color: "var(--accent)" }}>Lançar Transação Financeira</h3>
             
             <form onSubmit={handleInvoiceSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -1353,7 +1409,7 @@ export default function Financial({
       {selectedInvoice && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setSelectedInvoice(null)}>
           <div 
-            style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "90%", maxWidth: "700px", maxHeight: "90vh", overflowY: "auto", boxShadow: "var(--shadow-lg)", display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "20px" }}
+            style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "90%", maxWidth: "700px", maxHeight: "90vh", overflowY: "auto", boxShadow: "var(--shadow-lg)", display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "20px" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left Column: Form Edits */}
@@ -1500,7 +1556,7 @@ export default function Financial({
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px", overflowY: "auto", maxHeight: "100px" }}>
                   {selectedInvoice.anexos && selectedInvoice.anexos.length > 0 ? (
                     selectedInvoice.anexos.map(anx => (
-                      <div key={anx.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", border: "1px solid var(--border)", borderRadius: "6px", background: "#fff", fontSize: "10px" }}>
+                       <div key={anx.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", border: "1px solid var(--border)", borderRadius: "6px", background: "var(--bg-card)", fontSize: "10px" }}>
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexGrow: 1 }}>{anx.name}</span>
                         <button onClick={() => handleDeleteAnexo(anx.id)} style={{ border: "none", background: "none", color: "var(--danger)", cursor: "pointer", marginLeft: "6px" }}><Trash2 size={10} /></button>
                       </div>

@@ -38,6 +38,7 @@ export interface CentroDeCusto {
   equipePropria: number;
   terceirizados: number;
   taxasOrganizador: number;
+  fornecedoresDespesas?: { [categoria: string]: string };
 }
 
 export interface ProjectDoc {
@@ -73,6 +74,27 @@ export interface OSHistoricoLog {
   depois: string;
   date: string;
   usuario: string;
+}
+
+export interface ConventionCenterRules {
+  nome: string;
+  taxaEnergia: number;
+  taxaLimpeza: number;
+  limiteAltura: string;
+  artObrigatoria: boolean;
+  brigadistaObrigatorio: boolean;
+  seguroObrigatorio: boolean;
+  estacionamento: number;
+  contatoGestor: string;
+}
+
+export interface ProductionSectors {
+  marcenaria: "pendente" | "em_andamento" | "concluido";
+  pintura: "pendente" | "em_andamento" | "concluido";
+  eletrica: "pendente" | "em_andamento" | "concluido";
+  comunicacaoVisual: "pendente" | "em_andamento" | "concluido";
+  vidros: "pendente" | "em_andamento" | "concluido";
+  limpeza: "pendente" | "em_andamento" | "concluido";
 }
 
 export interface Project {
@@ -120,6 +142,19 @@ export interface Project {
   materiais?: string[];
   assinaturas?: OSAssinaturas;
   historicoAlteracoes?: OSHistoricoLog[];
+  
+  // JC Eventos 3.0 expanded properties
+  centroConvencoes?: string;
+  regrasCentro?: ConventionCenterRules;
+  producao?: ProductionSectors;
+  romaneioChecked?: { [itemId: string]: boolean };
+  cronogramaTurnos?: {
+    dia1Manha: boolean;
+    dia1Tarde: boolean;
+    dia2Manha: boolean;
+    dia2Tarde: boolean;
+  };
+  devolucoesAlugados?: { [itemId: string]: "pendente" | "devolvido" | "avariado" };
 }
 
 export interface AtivoHistorico {

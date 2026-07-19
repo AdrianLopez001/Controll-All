@@ -142,31 +142,53 @@ const INITIAL_EVENTS: Project[] = [
       { id: "item-1", name: "Furadeira de Impacto Bosch", type: "tool", allocatedQty: 2 },
       { id: "item-2", name: "Serra Circular Dewalt", type: "tool", allocatedQty: 1 }
     ],
-    hotelName: "",
-    hotelCheckin: "",
-    flightDetails: "",
+    hotelName: "Hotel Reis Magos Natal",
+    hotelCheckin: "2026-07-22",
+    flightDetails: "Sem voos — equipe local de Natal/RN",
     docs: [
-      { id: "d1", name: "Contrato de Prestação de Serviços", status: "approved" },
-      { id: "d2", name: "ART de Responsabilidade Técnica (CREA)", status: "approved" },
-      { id: "d3", name: "Credencial de Acesso ao Pavilhão", status: "pending" }
+      { id: "d1", name: "Contrato Assinado", status: "approved" },
+      { id: "d2", name: "ART de Responsabilidade Técnica", status: "approved" },
+      { id: "d3", name: "Credencial Pavilhão", status: "pending" }
     ],
     valorContratado: 35000.00,
-    valorRecebido: 17500.00,
-    valorPendente: 17500.00,
-    custoPrevisto: 14000.00,
-    custoRealizado: 9800.00,
+    valorRecebido: 20000.00,
+    valorPendente: 15000.00,
+    custoPrevisto: 18000.00,
+    custoRealizado: 12400.00,
     centroCusto: {
-      madeiraMdf: 4200.00,
+      madeiraMdf: 4500.00,
       vidrosVidraçaria: 0,
-      iluminacaoEletrica: 800.00,
-      mobiliarioAlugado: 1800.00,
-      fretes: 600.00,
-      combustivelPedagios: 200.00,
+      iluminacaoEletrica: 1200.00,
+      mobiliarioAlugado: 2400.00,
+      fretes: 800.00,
+      combustivelPedagios: 300.00,
       hospedagemPassagens: 0,
-      equipePropria: 1800.00,
-      terceirizados: 400.00,
-      taxasOrganizador: 0
+      equipePropria: 2400.00,
+      terceirizados: 800.00,
+      taxasOrganizador: 0,
+      fornecedoresDespesas: {
+        madeiraMdf: "Madeiras Pinheiro",
+        iluminacaoEletrica: "Elétrica Luz",
+        mobiliarioAlugado: "Locadora Real"
+      }
     },
+    centroConvencoes: "Centro de Convenções de Natal",
+    producao: {
+      marcenaria: "concluido",
+      pintura: "em_andamento",
+      eletrica: "pendente",
+      comunicacaoVisual: "pendente",
+      vidros: "pendente",
+      limpeza: "pendente"
+    },
+    romaneioChecked: {},
+    cronogramaTurnos: {
+      dia1Manha: true,
+      dia1Tarde: true,
+      dia2Manha: true,
+      dia2Tarde: false
+    },
+    devolucoesAlugados: {},
     mapsRoute: {
       endereco: "Centro de Convenções de Natal – Via Costeira, Natal/RN",
       latitude: -5.865700,
@@ -228,8 +250,28 @@ const INITIAL_EVENTS: Project[] = [
       hospedagemPassagens: 3800.00,
       equipePropria: 3600.00,
       terceirizados: 1000.00,
-      taxasOrganizador: 0
+      taxasOrganizador: 0,
+      fornecedoresDespesas: {
+        madeiraMdf: "Madeiras Pinheiro"
+      }
     },
+    centroConvencoes: "Expo Recife",
+    producao: {
+      marcenaria: "pendente",
+      pintura: "pendente",
+      eletrica: "pendente",
+      comunicacaoVisual: "pendente",
+      vidros: "pendente",
+      limpeza: "pendente"
+    },
+    romaneioChecked: {},
+    cronogramaTurnos: {
+      dia1Manha: false,
+      dia1Tarde: false,
+      dia2Manha: false,
+      dia2Tarde: false
+    },
+    devolucoesAlugados: {},
     mapsRoute: {
       endereco: "Expo Recife – Av. Prof. Andrade Bezerra, Salgadinho, Olinda/PE",
       latitude: -7.979600,
@@ -291,8 +333,29 @@ const INITIAL_EVENTS: Project[] = [
       hospedagemPassagens: 2400.00,
       equipePropria: 800.00,
       terceirizados: 3500.00,
-      taxasOrganizador: 0
+      taxasOrganizador: 0,
+      fornecedoresDespesas: {
+        iluminacaoEletrica: "Elétrica Luz",
+        fretes: "Fretes & Carretos Rápidos"
+      }
     },
+    centroConvencoes: "Centro de Eventos do Ceará",
+    producao: {
+      marcenaria: "concluido",
+      pintura: "concluido",
+      eletrica: "concluido",
+      comunicacaoVisual: "concluido",
+      vidros: "concluido",
+      limpeza: "concluido"
+    },
+    romaneioChecked: {},
+    cronogramaTurnos: {
+      dia1Manha: true,
+      dia1Tarde: true,
+      dia2Manha: true,
+      dia2Tarde: true
+    },
+    devolucoesAlugados: {},
     mapsRoute: {
       endereco: "Centro de Eventos do Ceará – Av. Washington Soares, 999 – Fortaleza/CE",
       latitude: -3.796800,
@@ -411,7 +474,10 @@ const INITIAL_WAREHOUSE: WarehouseItem[] = [
     valorLocacao: 15.00,
     stockMinimo: 5,
     origem: "proprio",
-    localizacaoFisica: { galpao: "A", corredor: "01", rua: "A", prateleira: "03", andar: "B", posicao: "02" }
+    localizacaoFisica: { galpao: "A", corredor: "01", rua: "A", prateleira: "03", andar: "B", posicao: "02" },
+    locacoesDetalhadas: [
+      { id: "loc-1", responsavel: "Construtora Alfa S.A.", dataSaida: "2026-07-10", dataRetorno: "2026-07-20", dias: 10, valor: 150.00, status: "ativa" }
+    ]
   },
   { 
     id: "item-2", 
@@ -483,7 +549,10 @@ const INITIAL_WAREHOUSE: WarehouseItem[] = [
     valorLocacao: 15.00,
     stockMinimo: 8,
     origem: "alugado",
-    localizacaoFisica: { galpao: "C", corredor: "10", rua: "F", prateleira: "02", andar: "D", posicao: "05" }
+    localizacaoFisica: { galpao: "C", corredor: "10", rua: "F", prateleira: "02", andar: "D", posicao: "05" },
+    locacoesDetalhadas: [
+      { id: "loc-2", responsavel: "Agência Click Eventos", dataSaida: "2026-07-12", dataRetorno: "2026-07-17", dias: 5, valor: 75.00, status: "ativa" }
+    ]
   },
   { 
     id: "item-6", 
@@ -519,7 +588,10 @@ const INITIAL_WAREHOUSE: WarehouseItem[] = [
     valorLocacao: 12.00,
     stockMinimo: 5,
     origem: "proprio",
-    localizacaoFisica: { galpao: "C", corredor: "11", rua: "G", prateleira: "01", andar: "B", posicao: "01" }
+    localizacaoFisica: { galpao: "C", corredor: "11", rua: "G", prateleira: "01", andar: "B", posicao: "01" },
+    locacoesDetalhadas: [
+      { id: "loc-3", responsavel: "Promoções Rio Ltda", dataSaida: "2026-07-14", dataRetorno: "2026-07-19", dias: 5, valor: 60.00, status: "ativa" }
+    ]
   }
 ];
 
@@ -602,7 +674,6 @@ export default function App() {
 
   const [clientes, setClientes] = useState(INITIAL_CLIENTS);
   const [fornecedores, setFornecedores] = useState(INITIAL_SUPPLIERS);
-
   // Budgets State & Handlers
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([
     {
@@ -709,7 +780,7 @@ export default function App() {
     registerAudit("Conversão Proposta", `Orçamento ${orc.codigo} convertido com sucesso na OS ${newProj.codigo}.`);
     alert(`Orçamento convertido com sucesso! Nova Ordem de Serviço criada: ${newProj.codigo}`);
   };
-  
+
   // Selected event details modal controller
   const [selectedEvent, setSelectedEvent] = useState<Project | null>(null);
 
@@ -1012,7 +1083,6 @@ export default function App() {
   };
 
   // ── Calculations for Overview KPIs ──
-  const activeEventsCount = events.filter(e => e.phase === "during").length;
   const scheduledCount = events.reduce((acc, curr) => acc + curr.assignedEmployees.length, 0);
   const lowStockCount = warehouseItems.filter(item => item.stock <= item.stockMinimo).length;
   const pendingDocsCount = events
@@ -1425,8 +1495,10 @@ export default function App() {
             <Financial 
               invoices={invoiceLogs}
               events={events}
+              fornecedores={fornecedores}
               onAddInvoice={addInvoice}
               onUpdateInvoice={updateInvoice}
+              onUpdateEvent={updateEvent}
             />
           )}
 
@@ -1439,6 +1511,7 @@ export default function App() {
               onAddVehicle={addVehicle}
             />
           )}
+
 
           {activeTab === "auditoria" && (
             <Auditoria 
@@ -1454,6 +1527,7 @@ export default function App() {
           event={selectedEvent}
           allEmployees={employees}
           allWarehouseItems={warehouseItems}
+          allEvents={events}
           onClose={() => setSelectedEvent(null)}
           onUpdateEvent={updateEventDetails}
         />
