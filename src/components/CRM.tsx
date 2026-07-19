@@ -3,7 +3,7 @@ import {
   Building2, User, Mail, Phone, DollarSign, Search, Plus, 
   X, FileText, Upload, Trash2, Edit, Award
 } from "lucide-react";
-import type { LeadCRM, CRMProjetoDetalhado } from "../types";
+import type { LeadCRM, CRMProjetoDetalhado, ClienteDocumento, ClienteDocumentoVersao } from "../types";
 
 interface CRMProps {
   leads: LeadCRM[];
@@ -30,6 +30,205 @@ export default function CRM({
   const [selectedClientIndex, setSelectedClientIndex] = useState<number | null>(null);
   const [selectedSupplierIndex, setSelectedSupplierIndex] = useState<number | null>(null);
 
+  // Lead modal state
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const selectedLead = leads.find(l => l.id === selectedLeadId);
+
+  // 3.1 Client Documents Tabs & Fields
+  const [activeLeadTab, setActiveLeadTab] = useState<"historico" | "documentos">("historico");
+  const [docCategory, setDocCategory] = useState<"contrato" | "proposta" | "planta" | "documento_cliente" | "outro">("contrato");
+  const [docName, setDocName] = useState("");
+  const [docFileSelected, setDocFileSelected] = useState<string>("");
+  const [docNotes, setDocNotes] = useState("");
+  const [selectedDocIdForVersion, setSelectedDocIdForVersion] = useState<string | null>(null);
+
+  // New interaction form state
+  const [newLogTipo, setNewLogTipo] = useState<"ligacao" | "reuniao" | "visita">("ligacao");
+  const [newLogDesc, setNewLogDesc] = useState("");
+  const [newLogDate, setNewLogDate] = useState("");
+
+  // New task form state
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDue, setNewTaskDue] = useState("");
+
+  // Lead follow-up local fields
+  const [leadFollowUp, setLeadFollowUp] = useState("");
+  const [leadNextInt, setLeadNextInt] = useState("");
+  const [leadNotes, setLeadNotes] = useState("");
+
+  const handleOpenLead = (lead: LeadCRM) => {
+    setSelectedLeadId(lead.id);
+    setLeadFollowUp(lead.followUpDate || "");
+    setLeadNextInt(lead.proximaInteracao || "");
+    setLeadNotes(lead.observacoes || "");
+    setNewLogDate(new Date().toISOString().split("T")[0]);
+    setNewTaskDue(new Date().toISOString().split("T")[0]);
+    setActiveLeadTab("historico"); // Reset tab
+    setSelectedDocIdForVersion(null);
+  };
+
+  const handleSaveLeadFields = () => {
+    if (!selectedLead) return;
+    const updated: LeadCRM = {
+      ...selectedLead,
+      followUpDate: leadFollowUp,
+      proximaInteracao: leadNextInt,
+      observacoes: leadNotes
+    };
+    onUpdateLead(updated);
+    alert("Informações do Lead salvas com sucesso!");
+  };
+
+  // Mock default documents for seed
+  const getDefaultDocs = (leadId: string): ClienteDocumento[] => {
+    return [
+      {
+        id: `doc-${leadId}-1`,
+        categoria: "contrato",
+        nome: "Contrato de Prestação de Serviços - Estande Cenográfico Natura",
+        versoes: [
+          { versao: 1, dataEnvio: "2026-07-10", responsavelEnvio: "Adrian (ADMIN)", nomeArquivo: "contrato_natura_v1.pdf", observacoes: "Primeira versão para avaliação do cliente.", urlSimulada: "#" }
+        ]
+      },
+      {
+        id: `doc-${leadId}-2`,
+        categoria: "planta",
+        nome: "Planta de Arquitetura 3D - Pavilhão Anhembi Stand Natura 12x10",
+        versoes: [
+          { versao: 1, dataEnvio: "2026-07-11", responsavelEnvio: "Jéssica Cenografia", nomeArquivo: "planta_natura_v1.dwg", observacoes: "Esboço inicial aprovado.", urlSimulada: "#" },
+          { versao: 2, dataEnvio: "2026-07-12", responsavelEnvio: "Adrian (ADMIN)", nomeArquivo: "planta_natura_final.pdf", observacoes: "Ajuste na parede traseira conforme organizador.", urlSimulada: "#" }
+        ]
+      }
+    ];
+  };
+
+  const handleAddClientDocument = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedLead || !docName) return;
+
+    const newDoc: ClienteDocumento = {
+      id: `doc-${Date.now()}`,
+      categoria: docCategory,
+      nome: docName,
+      versoes: [
+        {
+          versao: 1,
+          dataEnvio: new Date().toISOString().split("T")[0],
+          responsavelEnvio: "Adrian (ADMIN)",
+          nomeArquivo: docFileSelected || "documento_anexo.pdf",
+          observacoes: docNotes || "Carregado via CRM",
+          urlSimulada: "#"
+        }
+      ]
+    };
+
+    const currentDocs = selectedLead.documentosCliente || getDefaultDocs(selectedLead.id);
+    const updatedDocs = [...currentDocs, newDoc];
+
+    onUpdateLead({
+      ...selectedLead,
+      documentosCliente: updatedDocs
+    });
+
+    setDocName("");
+    setDocFileSelected("");
+    setDocNotes("");
+    alert("Documento anexado com sucesso!");
+  };
+
+  const handleAddDocumentVersion = (docId: string) => {
+    if (!selectedLead) return;
+    const currentDocs = selectedLead.documentosCliente || getDefaultDocs(selectedLead.id);
+    const docIndex = currentDocs.findIndex(d => d.id === docId);
+    if (docIndex === -1) return;
+
+    const doc = currentDocs[docIndex];
+    const newVersaoNum = doc.versoes.length + 1;
+    const newVersao: ClienteDocumentoVersao = {
+      versao: newVersaoNum,
+      dataEnvio: new Date().toISOString().split("T")[0],
+      responsavelEnvio: "Adrian (ADMIN)",
+      nomeArquivo: docFileSelected || `documento_v${newVersaoNum}.pdf`,
+      observacoes: docNotes || `Nova versão/revisão ${newVersaoNum}`,
+      urlSimulada: "#"
+    };
+
+    const updatedDoc = {
+      ...doc,
+      versoes: [...doc.versoes, newVersao]
+    };
+
+    const updatedDocs = [...currentDocs];
+    updatedDocs[docIndex] = updatedDoc;
+
+    onUpdateLead({
+      ...selectedLead,
+      documentosCliente: updatedDocs
+    });
+
+    setDocFileSelected("");
+    setDocNotes("");
+    setSelectedDocIdForVersion(null);
+    alert(`Nova versão ${newVersaoNum} adicionada ao documento!`);
+  };
+
+  const handleAddContactLog = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedLead || !newLogDesc) return;
+    
+    const newLog = {
+      id: `log-${Date.now()}`,
+      tipo: newLogTipo,
+      date: newLogDate || new Date().toISOString().split("T")[0],
+      descricao: newLogDesc
+    };
+
+    const updated: LeadCRM = {
+      ...selectedLead,
+      historicoContatos: [...(selectedLead.historicoContatos || []), newLog]
+    };
+    onUpdateLead(updated);
+    setNewLogDesc("");
+  };
+
+  const handleAddTask = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedLead || !newTaskTitle) return;
+
+    const newTask = {
+      id: `tsk-${Date.now()}`,
+      titulo: newTaskTitle,
+      vencimento: newTaskDue || new Date().toISOString().split("T")[0],
+      concluida: false
+    };
+
+    const updated: LeadCRM = {
+      ...selectedLead,
+      tarefas: [...(selectedLead.tarefas || []), newTask]
+    };
+    onUpdateLead(updated);
+    setNewTaskTitle("");
+  };
+
+  const handleToggleTask = (taskId: string) => {
+    if (!selectedLead) return;
+    const updatedTasks = (selectedLead.tarefas || []).map(t => 
+      t.id === taskId ? { ...t, concluida: !t.concluida } : t
+    );
+    onUpdateLead({
+      ...selectedLead,
+      tarefas: updatedTasks
+    });
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    if (!selectedLead) return;
+    onUpdateLead({
+      ...selectedLead,
+      tarefas: (selectedLead.tarefas || []).filter(t => t.id !== taskId)
+    });
+  };
+
   // New Client / Supplier quick form triggers
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
@@ -52,7 +251,7 @@ export default function CRM({
   const [telefone, setTelefone] = useState("");
   const [valorEstimado, setValorEstimado] = useState(0);
   const [origem, setOrigem] = useState("Instagram");
-  const [estagio, setEstagio] = useState<LeadCRM["estagio"]>("prospect");
+  const [estagio, setEstagio] = useState<LeadCRM["estagio"]>("briefing");
   const [observacoes, setObservacoes] = useState("");
 
   // Selected client detailed editing states
@@ -319,7 +518,7 @@ export default function CRM({
       {activeSubTab === "pipeline" && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", overflowX: "auto", paddingBottom: "12px" }}>
           {/* Colunas */}
-          {(["prospect", "negociacao", "fechado", "perdido"] as const).map((stage) => (
+          {(["briefing", "orcamento", "aprovado", "perdido"] as const).map((stage) => (
             <div 
               key={stage} 
               style={{
@@ -341,13 +540,13 @@ export default function CRM({
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
                     color: 
-                      stage === "fechado" ? "var(--success-text)" :
+                      stage === "aprovado" ? "var(--success-text)" :
                       stage === "perdido" ? "var(--danger)" : "var(--accent)"
                   }}
                 >
-                  {stage === "prospect" && "Fase 1: Prospecção"}
-                  {stage === "negociacao" && "Fase 2: Negociação"}
-                  {stage === "fechado" && "Fase 3: Fechado"}
+                  {stage === "briefing" && "Fase 1: Prospecção"}
+                  {stage === "orcamento" && "Fase 2: Negociação"}
+                  {stage === "aprovado" && "Fase 3: Fechado"}
                   {stage === "perdido" && "Arquivado: Perdido"}
                 </span>
                 <span 
@@ -385,8 +584,8 @@ export default function CRM({
                         gap: "10px"
                       }}
                     >
-                      <div>
-                        <strong style={{ display: "block", fontSize: "14px", color: "var(--text-primary)" }}>{lead.empresa}</strong>
+                      <div onClick={() => handleOpenLead(lead)} style={{ cursor: "pointer" }} title="Ver detalhes do Lead">
+                        <strong style={{ display: "block", fontSize: "14px", color: "var(--accent)", textDecoration: "underline" }}>{lead.empresa}</strong>
                         <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{lead.contato} ({lead.cargo})</span>
                       </div>
 
@@ -400,23 +599,23 @@ export default function CRM({
 
                       {/* Ações de movimentação */}
                       <div style={{ display: "flex", gap: "6px", marginTop: "4px", borderTop: "1px solid var(--border)", paddingTop: "8px" }}>
-                        {stage !== "prospect" && (
+                        {stage !== "briefing" && (
                           <button 
-                            onClick={() => onUpdateLeadEstagio(lead.id, stage === "negociacao" ? "prospect" : stage === "fechado" ? "negociacao" : "negociacao")}
+                            onClick={() => onUpdateLeadEstagio(lead.id, stage === "orcamento" ? "briefing" : stage === "aprovado" ? "orcamento" : "orcamento")}
                             style={{ flexGrow: 1, padding: "4px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--border)", background: "#fff", cursor: "pointer", color: "var(--text-primary)" }}
                           >
                             ◄ Recuar
                           </button>
                         )}
-                        {stage !== "fechado" && stage !== "perdido" && (
+                        {stage !== "aprovado" && stage !== "perdido" && (
                           <button 
-                            onClick={() => onUpdateLeadEstagio(lead.id, stage === "prospect" ? "negociacao" : "fechado")}
+                            onClick={() => onUpdateLeadEstagio(lead.id, stage === "briefing" ? "orcamento" : "aprovado")}
                             style={{ flexGrow: 1, padding: "4px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--border)", background: "var(--accent-glow)", color: "var(--accent)", cursor: "pointer", fontWeight: 600 }}
                           >
                             Avançar ►
                           </button>
                         )}
-                        {stage !== "perdido" && stage !== "fechado" && (
+                        {stage !== "perdido" && stage !== "aprovado" && (
                           <button 
                             onClick={() => onUpdateLeadEstagio(lead.id, "perdido")}
                             style={{ padding: "4px 8px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--border)", background: "var(--danger-glow)", color: "var(--danger)", cursor: "pointer" }}
@@ -712,7 +911,7 @@ export default function CRM({
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", flexGrow: 1, overflowY: "auto", maxHeight: "250px" }}>
                 {clientes[selectedClientIndex].anexos && clientes[selectedClientIndex].anexos!.length > 0 ? (
                   clientes[selectedClientIndex].anexos!.map(anx => (
-                    <div key={anx.id} style={{ display: "flex", justifySpaceBetween: "space-between", alignItems: "center", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", backgroundColor: "#fff" }}>
+                    <div key={anx.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", backgroundColor: "#fff" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
                         <FileText size={14} style={{ color: "var(--accent-secondary)", flexShrink: 0 }} />
                         <span 
@@ -769,6 +968,273 @@ export default function CRM({
                 <button type="button" className="btn-secondary" onClick={() => setSelectedSupplierIndex(null)}>Cancelar</button>
                 <button type="button" className="btn-primary" onClick={handleSaveSupplier}>Salvar Alterações</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Detalhes do Lead (CRM Completo: interações, tarefas, follow-up) */}
+      {selectedLead && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setSelectedLeadId(null)}>
+          <div 
+            style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "90%", maxWidth: "750px", maxHeight: "90vh", overflowY: "auto", boxShadow: "var(--shadow-lg)", display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "20px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Left Pane: Lead Fields */}
+            <div style={{ borderRight: "1px solid var(--border)", paddingRight: "20px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "600", color: "var(--accent)", marginBottom: "12px" }}>Lead: {selectedLead.empresa}</h3>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "12px" }}>
+                <div>
+                  <span className="text-xs text-muted" style={{ display: "block" }}>Contato Principal:</span>
+                  <p><strong>{selectedLead.contato}</strong> ({selectedLead.cargo})</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted" style={{ display: "block" }}>Contatos:</span>
+                  <p>Email: {selectedLead.email} <br /> Fone: {selectedLead.telefone}</p>
+                </div>
+
+                <div style={{ borderTop: "1px solid var(--border)", paddingTop: "10px", marginTop: "10px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div>
+                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Data do Próximo Follow-up</label>
+                    <input type="date" value={leadFollowUp} onChange={(e) => setLeadFollowUp(e.target.value)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Próxima Interação Planejada</label>
+                    <input type="text" value={leadNextInt} onChange={(e) => setLeadNextInt(e.target.value)} placeholder="Ex: Enviar orçamento revisado" style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Observações do Lead</label>
+                    <textarea value={leadNotes} onChange={(e) => setLeadNotes(e.target.value)} rows={3} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px", fontFamily: "var(--font)" }} />
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+                  <button type="button" className="btn-primary" onClick={handleSaveLeadFields} style={{ flexGrow: 1, padding: "8px", fontSize: "12px", borderRadius: "6px" }}>Salvar Dados</button>
+                  <button type="button" className="btn-success" onClick={() => { onUpdateLeadEstagio(selectedLead.id, "aprovado"); setSelectedLeadId(null); }} style={{ padding: "8px", fontSize: "12px", borderRadius: "6px" }}>Converter Cliente</button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Pane: Interactions & Tasks tabs */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", overflowY: "auto", maxHeight: "80vh" }}>
+              {/* Tab Navigation header */}
+              <div style={{ display: "flex", gap: "12px", borderBottom: "1px solid var(--border)", paddingBottom: "8px" }}>
+                <button 
+                  type="button" 
+                  onClick={() => setActiveLeadTab("historico")}
+                  style={{ 
+                    border: "none", 
+                    background: "none", 
+                    fontWeight: activeLeadTab === "historico" ? "bold" : "normal", 
+                    color: activeLeadTab === "historico" ? "var(--accent)" : "var(--text-secondary)", 
+                    cursor: "pointer",
+                    fontSize: "12px"
+                  }}
+                >
+                  Histórico &amp; Tarefas
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setActiveLeadTab("documentos")}
+                  style={{ 
+                    border: "none", 
+                    background: "none", 
+                    fontWeight: activeLeadTab === "documentos" ? "bold" : "normal", 
+                    color: activeLeadTab === "documentos" ? "var(--accent)" : "var(--text-secondary)", 
+                    cursor: "pointer",
+                    fontSize: "12px"
+                  }}
+                >
+                  Documentos do Cliente
+                </button>
+              </div>
+
+              {activeLeadTab === "historico" && (
+                <>
+                  <strong style={{ fontSize: "13px", color: "var(--text-primary)" }}>Histórico de Interações</strong>
+                  
+                  {/* Interaction add form */}
+                  <form onSubmit={handleAddContactLog} style={{ display: "flex", gap: "6px", alignItems: "flex-end", borderBottom: "1px solid var(--border)", paddingBottom: "12px" }}>
+                    <div style={{ flexGrow: 1 }}>
+                      <select value={newLogTipo} onChange={(e) => setNewLogTipo(e.target.value as any)} style={{ padding: "4px", width: "100%", marginBottom: "4px", borderRadius: "4px" }}>
+                        <option value="ligacao">📞 Ligação</option>
+                        <option value="reuniao">🤝 Reunião</option>
+                        <option value="visita">🚗 Visita</option>
+                      </select>
+                      <input type="text" placeholder="Resumo do contato..." value={newLogDesc} onChange={(e) => setNewLogDesc(e.target.value)} style={{ width: "100%", padding: "4px", fontSize: "11px", border: "1px solid var(--border)", borderRadius: "4px" }} required />
+                    </div>
+                    <button type="submit" className="btn-secondary" style={{ padding: "6px 12px" }}>Registrar</button>
+                  </form>
+
+                  {/* Interaction List */}
+                  <div style={{ maxHeight: "120px", overflowY: "auto", fontSize: "11px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {(!selectedLead.historicoContatos || selectedLead.historicoContatos.length === 0) ? (
+                      <p className="text-muted" style={{ fontStyle: "italic" }}>Sem registros de contato.</p>
+                    ) : (
+                      selectedLead.historicoContatos.map((log) => (
+                        <div key={log.id} style={{ borderBottom: "1px solid var(--border)", paddingBottom: "4px" }}>
+                          <span className="semibold text-muted" style={{ fontSize: "9px" }}>{log.date} | {log.tipo.toUpperCase()}</span>
+                          <p style={{ margin: 0 }}>{log.descricao}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Tasks Section */}
+                  <strong style={{ fontSize: "13px", color: "var(--text-primary)", borderTop: "1px solid var(--border)", paddingTop: "12px" }}>Tarefas do Lead</strong>
+                  
+                  {/* Task add form */}
+                  <form onSubmit={handleAddTask} style={{ display: "flex", gap: "6px", alignItems: "flex-end" }}>
+                    <div style={{ flexGrow: 1 }}>
+                      <input type="text" placeholder="Nova tarefa..." value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} style={{ width: "100%", padding: "4px", fontSize: "11px", border: "1px solid var(--border)", borderRadius: "4px", marginBottom: "4px" }} required />
+                      <input type="date" value={newTaskDue} onChange={(e) => setNewTaskDue(e.target.value)} style={{ width: "100%", padding: "4px", fontSize: "11px", border: "1px solid var(--border)", borderRadius: "4px" }} />
+                    </div>
+                    <button type="submit" className="btn-secondary" style={{ padding: "6px 12px" }}>Criar</button>
+                  </form>
+
+                  {/* Tasks List */}
+                  <div style={{ maxHeight: "120px", overflowY: "auto", fontSize: "11px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {(!selectedLead.tarefas || selectedLead.tarefas.length === 0) ? (
+                      <p className="text-muted" style={{ fontStyle: "italic" }}>Sem tarefas pendentes.</p>
+                    ) : (
+                      selectedLead.tarefas.map((task) => (
+                        <div key={task.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", padding: "4px 0" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", textDecoration: task.concluida ? "line-through" : "none" }}>
+                            <input type="checkbox" checked={task.concluida} onChange={() => handleToggleTask(task.id)} />
+                            <span>{task.titulo} (Até: {task.vencimento})</span>
+                          </label>
+                          <button type="button" onClick={() => handleDeleteTask(task.id)} style={{ border: "none", background: "none", color: "var(--danger)", cursor: "pointer" }}>
+                            ✕
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              )}
+
+              {activeLeadTab === "documentos" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "11px" }}>
+                  <strong style={{ fontSize: "13px", color: "var(--text-primary)" }}>Área de Documentos do Cliente</strong>
+                  
+                  {/* Add Document Form */}
+                  <form onSubmit={handleAddClientDocument} style={{ display: "flex", flexDirection: "column", gap: "8px", border: "1px solid var(--border)", padding: "10px", borderRadius: "8px", backgroundColor: "var(--bg-main)" }}>
+                    <div style={{ fontWeight: "600", fontSize: "11px", color: "var(--accent)" }}>Anexar Novo Documento</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                      <div>
+                        <label style={{ display: "block", marginBottom: "2px" }}>Nome do Doc</label>
+                        <input type="text" value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="Ex: Planta Final Stand 3D" style={{ width: "100%", padding: "4px", borderRadius: "4px", border: "1px solid var(--border)" }} required />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", marginBottom: "2px" }}>Categoria</label>
+                        <select value={docCategory} onChange={(e) => setDocCategory(e.target.value as any)} style={{ width: "100%", padding: "4px", borderRadius: "4px", border: "1px solid var(--border)" }}>
+                          <option value="contrato">Contrato Comercial</option>
+                          <option value="proposta">Proposta Comercial</option>
+                          <option value="planta">Planta Cenográfica</option>
+                          <option value="documento_cliente">Docs Enviados Cliente</option>
+                          <option value="outro">Outro Documento</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                      <div>
+                        <label style={{ display: "block", marginBottom: "2px" }}>Arquivo Simulado</label>
+                        <input type="text" value={docFileSelected} onChange={(e) => setDocFileSelected(e.target.value)} placeholder="Ex: planta_natura.pdf" style={{ width: "100%", padding: "4px", borderRadius: "4px", border: "1px solid var(--border)" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", marginBottom: "2px" }}>Observações</label>
+                        <input type="text" value={docNotes} onChange={(e) => setDocNotes(e.target.value)} placeholder="Ex: Aprovada com o cliente" style={{ width: "100%", padding: "4px", borderRadius: "4px", border: "1px solid var(--border)" }} />
+                      </div>
+                    </div>
+                    <button type="submit" className="btn-secondary" style={{ padding: "6px", alignSelf: "flex-end" }}>Salvar Documento</button>
+                  </form>
+
+                  {/* Documents List Organized by Category */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px" }}>
+                    {(["contrato", "proposta", "planta", "documento_cliente", "outro"] as const).map(cat => {
+                      const docsOfCat = (selectedLead.documentosCliente || getDefaultDocs(selectedLead.id)).filter(d => d.categoria === cat);
+                      const catNameMap = {
+                        contrato: "📄 Contratos em PDF",
+                        proposta: "💰 Propostas Comerciais",
+                        planta: "📐 Plantas do Estande",
+                        documento_cliente: "📥 Documentos Enviados pelo Cliente",
+                        outro: "📁 Outros Documentos"
+                      };
+                      return (
+                        <div key={cat} style={{ borderBottom: "1px solid var(--border)", paddingBottom: "6px" }}>
+                          <div style={{ fontWeight: "700", color: "var(--text-primary)", fontSize: "11px", marginBottom: "4px" }}>{catNameMap[cat]}</div>
+                          {docsOfCat.length === 0 ? (
+                            <span className="text-muted" style={{ fontStyle: "italic", marginLeft: "8px", fontSize: "10px" }}>Sem arquivos nesta categoria.</span>
+                          ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginLeft: "8px" }}>
+                              {docsOfCat.map(doc => {
+                                const latestVersion = doc.versoes[doc.versoes.length - 1];
+                                return (
+                                  <div key={doc.id} style={{ display: "flex", flexDirection: "column", gap: "2px", backgroundColor: "#fafafa", padding: "6px", borderRadius: "6px" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                      <span style={{ fontWeight: "600", color: "var(--accent)" }}>{doc.nome}</span>
+                                      <span style={{ fontSize: "9px", padding: "2px 4px", backgroundColor: "var(--accent-glow)", color: "var(--accent)", borderRadius: "4px" }}>
+                                        v{latestVersion.versao} (Atual)
+                                      </span>
+                                    </div>
+                                    <div style={{ color: "var(--text-secondary)", fontSize: "10px" }}>
+                                      Arquivo: <span style={{ fontFamily: "monospace" }}>{latestVersion.nomeArquivo}</span> | Data: {latestVersion.dataEnvio}
+                                    </div>
+                                    <div style={{ fontSize: "10px" }}>
+                                      Responsável: <strong>{latestVersion.responsavelEnvio}</strong>
+                                    </div>
+                                    {latestVersion.observacoes && (
+                                      <div style={{ fontStyle: "italic", color: "var(--text-muted)", fontSize: "9px" }}>
+                                        Obs: {latestVersion.observacoes}
+                                      </div>
+                                    )}
+                                    <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
+                                      <button 
+                                        type="button" 
+                                        onClick={() => {
+                                          alert(`Simulando download/visualização direta de: ${latestVersion.nomeArquivo}`);
+                                        }}
+                                        style={{ border: "none", background: "none", color: "var(--accent)", cursor: "pointer", textDecoration: "underline", fontSize: "9px", padding: 0 }}
+                                      >
+                                        Visualizar/Baixar
+                                      </button>
+                                      <button 
+                                        type="button" 
+                                        onClick={() => {
+                                          setSelectedDocIdForVersion(selectedDocIdForVersion === doc.id ? null : doc.id);
+                                        }}
+                                        style={{ border: "none", background: "none", color: "var(--text-secondary)", cursor: "pointer", textDecoration: "underline", fontSize: "9px", padding: 0 }}
+                                      >
+                                        Subir Nova Versão
+                                      </button>
+                                    </div>
+
+                                    {/* Upload new version inputs inline */}
+                                    {selectedDocIdForVersion === doc.id && (
+                                      <div style={{ marginTop: "6px", borderTop: "1px dashed var(--border)", paddingTop: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                                        <div style={{ fontWeight: "600", fontSize: "9px" }}>Nova Versão (v{doc.versoes.length + 1})</div>
+                                        <input type="text" value={docFileSelected} onChange={(e) => setDocFileSelected(e.target.value)} placeholder="Ex: arquivo_v2.pdf" style={{ width: "100%", padding: "3px" }} />
+                                        <input type="text" value={docNotes} onChange={(e) => setDocNotes(e.target.value)} placeholder="Notas da revisão/observações..." style={{ width: "100%", padding: "3px" }} />
+                                        <div style={{ display: "flex", gap: "4px", justifyContent: "flex-end" }}>
+                                          <button type="button" onClick={() => setSelectedDocIdForVersion(null)} style={{ fontSize: "9px", padding: "2px 6px" }}>Cancelar</button>
+                                          <button type="button" onClick={() => handleAddDocumentVersion(doc.id)} style={{ fontSize: "9px", padding: "2px 6px", backgroundColor: "var(--accent)", color: "white", border: "none", borderRadius: "3px" }}>Salvar Versão</button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <button type="button" className="btn-secondary btn-sm" onClick={() => setSelectedLeadId(null)} style={{ marginTop: "auto" }}>Fechar</button>
             </div>
           </div>
         </div>

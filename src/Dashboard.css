@@ -1,41 +1,70 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --bg-main: #F3E4E8;           /* Rosa Muito Claro */
-  --bg-card: #FFFFFF;           /* Branco */
-  --bg-card-hover: #faf6f7;     /* Light pink hover */
-  --bg-sidebar: #293B8F;        /* Azul Institucional JC Eventos */
+  --bg-main: #f4f6fb;           /* Azul muito claro — derivado do azul institucional */
+  --bg-card: #ffffff;
+  --bg-card-hover: #eef1f9;
+  --bg-sidebar: #293B8F;        /* Azul institucional JC Eventos */
   
-  --border: #E8E8E8;            /* Cinza Claro */
-  --border-hover: #d2d2d2;
+  --border: #e0e5f0;
+  --border-hover: #c5ccdf;
   
-  --accent: #293B8F;            /* Azul Institucional */
-  --accent-secondary: #C95D46;  /* Terracota */
-  --accent-glow: #e9ecf7;       /* Very light institutional blue tint */
+  --accent: #293B8F;            /* Azul Institucional JC Eventos */
+  --accent-secondary: #C95D46;  /* Terracota JC Eventos */
+  --accent-glow: #eaedfa;       /* Azul bem claro */
   --accent-hover: #1e2b6b;
   
-  --text-primary: #4A4A4A;      /* Cinza Escuro */
-  --text-secondary: #6e6e6e;    /* Medium grey */
-  --text-muted: #8c8c8c;
+  --text-primary: #1a2133;
+  --text-secondary: #3d4f72;
+  --text-muted: #7a89a8;
   
-  --success: #BFD7D3;           /* Verde Água */
-  --success-text: #1d3f3a;      /* Dark green for readable text on Verde Água background */
-  --success-glow: #eff6f5;
+  --success: #d1fae5;
+  --success-text: #065f46;
+  --success-glow: #f0fdf4;
   
-  --warning: #C95D46;           /* Terracota */
-  --warning-glow: #faeae7;
+  --warning: #fef3c7;
+  --warning-glow: #fffdf5;
   
-  --danger: #c22f2f;            /* A strong red */
-  --danger-glow: #fcebeb;
+  --danger: #fee2e2;
+  --danger-glow: #fef2f2;
   
-  --shadow-sm: 0 1px 3px rgba(41, 59, 143, 0.08), 0 1px 2px rgba(41, 59, 143, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(41, 59, 143, 0.1), 0 2px 4px -1px rgba(41, 59, 143, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(41, 59, 143, 0.1), 0 4px 6px -2px rgba(41, 59, 143, 0.05);
-  --shadow-glow: 0 0 12px 0 rgba(41, 59, 143, 0.2);
+  --shadow-sm: 0 1px 3px rgba(41, 59, 143, 0.06), 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-md: 0 4px 12px rgba(41, 59, 143, 0.1), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 24px rgba(41, 59, 143, 0.1), 0 4px 6px rgba(0,0,0,0.04);
+  --shadow-glow: 0 0 0 3px rgba(41, 59, 143, 0.12);
   
-  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --font: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-title: 'Poppins', sans-serif;
+  --transition: all 0.18s ease-in-out;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-title: 'Inter', sans-serif;
+}
+
+[data-theme='dark'] {
+  --bg-main: #0f172a;           /* Dark Slate main bg */
+  --bg-card: #1e293b;           /* Slate-800 */
+  --bg-card-hover: #334155;     /* Slate-700 hover */
+  --bg-sidebar: #0f172a;
+  
+  --border: #334155;            /* Slate-700 border */
+  --border-hover: #475569;
+  
+  --accent: #38bdf8;            /* Cyan/Sky accent */
+  --accent-secondary: #f43f5e;  /* Coral/Rose accent */
+  --accent-glow: rgba(56, 189, 248, 0.1);
+  --accent-hover: #0ea5e9;
+  
+  --text-primary: #f8fafc;      /* Slate-50 text */
+  --text-secondary: #cbd5e1;    /* Slate-300 text */
+  --text-muted: #64748b;        /* Slate-500 text */
+  
+  --success: #065f46;
+  --success-text: #d1fae5;
+  --success-glow: rgba(16, 185, 129, 0.1);
+  
+  --warning: #92400e;
+  --warning-glow: rgba(245, 158, 11, 0.1);
+  
+  --danger: #7f1d1d;
+  --danger-glow: rgba(239, 68, 68, 0.1);
 }
 
 * {
@@ -72,46 +101,278 @@ body {
 
 /* Layout Wrapper */
 .layout-wrapper {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  min-height: 100vh;
-  position: relative;
-}
-
-/* Sidebar */
-.sidebar {
-  background-color: var(--bg-sidebar);
-  border-right: none;
-  padding: 24px 12px;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  box-shadow: var(--shadow-md);
+  min-height: 100vh;
+  position: relative;
+  padding-top: 60px; /* Leave space for fixed top nav */
 }
 
-.logo-container {
+/* Top Navigation Bar */
+.top-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  /* Gradiente com o azul institucional JC Eventos */
+  background: linear-gradient(135deg, #293B8F 0%, #1e2b6b 100%);
+  border-bottom: 3px solid #C95D46;  /* Borda terracota */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 1000;
+  box-shadow: 0 4px 16px rgba(41, 59, 143, 0.3);
+  transition: var(--transition);
+}
+
+.top-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.top-nav-logo {
+  font-family: var(--font-title);
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  letter-spacing: -0.3px;
+}
+
+.top-nav-logo-dot {
+  color: var(--accent-secondary);
+  font-weight: 900;
+}
+
+/* Menu principal */
+.top-nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.menu-group {
+  position: relative;
+  display: inline-block;
+}
+
+.menu-group-btn {
+  background: none;
+  border: none;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.75);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.menu-group-btn:hover {
+  color: #ffffff;
+  background-color: rgba(255,255,255,0.12);
+}
+
+.menu-group-btn.active {
+  color: #ffffff;
+  background-color: rgba(255,255,255,0.15);
+  box-shadow: inset 0 -2px 0 #C95D46; /* sublinhado terracota no item ativo */
+  border-radius: 8px 8px 0 0;
+}
+
+/* Dropdown list */
+.menu-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px;
+  min-width: 210px;
+  box-shadow: var(--shadow-lg);
+  z-index: 1010;
+  margin-top: 4px;
+  animation: dropdownFade 0.15s ease-out;
+}
+
+@keyframes dropdownFade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.menu-group:hover .menu-dropdown {
+  display: block;
+}
+
+.dropdown-item {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 32px;
-  padding: 0 16px;
+  transition: var(--transition);
 }
 
-.logo-text {
-  font-family: var(--font-title);
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.2px;
+.dropdown-item:hover {
+  background-color: var(--bg-main);
+  color: var(--accent);
+}
+
+.dropdown-item.active {
+  background-color: var(--accent-glow);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Global search */
+.top-nav-search {
+  position: relative;
+  width: 100%;
+  max-width: 200px;
+}
+
+.top-nav-search input {
+  width: 100%;
+  padding: 6px 12px 6px 32px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 12px;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  outline: none;
+  transition: var(--transition);
+}
+
+.top-nav-search input:focus {
+  border-color: var(--accent);
+  background-color: var(--bg-card);
+}
+
+.top-nav-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* Actions right */
+.top-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.top-nav-icon-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: var(--transition);
+}
+
+.top-nav-icon-btn:hover {
+  background-color: rgba(255,255,255,0.12);
   color: #ffffff;
 }
 
-.logo-dot {
-  color: var(--accent-secondary);
-  font-size: 22px;
-  font-weight: 900;
+.top-nav-icon-btn.active {
+  background-color: rgba(201,93,70,0.3);
+  color: #ffffff;
+}
+
+.icon-badge {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  background-color: var(--accent-secondary);
+  color: #fff;
+  font-size: 8px;
+  font-weight: bold;
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* User profile button */
+.top-nav-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.top-nav-user:hover {
+  background-color: var(--bg-main);
+}
+
+.top-nav-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #C95D46;  /* Terracota JC Eventos */
+  color: #fff;
+  font-size: 11px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  border: 2px solid rgba(255,255,255,0.3);
+}
+
+.top-nav-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.top-nav-username {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.top-nav-userrole {
+  font-size: 9px;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .nav-list {
@@ -217,8 +478,7 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  height: 100vh;
-  overflow-y: auto;
+  flex-grow: 1;
   background-color: var(--bg-main);
 }
 
@@ -1022,4 +1282,36 @@ body {
 }
 .pointer {
   cursor: pointer;
+}
+
+/* Responsive Top Navigation Rules */
+@media (max-width: 900px) {
+  .top-nav-menu {
+    gap: 2px;
+  }
+  .menu-group-btn {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  .top-nav-search {
+    max-width: 140px;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-nav {
+    padding: 0 12px;
+  }
+  .top-nav-logo span {
+    display: none; /* Hide brand name Controll-All in mobile to avoid overlap */
+  }
+  .top-nav-logo-dot {
+    display: none;
+  }
+  .top-nav-search {
+    display: none;
+  }
+  .top-nav-user-info {
+    display: none;
+  }
 }

@@ -1,7 +1,8 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { 
   LayoutDashboard, Briefcase, Archive, Users, LogOut, 
-  Building2, DollarSign, Truck, Bot, Shield 
+  Building2, DollarSign, Truck, Bot, Shield, FileText, CheckSquare, Calendar,
+  Sun, Moon, Bell, ClipboardCheck, Search, Settings, ChevronDown, Plus, Eye
 } from "lucide-react";
 import "./Dashboard.css";
 
@@ -14,36 +15,89 @@ import EventDetailsModal from "./components/EventDetailsModal";
 import CRM from "./components/CRM";
 import Financial from "./components/Financial";
 import Logistics from "./components/Logistics";
-import IAAssistant from "./components/IAAssistant";
+import IAAssistant from "./components/IAAssistant"; // kept for reference, not rendered in nav
 import Auditoria from "./components/Auditoria";
+import Orcamentos from "./components/Orcamentos";
+import OrdensServico from "./components/OrdensServico";
+import Agenda from "./components/Agenda";
 
 // Import shared types
 import type { 
   Project, Employee, WarehouseItem, InvoiceLog, 
-  LeadCRM, VeiculoLogistica, AuditoriaLog 
+  LeadCRM, VeiculoLogistica, AuditoriaLog, Orcamento 
 } from "./types";
 
 // ── Initial Mock Data 2.0 (Seed Completo) ──
 
 const INITIAL_CLIENTS = [
-  { name: "Volkswagen do Brasil Ltda", email: "compras@volkswagen.com.br", cnpj: "59.104.273/0001-29" },
-  { name: "Ambev S/A", email: "marketing@ambev.com.br", cnpj: "07.526.557/0001-00" },
-  { name: "Petróleo Brasileiro S.A.", email: "stands@petrobras.com.br", cnpj: "33.000.167/0001-01" },
-  { name: "Natura & Co", email: "eventos@natura.net", cnpj: "12.890.312/0002-45" },
-  { name: "Samsung Eletrônica da Amazônia", email: "b2b.stands@samsung.com", cnpj: "00.234.908/0003-89" }
+  { name: "Unimed Natal Cooperativa Médica", email: "marketing@unimednatalnatal.com.br", cnpj: "08.243.170/0001-34" },
+  { name: "Chevrolet Concessionária Potiguar", email: "eventos@chevroletpotiguar.com.br", cnpj: "10.491.228/0001-12" },
+  { name: "UFRN – Universidade Federal do RN", email: "extensao@ufrn.br", cnpj: "24.365.710/0001-83" },
+  { name: "Hapvida Saúde", email: "feiras@hapvida.com.br", cnpj: "63.554.067/0001-98" },
+  { name: "Banco do Nordeste do Brasil", email: "mktbne@bnb.gov.br", cnpj: "07.237.373/0001-20" }
 ];
 
 const INITIAL_SUPPLIERS = [
   { name: "Comercial de Madeiras RN", email: "vendas@madeirasrn.com.br", servico: "Madeira e MDF" },
   { name: "Eletro Ferragens Natal", email: "comercial@eletroferragens.com", servico: "Iluminação e Materiais Elétricos" },
-  { name: "Móveis Eventos Express", email: "aluguel@moveisexpress.com.br", servico: "Locação de Mobiliário" },
-  { name: "Fretes & Carretos Rápidos", email: "fretes@carretosrapidos.com", servico: "Logística e Fretes" }
+  { name: "Móveis Eventos Express RN", email: "aluguel@moveisexpress.com.br", servico: "Locação de Mobiliário" },
+  { name: "Transportes Potiguar Cargas", email: "fretes@potiguar.com", servico: "Logística e Fretes" },
+  { name: "Alumínio Construção Fortaleza", email: "vendas@aluminiofortal.com.br", servico: "Perfis Octanorm e Alumínio" }
 ];
 
 const INITIAL_LEADS: LeadCRM[] = [
-  { id: "lead-1", empresa: "Natura & Co", contato: "Mariana Souza", cargo: "Gerente de Marketing", email: "mariana.souza@natura.net", telefone: "(11) 98765-4321", valorEstimado: 120000.00, origem: "Site / Google", estagio: "negociacao", dataCriacao: "2026-07-10", observacoes: "Interessada em stand ecológico feito de madeira reflorestada para a Hospitalar Expo." },
-  { id: "lead-2", empresa: "Samsung Eletrônica", contato: "Joon-woo Park", cargo: "Diretor Comercial", email: "j.park@samsung.com", telefone: "(11) 91234-5678", valorEstimado: 250000.00, origem: "Indicação", estagio: "prospect", dataCriacao: "2026-07-12", observacoes: "Necessita de fachada com painel de LED integrado." },
-  { id: "lead-3", empresa: "Volkswagen do Brasil", contato: "Roberto Silveira", cargo: "Coordenador de Feiras", email: "roberto.silveira@volkswagen.com.br", telefone: "(11) 99876-0012", valorEstimado: 180000.00, origem: "Instagram", estagio: "fechado", dataCriacao: "2026-07-08", observacoes: "Contrato assinado para a Feicon 2026." }
+  {
+    id: "lead-1",
+    empresa: "Unimed Natal",
+    contato: "Dra. Camila Freitas",
+    cargo: "Gerente de Marketing",
+    email: "camila.freitas@unimednatalnatal.com.br",
+    telefone: "(84) 99201-3344",
+    valorEstimado: 35000.00,
+    origem: "Indicação de cliente",
+    estagio: "orcamento",
+    dataCriacao: "2026-07-10",
+    observacoes: "Quer estande misto para o Congresso Médico de Natal em agosto. Precisa de recepção, display e 2 TVs.",
+    tipoEstande: "misto",
+    areaEstimadaM2: 18,
+    nomeFeira: "Congresso Médico RN 2026",
+    cidadeEvento: "Natal/RN",
+    briefing: "Estande para exposição de planos e captação de associados. Identidade visual Unimed (verde). Mesa de atendimento para 2 pessoas, TV 55\" e painel de fundo."
+  },
+  {
+    id: "lead-2",
+    empresa: "Hapvida Saúde",
+    contato: "Marcos Quirino",
+    cargo: "Coordenador Comercial",
+    email: "marcos.quirino@hapvida.com.br",
+    telefone: "(84) 98877-5511",
+    valorEstimado: 22000.00,
+    origem: "Instagram",
+    estagio: "briefing",
+    dataCriacao: "2026-07-12",
+    observacoes: "Feira de saúde em Fortaleza. Quer stand padrão Octanorm simples com backdrop e balcão.",
+    tipoEstande: "padrao",
+    areaEstimadaM2: 9,
+    nomeFeira: "ExpeSaúde Fortaleza 2026",
+    cidadeEvento: "Fortaleza/CE"
+  },
+  {
+    id: "lead-3",
+    empresa: "Chevrolet Concessionária Potiguar",
+    contato: "Thiago Melo",
+    cargo: "Gerente de Marketing",
+    email: "thiago.melo@chevroletpotiguar.com.br",
+    telefone: "(84) 99415-8800",
+    valorEstimado: 68000.00,
+    origem: "Prospecção ativa",
+    estagio: "aprovado",
+    dataCriacao: "2026-07-08",
+    observacoes: "Contrato assinado. Stand construído para Salão do Automóvel de Recife. Projeto aprovado com área de exposição de 3 veículos.",
+    tipoEstande: "construido",
+    areaEstimadaM2: 72,
+    nomeFeira: "Salão do Automóvel Recife 2026",
+    cidadeEvento: "Recife/PE"
+  }
 ];
 
 const INITIAL_VEHICLES: VeiculoLogistica[] = [
@@ -56,187 +110,196 @@ const INITIAL_EVENTS: Project[] = [
   {
     id: "evt-1",
     codigo: "EST-2026-001",
-    name: "Estande Nestlé - Bienal do Livro 2026",
-    client: "Nestlé S/A",
-    responsavel: "Ricardo Mendes Alves",
-    phase: "during",
-    startDate: "2026-07-20",
-    endDate: "2026-07-28",
-    dataMontagem: "2026-07-18",
-    dataDesmontagem: "2026-07-29",
-    completionRate: 60,
+    name: "Stand Unimed — Congresso Médico RN 2026",
+    client: "Unimed Natal Cooperativa Médica",
+    responsavel: "Jailson Correia",
+    phase: "Montagem",
+    startDate: "2026-07-24",
+    endDate: "2026-07-27",
+    dataMontagem: "2026-07-22",
+    dataDesmontagem: "2026-07-28",
+    completionRate: 55,
+    tipoEstande: "misto",
+    areaM2: 18,
+    nomeFeira: "Congresso Médico RN 2026",
+    cidadeEvento: "Natal/RN",
+    briefing: "Estande de atendimento com balcão de recepção, 2 TVs 55\" e painel backdrop com logo Unimed. Cores verde e branco.",
     checklist: [
-      { id: "c1", text: "Avaliar plantas e projeto técnico do estande", done: true },
-      { id: "c2", text: "Subir contrato comercial assinado", done: true },
-      { id: "c3", text: "Alinhar e conferir logomarcas da marca", done: true },
-      { id: "c4", text: "Comprar materiais para construção (mdf, caibros, tintas)", done: false },
-      { id: "c5", text: "Pagar taxas e emitir ART/RRT de montagem", done: true },
-      { id: "c6", text: "Escalar funcionários e enviar RG/CPF de todos", done: false },
-      { id: "c7", text: "Organizar passagens aéreas e hotel da equipe", done: false },
-      { id: "c8", text: "Conseguir termo de liberação assinado da organização", done: false }
+      { id: "c1", text: "Aprovar planta baixa e projeto gráfico com o cliente", done: true },
+      { id: "c2", text: "Assinar contrato e emitir ART no CREA", done: true },
+      { id: "c3", text: "Comprar MDF, perfis e tintas", done: true },
+      { id: "c4", text: "Locar mobiliário (cadeiras, balcão, mesa)", done: false },
+      { id: "c5", text: "Escalar equipe e entregar RG/CPF à organização", done: false },
+      { id: "c6", text: "Credenciar montadores junto ao pavilhão", done: false },
+      { id: "c7", text: "Confirmar datas de montagem com organização do evento", done: true },
+      { id: "c8", text: "Retirar materiais do depósito e carregar caminhão", done: false }
     ],
     assignedEmployees: [
-      { id: "emp-1", name: "José Alves de Oliveira", role: "Montador de Estande", documentStatus: "complete" },
-      { id: "emp-2", name: "Carlos Henrique Lima", role: "Carpinteiro Montador", documentStatus: "complete" }
+      { id: "emp-1", name: "José Alves de Oliveira", role: "Montador", documentStatus: "complete" },
+      { id: "emp-2", name: "Carlos Henrique Lima", role: "Carpinteiro", documentStatus: "complete" }
     ],
     assignedTools: [
       { id: "item-1", name: "Furadeira de Impacto Bosch", type: "tool", allocatedQty: 2 },
       { id: "item-2", name: "Serra Circular Dewalt", type: "tool", allocatedQty: 1 }
     ],
-    hotelName: "Ibis Budget Center Paulista",
-    hotelCheckin: "2026-07-19",
-    flightDetails: "Latam LA3140 - NAT -> GRU (Conf: XPT991) - João e Carlos",
-    docs: [
-      { id: "d1", name: "Contrato de Prestação de Serviços", status: "approved" },
-      { id: "d2", name: "ART/RRT de Responsabilidade Técnica", status: "uploaded" },
-      { id: "d3", name: "Termo de Liberação Oficial do Pavilhão", status: "pending" }
-    ],
-    
-    // JC Eventos 2.0 financial metrics
-    valorContratado: 120000.00,
-    valorRecebido: 80000.00,
-    valorPendente: 40000.00,
-    custoPrevisto: 45000.00,
-    custoRealizado: 34500.00,
-    centroCusto: {
-      madeiraMdf: 15500.00,
-      vidrosVidraçaria: 3200.00,
-      iluminacaoEletrica: 4500.00,
-      mobiliarioAlugado: 2400.00,
-      fretes: 3100.00,
-      combustivelPedagios: 1200.00,
-      hospedagemPassagens: 2400.00,
-      equipePropria: 1200.00,
-      terceirizados: 1000.00,
-      taxasOrganizador: 0
-    },
-    mapsRoute: {
-      endereco: "Distrito Anhembi, Av. Olavo Fontoura, 1209 - Santana, São Paulo - SP",
-      latitude: -23.514781,
-      longitude: -46.643212,
-      linkMaps: "https://maps.app.goo.gl/Anhembi",
-      distanciaKm: 42.5,
-      tempoEstimado: "45 min"
-    }
-  },
-  {
-    id: "evt-2",
-    codigo: "EST-2026-002",
-    name: "Estande Heineken - Feira APAS 2026",
-    client: "Cervejaria Heineken",
-    responsavel: "Ricardo Mendes Alves",
-    phase: "no_event",
-    startDate: "2026-08-05",
-    endDate: "2026-08-10",
-    dataMontagem: "2026-08-02",
-    dataDesmontagem: "2026-08-11",
-    completionRate: 25,
-    checklist: [
-      { id: "c1", text: "Avaliar plantas e projeto técnico do estande", done: true },
-      { id: "c2", text: "Subir contrato comercial assinado", done: true },
-      { id: "c3", text: "Alinhar e conferir logomarcas da marca", done: false },
-      { id: "c4", text: "Comprar materiais para construção (mdf, caibros, tintas)", done: false },
-      { id: "c5", text: "Pagar taxas e emitir ART/RRT de montagem", done: false },
-      { id: "c6", text: "Escalar funcionários e enviar RG/CPF de todos", done: false },
-      { id: "c7", text: "Organizar passagens aéreas e hotel da equipe", done: false },
-      { id: "c8", text: "Conseguir termo de liberação assinado da organização", done: false }
-    ],
-    assignedEmployees: [],
-    assignedTools: [],
     hotelName: "",
     hotelCheckin: "",
     flightDetails: "",
     docs: [
       { id: "d1", name: "Contrato de Prestação de Serviços", status: "approved" },
-      { id: "d2", name: "ART/RRT de Responsabilidade Técnica", status: "pending" },
-      { id: "d3", name: "Termo de Liberação Oficial do Pavilhão", status: "pending" }
+      { id: "d2", name: "ART de Responsabilidade Técnica (CREA)", status: "approved" },
+      { id: "d3", name: "Credencial de Acesso ao Pavilhão", status: "pending" }
     ],
-    
-    valorContratado: 180000.00,
-    valorRecebido: 90000.00,
-    valorPendente: 90000.00,
-    custoPrevisto: 72000.00,
-    custoRealizado: 25000.00,
+    valorContratado: 35000.00,
+    valorRecebido: 17500.00,
+    valorPendente: 17500.00,
+    custoPrevisto: 14000.00,
+    custoRealizado: 9800.00,
     centroCusto: {
-      madeiraMdf: 18000.00,
+      madeiraMdf: 4200.00,
       vidrosVidraçaria: 0,
-      iluminacaoEletrica: 2500.00,
-      mobiliarioAlugado: 0,
-      fretes: 1500.00,
-      combustivelPedagios: 800.00,
-      hospedagemPassagens: 2200.00,
-      equipePropria: 0,
-      terceirizados: 0,
+      iluminacaoEletrica: 800.00,
+      mobiliarioAlugado: 1800.00,
+      fretes: 600.00,
+      combustivelPedagios: 200.00,
+      hospedagemPassagens: 0,
+      equipePropria: 1800.00,
+      terceirizados: 400.00,
       taxasOrganizador: 0
     },
     mapsRoute: {
-      endereco: "Expo Center Norte, Rua José Bernardo Pinto, 333 - Vila Guilherme, São Paulo - SP",
-      latitude: -23.516801,
-      longitude: -46.613459,
-      linkMaps: "https://maps.app.goo.gl/CenterNorte",
-      distanciaKm: 38.2,
-      tempoEstimado: "35 min"
+      endereco: "Centro de Convenções de Natal – Via Costeira, Natal/RN",
+      latitude: -5.865700,
+      longitude: -35.188100,
+      linkMaps: "https://maps.google.com/?q=Centro+de+Convenções+Natal",
+      distanciaKm: 12.5,
+      tempoEstimado: "25 min"
+    }
+  },
+  {
+    id: "evt-2",
+    codigo: "EST-2026-002",
+    name: "Stand Chevrolet — Salão do Automóvel Recife 2026",
+    client: "Chevrolet Concessionária Potiguar",
+    responsavel: "Jailson Correia",
+    phase: "Produção",
+    startDate: "2026-08-14",
+    endDate: "2026-08-18",
+    dataMontagem: "2026-08-11",
+    dataDesmontagem: "2026-08-19",
+    completionRate: 20,
+    tipoEstande: "construido",
+    areaM2: 72,
+    nomeFeira: "Salão do Automóvel Recife 2026",
+    cidadeEvento: "Recife/PE",
+    briefing: "Stand construído com exposição de 3 veículos. Piso elevado, iluminação especial, recepção e area lounge. Identidade visual Chevrolet.",
+    checklist: [
+      { id: "c1", text: "Aprovar planta baixa e projeto 3D com cliente", done: true },
+      { id: "c2", text: "Assinar contrato e emitir ART no CREA-PE", done: true },
+      { id: "c3", text: "Comprar materiais de construção (MDF, caibros)", done: false },
+      { id: "c4", text: "Contratar serviços de elétrica terceirizada", done: false },
+      { id: "c5", text: "Escalar equipe de montagem (min 6 pessoas)", done: false },
+      { id: "c6", text: "Reservar hotel para equipe em Recife", done: false },
+      { id: "c7", text: "Comprar passagens ou alugar van de carga", done: false },
+      { id: "c8", text: "Credenciar equipe junto ao Expo Recife", done: false }
+    ],
+    assignedEmployees: [],
+    assignedTools: [],
+    hotelName: "Ibis Recife Centro",
+    hotelCheckin: "2026-08-10",
+    flightDetails: "Van de carga NAT→REC - Saída 06h do dia 11/08",
+    docs: [
+      { id: "d1", name: "Contrato Assinado", status: "approved" },
+      { id: "d2", name: "ART de Responsabilidade Técnica", status: "pending" },
+      { id: "d3", name: "Projeto Técnico 3D", status: "uploaded" }
+    ],
+    valorContratado: 68000.00,
+    valorRecebido: 34000.00,
+    valorPendente: 34000.00,
+    custoPrevisto: 32000.00,
+    custoRealizado: 8500.00,
+    centroCusto: {
+      madeiraMdf: 12000.00,
+      vidrosVidraçaria: 0,
+      iluminacaoEletrica: 4500.00,
+      mobiliarioAlugado: 3200.00,
+      fretes: 2800.00,
+      combustivelPedagios: 1100.00,
+      hospedagemPassagens: 3800.00,
+      equipePropria: 3600.00,
+      terceirizados: 1000.00,
+      taxasOrganizador: 0
+    },
+    mapsRoute: {
+      endereco: "Expo Recife – Av. Prof. Andrade Bezerra, Salgadinho, Olinda/PE",
+      latitude: -7.979600,
+      longitude: -34.840100,
+      linkMaps: "https://maps.google.com/?q=Expo+Center+Recife",
+      distanciaKm: 298.0,
+      tempoEstimado: "4h 20 min de carro"
     }
   },
   {
     id: "evt-3",
     codigo: "EST-2026-003",
-    name: "Estande Petrobras - Rio Oil & Gas 2026",
-    client: "Petróleo Brasileiro S.A.",
-    responsavel: "Ricardo Mendes Alves",
-    phase: "post",
-    startDate: "2026-06-15",
-    endDate: "2026-06-20",
-    dataMontagem: "2026-06-12",
-    dataDesmontagem: "2026-06-21",
+    name: "Stand Hapvida — ExpeSaúde Fortaleza 2026",
+    client: "Hapvida Saúde",
+    responsavel: "Jailson Correia",
+    phase: "Finalizado",
+    startDate: "2026-06-10",
+    endDate: "2026-06-13",
+    dataMontagem: "2026-06-08",
+    dataDesmontagem: "2026-06-14",
     completionRate: 100,
+    tipoEstande: "padrao",
+    areaM2: 9,
+    nomeFeira: "ExpeSaúde Fortaleza 2026",
+    cidadeEvento: "Fortaleza/CE",
+    briefing: "Stand padrão Octanorm 3x3m com backdrop impresso e balcão de atendimento.",
     checklist: [
-      { id: "c1", text: "Avaliar plantas e projeto técnico do estande", done: true },
-      { id: "c2", text: "Subir contrato comercial assinado", done: true },
-      { id: "c3", text: "Alinhar e conferir logomarcas da marca", done: true },
-      { id: "c4", text: "Comprar materiais para construção (mdf, caibros, tintas)", done: true },
-      { id: "c5", text: "Pagar taxas e emitir ART/RRT de montagem", done: true },
-      { id: "c6", text: "Escalar funcionários e enviar RG/CPF de todos", done: true },
-      { id: "c7", text: "Organizar passagens aéreas e hotel da equipe", done: true },
-      { id: "c8", text: "Conseguir termo de liberação assinado da organização", done: true }
+      { id: "c1", text: "Aprovar planta e arte do backdrop", done: true },
+      { id: "c2", text: "Assinar contrato", done: true },
+      { id: "c3", text: "Montar e entregar stand", done: true },
+      { id: "c4", text: "Desmontar e retornar materiais ao depósito", done: true }
     ],
     assignedEmployees: [
-      { id: "emp-3", name: "Claudio Barbosa Silva", role: "Eletricista Operacional", documentStatus: "complete" }
+      { id: "emp-3", name: "Claudio Barbosa Silva", role: "Montador", documentStatus: "complete" }
     ],
-    assignedTools: [],
-    hotelName: "Hotel Windsor Barra",
-    hotelCheckin: "2026-06-14",
-    flightDetails: "Gol G3-1209 - NAT -> GIG - Localizador: GHJ441",
+    assignedTools: [
+      { id: "item-1", name: "Furadeira de Impacto Bosch", type: "tool", allocatedQty: 1 }
+    ],
+    hotelName: "Hotel São Pedro Fortaleza",
+    hotelCheckin: "2026-06-07",
+    flightDetails: "Azul AD4101 – NAT→FOR – 07h00 – Loc: ABC123",
     docs: [
       { id: "d1", name: "Contrato de Prestação de Serviços", status: "approved" },
-      { id: "d2", name: "ART/RRT de Responsabilidade Técnica", status: "approved" },
-      { id: "d3", name: "Termo de Liberação Oficial do Pavilhão", status: "approved" }
+      { id: "d2", name: "ART de Responsabilidade Técnica", status: "approved" },
+      { id: "d3", name: "Credencial Pavilhão", status: "approved" }
     ],
-    
-    valorContratado: 320000.00,
-    valorRecebido: 320000.00,
+    valorContratado: 22000.00,
+    valorRecebido: 22000.00,
     valorPendente: 0,
-    custoPrevisto: 140000.00,
-    custoRealizado: 135800.00,
+    custoPrevisto: 9000.00,
+    custoRealizado: 8600.00,
     centroCusto: {
-      madeiraMdf: 55000.00,
-      vidrosVidraçaria: 12000.00,
-      iluminacaoEletrica: 18000.00,
-      mobiliarioAlugado: 9500.00,
-      fretes: 12800.00,
-      combustivelPedagios: 4200.00,
-      hospedagemPassagens: 11400.00,
-      equipePropria: 6800.00,
-      terceirizados: 3600.00,
-      taxasOrganizador: 2500.00
+      madeiraMdf: 0,
+      vidrosVidraçaria: 0,
+      iluminacaoEletrica: 400.00,
+      mobiliarioAlugado: 0,
+      fretes: 1200.00,
+      combustivelPedagios: 300.00,
+      hospedagemPassagens: 2400.00,
+      equipePropria: 800.00,
+      terceirizados: 3500.00,
+      taxasOrganizador: 0
     },
     mapsRoute: {
-      endereco: "Riocentro, Av. Salvador Allende, 6555 - Barra da Tijuca, Rio de Janeiro - RJ",
-      latitude: -22.979032,
-      longitude: -43.411209,
-      linkMaps: "https://maps.app.goo.gl/Riocentro",
-      distanciaKm: 422.0,
-      tempoEstimado: "5h 30 min"
+      endereco: "Centro de Eventos do Ceará – Av. Washington Soares, 999 – Fortaleza/CE",
+      latitude: -3.796800,
+      longitude: -38.479200,
+      linkMaps: "https://maps.google.com/?q=Centro+Eventos+Ceara",
+      distanciaKm: 538.0,
+      tempoEstimado: "1h 30 min de voo"
     }
   }
 ];
@@ -475,8 +538,58 @@ const INITIAL_AUDIT_LOGS: AuditoriaLog[] = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<
-    "overview" | "crm" | "kanban" | "warehouse" | "employees" | "financial" | "logistics" | "ia" | "auditoria"
+    "overview" | "crm" | "orcamentos" | "os" | "kanban" | "agenda" | "warehouse" | "employees" | "financial" | "logistics" | "auditoria"
   >("overview");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [globalSearch, setGlobalSearch] = useState("");
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    setTheme(nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+  };
+
+  const handleGlobalSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!globalSearch.trim()) return;
+    const term = globalSearch.toLowerCase();
+    
+    // search events
+    const foundEvents = events.filter(evt => evt.name.toLowerCase().includes(term) || evt.client.toLowerCase().includes(term));
+    // search leads
+    const foundLeads = leads.filter(l => l.empresa.toLowerCase().includes(term) || l.contato.toLowerCase().includes(term));
+    // search wms
+    const foundWms = warehouseItems.filter(item => item.name.toLowerCase().includes(term) || item.marca.toLowerCase().includes(term));
+
+    let msg = `Resultados da busca por "${globalSearch}":\n\n`;
+    if (foundEvents.length > 0) msg += `Projetos/Eventos: ${foundEvents.map(e => e.name).join(", ")}\n`;
+    if (foundLeads.length > 0) msg += `Leads CRM: ${foundLeads.map(l => l.empresa).join(", ")}\n`;
+    if (foundWms.length > 0) msg += `Estoque WMS: ${foundWms.map(i => i.name).join(", ")}\n`;
+    
+    if (foundEvents.length === 0 && foundLeads.length === 0 && foundWms.length === 0) {
+      msg += "Nenhum registro correspondente foi localizado.";
+    }
+    
+    alert(msg);
+  };
+
+  // Permissions & Modules Activation States
+  const [userRole, setUserRole] = useState<"admin" | "comercial" | "estoque" | "operador">("admin");
+  const [activeModules, setActiveModules] = useState<Record<string, boolean>>({
+    overview: true,
+    crm: true,
+    orcamentos: true,
+    os: true,
+    kanban: true,
+    agenda: true,
+    warehouse: true,
+    logistics: true,
+    financial: true,
+    employees: true,
+    auditoria: true
+  });
   
   // App Global State
   const [events, setEvents] = useState<Project[]>(INITIAL_EVENTS);
@@ -484,11 +597,118 @@ export default function App() {
   const [warehouseItems, setWarehouseItems] = useState<WarehouseItem[]>(INITIAL_WAREHOUSE);
   const [invoiceLogs, setInvoiceLogs] = useState<InvoiceLog[]>(INITIAL_INVOICES);
   const [leads, setLeads] = useState<LeadCRM[]>(INITIAL_LEADS);
-  const [vehicles] = useState<VeiculoLogistica[]>(INITIAL_VEHICLES);
+  const [vehicles, setVehicles] = useState<VeiculoLogistica[]>(INITIAL_VEHICLES);
   const [auditLogs, setAuditLogs] = useState<AuditoriaLog[]>(INITIAL_AUDIT_LOGS);
 
   const [clientes, setClientes] = useState(INITIAL_CLIENTS);
-  const [fornecedores] = useState(INITIAL_SUPPLIERS);
+  const [fornecedores, setFornecedores] = useState(INITIAL_SUPPLIERS);
+
+  // Budgets State & Handlers
+  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([
+    {
+      id: "orc-1",
+      codigo: "PROP-2026-001",
+      cliente: "Natura & Co",
+      cnpjCliente: "12.890.312/0002-45",
+      emailCliente: "eventos@natura.net",
+      status: "negociacao",
+      dataCriacao: "2026-07-14",
+      validoAte: "2026-08-14",
+      produtos: [
+        { id: "item-1", name: "MDF Caibros e Placas", qty: 10, precoVenda: 150 }
+      ],
+      servicos: [
+        { name: "Cenografia Stand Natura Hospitalar", preco: 45000 }
+      ],
+      desconto: 500,
+      impostos: 15,
+      total: 51250,
+      emailEnviado: true,
+      revisoes: [
+        { versao: 1, data: "2026-07-14", descricao: "Versão inicial criada e enviada ao cliente." }
+      ]
+    }
+  ]);
+
+  const handleAddOrcamento = (newOrc: Omit<Orcamento, "id" | "codigo" | "dataCriacao" | "revisoes" | "emailEnviado">) => {
+    const orc: Orcamento = {
+      ...newOrc,
+      id: `orc-${Date.now()}`,
+      codigo: `PROP-2026-${Math.floor(100 + Math.random() * 900)}`,
+      dataCriacao: new Date().toISOString().split("T")[0],
+      emailEnviado: false,
+      revisoes: [
+        { versao: 1, data: new Date().toISOString().split("T")[0], descricao: "Proposta inicial criada." }
+      ]
+    };
+    setOrcamentos((prev) => [orc, ...prev]);
+    registerAudit("Nova Proposta", `Orçamento ${orc.codigo} cadastrado para ${orc.cliente}.`);
+  };
+
+  const handleUpdateOrcamento = (updated: Orcamento) => {
+    setOrcamentos((prev) => prev.map(o => o.id === updated.id ? updated : o));
+    registerAudit("Editar Proposta", `Orçamento ${updated.codigo} atualizado (Versão: ${updated.revisoes.length}).`);
+  };
+
+  const handleConvertToOS = (orc: Orcamento) => {
+    const newProj: Project = {
+      id: `evt-${Date.now()}`,
+      codigo: `EST-2026-${Math.floor(100 + Math.random() * 900)}`,
+      name: `Estande ${orc.cliente} - Cenografia Convertida`,
+      client: orc.cliente,
+      responsavel: "Ricardo Mendes Alves",
+      phase: "no_event",
+      startDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      endDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      dataMontagem: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      dataDesmontagem: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      completionRate: 0,
+      checklist: [
+        { id: "c1", text: "Alinhar e conferir plantas do estande", done: false },
+        { id: "c2", text: "Subir contrato comercial assinado", done: true },
+        { id: "c3", text: "Comprar caibros e tintas homologadas", done: false },
+        { id: "c4", text: "Registrar ART de montagem no CREA/CAU", done: false }
+      ],
+      assignedEmployees: [],
+      assignedTools: [],
+      hotelName: "",
+      hotelCheckin: "",
+      flightDetails: "",
+      docs: [
+        { id: "d1", name: "Contrato Comercial Integrado", status: "approved" },
+        { id: "d2", name: "ART de Responsabilidade Técnica", status: "pending" }
+      ],
+      valorContratado: orc.total,
+      valorRecebido: 0,
+      valorPendente: orc.total,
+      custoPrevisto: orc.total * 0.4,
+      custoRealizado: 0,
+      centroCusto: {
+        madeiraMdf: 0,
+        vidrosVidraçaria: 0,
+        iluminacaoEletrica: 0,
+        mobiliarioAlugado: 0,
+        fretes: 0,
+        combustivelPedagios: 0,
+        hospedagemPassagens: 0,
+        equipePropria: 0,
+        terceirizados: 0,
+        taxasOrganizador: 0
+      },
+      mapsRoute: {
+        endereco: "Distrito Anhembi, São Paulo - SP",
+        latitude: -23.514781,
+        longitude: -46.643212,
+        linkMaps: "https://maps.google.com",
+        distanciaKm: 15,
+        tempoEstimado: "20 min"
+      }
+    };
+
+    setEvents((prev) => [newProj, ...prev]);
+    registerAudit("Conversão Proposta", `Orçamento ${orc.codigo} convertido com sucesso na OS ${newProj.codigo}.`);
+    alert(`Orçamento convertido com sucesso! Nova Ordem de Serviço criada: ${newProj.codigo}`);
+  };
   
   // Selected event details modal controller
   const [selectedEvent, setSelectedEvent] = useState<Project | null>(null);
@@ -497,7 +717,7 @@ export default function App() {
   const registerAudit = (acao: string, detalhes: string) => {
     const newLog: AuditoriaLog = {
       id: `log-${Date.now()}`,
-      usuario: "Adrian (Coordenador)",
+      usuario: `Adrian (${userRole.toUpperCase()})`,
       acao,
       detalhes,
       date: new Date().toISOString().split("T")[0],
@@ -505,6 +725,21 @@ export default function App() {
       ip: "192.168.1.45" // Simulado
     };
     setAuditLogs((prev) => [newLog, ...prev]);
+  };
+
+  const hasAccess = (tab: string) => {
+    if (!activeModules[tab]) return false;
+    if (userRole === "admin") return true;
+    if (userRole === "comercial") {
+      return ["overview", "crm", "orcamentos", "agenda"].includes(tab);
+    }
+    if (userRole === "estoque") {
+      return ["overview", "warehouse", "logistics", "agenda"].includes(tab);
+    }
+    if (userRole === "operador") {
+      return ["overview", "os", "kanban", "agenda"].includes(tab);
+    }
+    return false;
   };
 
   // Add Event
@@ -674,8 +909,8 @@ export default function App() {
     setLeads((prev) => [newLead, ...prev]);
     registerAudit("Novo Lead CRM", `Oportunidade cadastrada: "${lead.empresa}" (R$ ${lead.valorEstimado})`);
     
-    // Se o lead já é adicionado como fechado, cria-se o cliente na tabela
-    if (lead.estagio === "fechado") {
+    // Se o lead já é adicionado como aprovado, cria-se o cliente na tabela
+    if (lead.estagio === "aprovado") {
       setClientes(prev => [...prev, { name: lead.empresa, email: lead.email || "contato@cliente.com", cnpj: "00.000.000/0001-00" }]);
     }
   };
@@ -688,13 +923,12 @@ export default function App() {
     const lead = leads.find(l => l.id === id);
     registerAudit("Pipeline CRM", `Estágio do lead "${lead?.empresa}" movido para "${novoEstagio}"`);
 
-    // Adiciona na lista de clientes caso feche negócio
-    if (novoEstagio === "fechado" && lead) {
+    // Adiciona na lista de clientes ao aprovar o negócio
+    if (novoEstagio === "aprovado" && lead) {
       const alreadyExists = clientes.some(c => c.name === lead.empresa);
       if (!alreadyExists) {
         setClientes(prev => [...prev, { name: lead.empresa, email: lead.email || "contato@cliente.com", cnpj: "00.000.000/0001-00" }]);
-        // Cria também um estande mock correspondente no Kanban para não deixar vazio
-        addEvent(`Estande ${lead.empresa} - Feira Corporativa 2026`, lead.empresa, "2026-09-10");
+        addEvent(`Stand ${lead.empresa}${ lead.nomeFeira ? " - " + lead.nomeFeira : " - Feira 2026"}`, lead.empresa, "2026-09-10");
       }
     }
   };
@@ -785,128 +1019,321 @@ export default function App() {
     .filter(e => e.phase !== "post")
     .reduce((acc, curr) => acc + curr.docs.filter(d => d.status === "pending").length, 0);
 
+  if (!isLoggedIn) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", backgroundColor: "var(--bg-main)", fontFamily: "var(--font)", padding: "20px" }}>
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "40px", width: "100%", maxWidth: "420px", boxShadow: "var(--shadow-lg)", textAlign: "center", display: "flex", flexDirection: "column", gap: "24px" }}>
+          
+          {/* Logo JC Eventos */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+            <svg width="60" height="60" viewBox="0 0 100 100" fill="none">
+              <rect width="100" height="100" rx="22" fill="var(--accent)" />
+              <path d="M35 30H52V60C52 66 47 70 40 70" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M72 35H58C52 35 48 40 48 48C48 56 52 61 58 61H72" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="80" cy="72" r="8" fill="var(--accent-secondary)" />
+            </svg>
+            <h1 style={{ fontSize: "22px", fontWeight: "800", letterSpacing: "1px", color: "var(--accent)", margin: 0 }}>JC EVENTOS</h1>
+            <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Controll-All ERP Portal</span>
+          </div>
+
+          {/* Form simulation */}
+          <form onSubmit={(e) => { e.preventDefault(); setIsLoggedIn(true); registerAudit("Login de Usuário", "Login efetuado no sistema via portal JC Eventos"); }} style={{ display: "flex", flexDirection: "column", gap: "16px", textAlign: "left" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "6px", color: "var(--text-secondary)" }}>Usuário / E-mail</label>
+              <input 
+                type="text" 
+                defaultValue="adrian@jceventosrn.com.br" 
+                required 
+                style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px", outline: "none", backgroundColor: "var(--bg-main)", color: "var(--text-primary)" }}
+              />
+            </div>
+            
+            <div>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "6px", color: "var(--text-secondary)" }}>Senha de Acesso</label>
+              <input 
+                type="password" 
+                defaultValue="••••••••" 
+                required 
+                style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px", outline: "none", backgroundColor: "var(--bg-main)", color: "var(--text-primary)" }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "6px", color: "var(--text-secondary)" }}>Perfil Operacional</label>
+              <select 
+                value={userRole} 
+                onChange={(e) => setUserRole(e.target.value as any)}
+                style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px", outline: "none", backgroundColor: "var(--bg-main)", color: "var(--text-primary)", fontWeight: "600", cursor: "pointer" }}
+              >
+                <option value="admin">Administrador Geral</option>
+                <option value="comercial">Comercial / Vendas</option>
+                <option value="estoque">Almoxarifado / Estoque</option>
+                <option value="operador">Operacional (OS/Montagem)</option>
+              </select>
+            </div>
+
+            <button 
+              type="submit" 
+              className="btn-primary" 
+              style={{ width: "100%", padding: "12px", borderRadius: "8px", fontSize: "14px", fontWeight: "700", display: "flex", justifyContent: "center", marginTop: "8px" }}
+            >
+              Entrar no Sistema
+            </button>
+          </form>
+
+          {/* Footer details */}
+          <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "10px" }}>
+            <p>JC Design de Stands Ltda. Todos os direitos reservados.</p>
+            <p style={{ marginTop: "2px" }}>Natal/RN - jceventosrn.com.br</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="layout-wrapper">
-      {/* Sidebar Navigation */}
-      <aside className="sidebar">
-        <div className="logo-container">
-          <span className="logo-text">Controll-All</span>
-          <span className="logo-dot">.</span>
-        </div>
+      {/* Top Navigation Bar */}
+      <header className="top-nav">
+        <div className="top-nav-left">
+          <a href="#" className="top-nav-logo" onClick={(e) => { e.preventDefault(); setActiveTab("overview"); }} style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+            <svg width="26" height="26" viewBox="0 0 100 100" fill="none" style={{ marginRight: "8px" }}>
+              <rect width="100" height="100" rx="22" fill="rgba(255,255,255,0.15)" />
+              <path d="M35 30H52V60C52 66 47 70 40 70" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M72 35H58C52 35 48 40 48 48C48 56 52 61 58 61H72" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="80" cy="72" r="8" fill="#C95D46" />
+            </svg>
+            <span style={{ fontWeight: "800", letterSpacing: "0.5px", color: "#ffffff" }}>JC EVENTOS</span>
+            <span style={{ fontSize: "10px", fontWeight: "400", color: "rgba(255,255,255,0.45)", marginLeft: "8px", borderLeft: "1px solid rgba(255,255,255,0.2)", paddingLeft: "8px", letterSpacing: "0.5px" }}>Controll-All</span>
+          </a>
 
-        <nav>
-          <ul className="nav-list">
-            <li>
-              <button 
-                className={`nav-link ${activeTab === "overview" ? "active" : ""}`}
-                onClick={() => setActiveTab("overview")}
-              >
-                <LayoutDashboard size={18} /> Visão Geral
-              </button>
-            </li>
-            <li>
-              <button 
-                className={`nav-link ${activeTab === "crm" ? "active" : ""}`}
-                onClick={() => setActiveTab("crm")}
-              >
-                <Building2 size={18} /> CRM &amp; Clientes
-              </button>
-            </li>
-            <li>
-              <button 
-                className={`nav-link ${activeTab === "kanban" ? "active" : ""}`}
+          {/* Flat Direct Navigation — 7 items, no nested dropdowns */}
+          <nav className="top-nav-menu" style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+            <button
+              className={`menu-group-btn ${activeTab === "overview" ? "active" : ""}`}
+              onClick={() => setActiveTab("overview")}
+              title="Dashboard"
+            >
+              <LayoutDashboard size={14} /> Dashboard
+            </button>
+
+            {hasAccess("kanban") && (
+              <button
+                className={`menu-group-btn ${activeTab === "kanban" ? "active" : ""}`}
                 onClick={() => setActiveTab("kanban")}
+                title="Projetos / Kanban de Stands"
               >
-                <Briefcase size={18} /> Projetos &amp; Kanban
+                <Briefcase size={14} /> Projetos
               </button>
-            </li>
-            <li>
-              <button 
-                className={`nav-link ${activeTab === "warehouse" ? "active" : ""}`}
-                onClick={() => setActiveTab("warehouse")}
-              >
-                <Archive size={18} /> Depósito &amp; WMS
-              </button>
-            </li>
-            <li>
-              <button 
-                className={`nav-link ${activeTab === "employees" ? "active" : ""}`}
-                onClick={() => setActiveTab("employees")}
-              >
-                <Users size={18} /> RH &amp; Colaboradores
-              </button>
-            </li>
-            <li>
-              <button 
-                className={`nav-link ${activeTab === "financial" ? "active" : ""}`}
-                onClick={() => setActiveTab("financial")}
-              >
-                <DollarSign size={18} /> Financeiro &amp; Custos
-              </button>
-            </li>
-            <li>
-              <button 
-                className={`nav-link ${activeTab === "logistics" ? "active" : ""}`}
-                onClick={() => setActiveTab("logistics")}
-              >
-                <Truck size={18} /> Logística &amp; Viagem
-              </button>
-            </li>
-            <li>
-              <button 
-                className={`nav-link ${activeTab === "ia" ? "active" : ""}`}
-                onClick={() => setActiveTab("ia")}
-              >
-                <Bot size={18} /> IA Copilot
-              </button>
-            </li>
-            <li>
-              <button 
-                className={`nav-link ${activeTab === "auditoria" ? "active" : ""}`}
-                onClick={() => setActiveTab("auditoria")}
-              >
-                <Shield size={18} /> Auditoria
-              </button>
-            </li>
-          </ul>
-        </nav>
+            )}
 
-        {/* Sidebar Footer User Details */}
-        <div className="user-footer">
-          <div className="user-avatar">A</div>
-          <div className="user-info">
-            <span className="user-name">Adrian</span>
-            <span className="user-role">Coordenador</span>
-          </div>
-          <button 
-            style={{ marginLeft: "auto", background: "none", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer" }}
-            onClick={() => alert("Logout realizado (Simulado)")}
-          >
-            <LogOut size={16} />
-          </button>
+            {hasAccess("crm") && (
+              <button
+                className={`menu-group-btn ${activeTab === "crm" ? "active" : ""}`}
+                onClick={() => setActiveTab("crm")}
+                title="CRM & Clientes"
+              >
+                <Building2 size={14} /> CRM
+              </button>
+            )}
+
+            {hasAccess("orcamentos") && (
+              <button
+                className={`menu-group-btn ${activeTab === "orcamentos" ? "active" : ""}`}
+                onClick={() => setActiveTab("orcamentos")}
+                title="Propostas Comerciais"
+              >
+                <FileText size={14} /> Propostas
+              </button>
+            )}
+
+            {hasAccess("os") && (
+              <button
+                className={`menu-group-btn ${(activeTab === "os" || activeTab === "agenda") ? "active" : ""}`}
+                onClick={() => setActiveTab("os")}
+                title="Ordens de Serviço"
+              >
+                <CheckSquare size={14} /> OS
+              </button>
+            )}
+
+            {hasAccess("warehouse") && (
+              <button
+                className={`menu-group-btn ${(activeTab === "warehouse" || activeTab === "logistics") ? "active" : ""}`}
+                onClick={() => setActiveTab("warehouse")}
+                title="Depósito & WMS"
+              >
+                <Archive size={14} /> Depósito
+              </button>
+            )}
+
+            {hasAccess("financial") && (
+              <button
+                className={`menu-group-btn ${activeTab === "financial" ? "active" : ""}`}
+                onClick={() => setActiveTab("financial")}
+                title="Financeiro"
+              >
+                <DollarSign size={14} /> Financeiro
+              </button>
+            )}
+
+            {hasAccess("employees") && (
+              <button
+                className={`menu-group-btn ${activeTab === "employees" ? "active" : ""}`}
+                onClick={() => setActiveTab("employees")}
+                title="Equipe & RH"
+              >
+                <Users size={14} /> Equipe
+              </button>
+            )}
+
+            {hasAccess("logistics") && (
+              <button
+                className={`menu-group-btn ${activeTab === "logistics" ? "active" : ""}`}
+                onClick={() => setActiveTab("logistics")}
+                title="Logística & Viagens"
+              >
+                <Truck size={14} /> Logística
+              </button>
+            )}
+          </nav>
         </div>
-      </aside>
+
+        {/* Right Area */}
+        <div className="top-nav-right">
+          {/* Global search */}
+          <form onSubmit={handleGlobalSearch} className="top-nav-search">
+            <Search className="top-nav-search-icon" size={14} />
+            <input 
+              type="text" 
+              placeholder="Pesquisa global..." 
+              value={globalSearch} 
+              onChange={(e) => setGlobalSearch(e.target.value)} 
+            />
+          </form>
+
+          {/* Theme switcher */}
+          <button 
+            className="top-nav-icon-btn" 
+            onClick={toggleTheme} 
+            title={theme === "light" ? "Mudar para Modo Escuro" : "Mudar para Modo Claro"}
+          >
+            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
+
+          {/* Agenda quick access */}
+          <button 
+            className={`top-nav-icon-btn ${activeTab === "agenda" ? "active" : ""}`}
+            onClick={() => setActiveTab("agenda")}
+            title="Agenda do Dia"
+          >
+            <Calendar size={18} />
+          </button>
+
+          {/* Quick task checklist access */}
+          <button 
+            className="top-nav-icon-btn" 
+            onClick={() => {
+              const pendingChecklist = events.flatMap(evt => evt.checklist.filter(c => !c.done).map(c => `${evt.name}: ${c.text}`));
+              alert(`Tarefas Operacionais Pendentes (${pendingChecklist.length}):\n\n` + 
+                (pendingChecklist.length > 0 ? pendingChecklist.slice(0, 8).map((t, idx) => `${idx + 1}. ${t}`).join("\n") + (pendingChecklist.length > 8 ? "\n...e mais." : "") : "Nenhuma tarefa pendente!"));
+            }}
+            title="Tarefas Pendentes"
+          >
+            <ClipboardCheck size={18} />
+            {events.flatMap(evt => evt.checklist.filter(c => !c.done)).length > 0 && (
+              <span className="icon-badge">
+                {events.flatMap(evt => evt.checklist.filter(c => !c.done)).length}
+              </span>
+            )}
+          </button>
+
+          {/* Notifications */}
+          <button 
+            className="top-nav-icon-btn" 
+            onClick={() => {
+              const notifications = [];
+              if (lowStockCount > 0) notifications.push(`⚠️ Estoque Crítico: ${lowStockCount} itens abaixo do mínimo.`);
+              if (pendingDocsCount > 0) notifications.push(`📄 Documentação: ${pendingDocsCount} documentos de projetos pendentes.`);
+              notifications.push("📅 Agenda: Estande Feicon 2026 inicia montagem em breve.");
+              alert(`Painel de Notificações:\n\n` + notifications.map((n, idx) => `${idx + 1}. ${n}`).join("\n"));
+            }}
+            title="Notificações"
+          >
+            <Bell size={18} />
+            {(lowStockCount > 0 || pendingDocsCount > 0) && (
+              <span className="icon-badge">
+                {(lowStockCount > 0 ? 1 : 0) + (pendingDocsCount > 0 ? 1 : 0) + 1}
+              </span>
+            )}
+          </button>
+
+          {/* Audit log quick access */}
+          <button 
+            className={`top-nav-icon-btn ${activeTab === "auditoria" ? "active" : ""}`}
+            onClick={() => setActiveTab("auditoria")}
+            title="Auditoria & Configurações"
+          >
+            <Shield size={18} />
+          </button>
+
+          {/* Profile Dropdown */}
+          <div className="menu-group">
+            <div className="top-nav-user">
+              <div className="top-nav-avatar">
+                {userRole.substring(0, 2)}
+              </div>
+              <div className="top-nav-user-info">
+                <span className="top-nav-username">Adrian</span>
+                <span className="top-nav-userrole">{userRole}</span>
+              </div>
+              <ChevronDown size={10} style={{ marginLeft: "4px", color: "var(--text-muted)" }} />
+            </div>
+            
+            <div className="menu-dropdown" style={{ right: 0, left: "auto" }}>
+              <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)", marginBottom: "4px" }}>
+                <span style={{ fontSize: "10px", fontWeight: "600", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Alterar Nível de Acesso</span>
+              </div>
+              <button className={`dropdown-item ${userRole === "admin" ? "active" : ""}`} onClick={() => { setUserRole("admin"); registerAudit("Alteração de Perfil", "Nível de acesso alterado para ADMIN"); }}>
+                Administrador Geral
+              </button>
+              <button className={`dropdown-item ${userRole === "comercial" ? "active" : ""}`} onClick={() => { setUserRole("comercial"); registerAudit("Alteração de Perfil", "Nível de acesso alterado para COMERCIAL"); }}>
+                Comercial / Vendas
+              </button>
+              <button className={`dropdown-item ${userRole === "estoque" ? "active" : ""}`} onClick={() => { setUserRole("estoque"); registerAudit("Alteração de Perfil", "Nível de acesso alterado para ESTOQUE"); }}>
+                Almoxarifado / Estoque
+              </button>
+              <button className={`dropdown-item ${userRole === "operador" ? "active" : ""}`} onClick={() => { setUserRole("operador"); registerAudit("Alteração de Perfil", "Nível de acesso alterado para OPERADOR"); }}>
+                Operacional (OS/Montagem)
+              </button>
+              
+              <div style={{ borderTop: "1px solid var(--border)", marginTop: "6px", paddingTop: "4px" }}>
+                <button className="dropdown-item" onClick={() => { setIsLoggedIn(false); registerAudit("Logout de Usuário", "Usuário desconectou do sistema"); }} style={{ color: "var(--danger)" }}>
+                  <LogOut size={14} /> Sair do Sistema
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
 
       {/* Main Container Area */}
       <main className="main-area">
         {/* Header */}
-        <header className="header">
-          <h2 className="page-title">
+        <header className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "none", padding: "20px 24px 0 24px", background: "none", height: "auto" }}>
+          <h2 className="page-title" style={{ fontSize: "20px", fontWeight: "700" }}>
             {activeTab === "overview" && "Painel Executivo da JC Eventos"}
             {activeTab === "crm" && "Gestão de Oportunidades & Leads"}
+            {activeTab === "orcamentos" && "Propostas Comerciais & Orçamentos"}
+            {activeTab === "os" && "Ordens de Serviço & Checklist Técnico"}
             {activeTab === "kanban" && "Quadro Operacional de Montagem"}
+            {activeTab === "agenda" && "Calendário Integrado da JC"}
             {activeTab === "warehouse" && "Depósito, Organização Física & WMS"}
             {activeTab === "employees" && "Ficha de Equipe & Certificações NRs"}
             {activeTab === "financial" && "Contabilidade, Caixa & Centro de Custos"}
             {activeTab === "logistics" && "Coordenação de Frota, Voo & Hospedagem"}
-            {activeTab === "ia" && "AI Copilot Operacional"}
             {activeTab === "auditoria" && "Trilha de Segurança e Auditoria Geral"}
           </h2>
-          <div className="header-actions">
-            <span className="text-xs text-muted" style={{ fontWeight: 600 }}>
-              Status Operacional: <span style={{ color: "var(--accent-secondary)" }}>Evoluído 2.0 (Online)</span>
-            </span>
-          </div>
         </header>
 
         {/* Content Wrapper */}
@@ -917,7 +1344,8 @@ export default function App() {
               employeesCount={scheduledCount}
               lowStockItemsCount={lowStockCount}
               pendingDocsCount={pendingDocsCount}
-              onNavigateToTab={(tab) => setActiveTab(tab)}
+              invoices={invoiceLogs}
+              onNavigateToTab={(tab) => setActiveTab(tab as any)}
               onSelectEvent={(evt) => setSelectedEvent(evt)}
             />
           )}
@@ -937,12 +1365,41 @@ export default function App() {
             />
           )}
 
+          {activeTab === "orcamentos" && (
+            <Orcamentos 
+              orcamentos={orcamentos}
+              warehouseItems={warehouseItems}
+              clientes={clientes}
+              onAddOrcamento={handleAddOrcamento}
+              onUpdateOrcamento={handleUpdateOrcamento}
+              onConvertToOS={handleConvertToOS}
+            />
+          )}
+
+          {activeTab === "os" && (
+            <OrdensServico 
+              events={events}
+              allEmployees={employees}
+              allWarehouseItems={warehouseItems}
+              onUpdateEvent={updateEventDetails}
+            />
+          )}
+
           {activeTab === "kanban" && (
             <KanbanBoards 
               events={events}
               onSelectEvent={(evt) => setSelectedEvent(evt)}
               onAddEvent={addEvent}
               onUpdateEventPhase={updateEventPhase}
+            />
+          )}
+
+          {activeTab === "agenda" && (
+            <Agenda 
+              events={events}
+              employees={employees}
+              invoices={invoiceLogs}
+              leads={leads}
             />
           )}
 
@@ -983,15 +1440,6 @@ export default function App() {
             />
           )}
 
-          {activeTab === "ia" && (
-            <IAAssistant 
-              events={events}
-              employees={employees}
-              warehouseItems={warehouseItems}
-              invoices={invoiceLogs}
-            />
-          )}
-
           {activeTab === "auditoria" && (
             <Auditoria 
               logs={auditLogs}
@@ -1010,6 +1458,57 @@ export default function App() {
           onUpdateEvent={updateEventDetails}
         />
       )}
+
+      {/* Modal Configurar Módulos ERP (Ativar/Desativar Módulos JC Eventos) */}
+      <div 
+        id="modules-config-modal"
+        style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "none", alignItems: "center", justifyContent: "center", zIndex: 100 }}
+        onClick={() => {
+          const target = document.getElementById("modules-config-modal");
+          if (target) target.style.display = "none";
+        }}
+      >
+        <div 
+          style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "450px", boxShadow: "var(--shadow-lg)" }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px", color: "var(--accent)" }}>Configurar Módulos Ativos no ERP</h3>
+          <p style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "16px" }}>Marque ou desmarque os módulos abaixo para ativar/desativar funcionalidades em tempo real.</p>
+          
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "12px" }}>
+            {Object.keys(activeModules).map((moduleKey) => (
+              <label key={moduleKey} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", textTransform: "capitalize" }}>
+                <input 
+                  type="checkbox" 
+                  checked={activeModules[moduleKey]} 
+                  onChange={(e) => {
+                    setActiveModules(prev => {
+                      const updated = { ...prev, [moduleKey]: e.target.checked };
+                      registerAudit("Configuração Módulos", `Módulo ${moduleKey.toUpperCase()} alterado para ${e.target.checked ? "ATIVO" : "INATIVO"}`);
+                      return updated;
+                    });
+                  }} 
+                />
+                <span>{moduleKey === "crm" ? "CRM & Clientes" : moduleKey === "orcamentos" ? "Orçamentos" : moduleKey === "os" ? "Ordens de Serviço" : moduleKey === "ia" ? "IA Copilot" : moduleKey === "auditoria" ? "Auditoria" : moduleKey}</span>
+              </label>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px" }}>
+            <button 
+              type="button" 
+              className="btn-primary text-xs" 
+              onClick={() => {
+                const target = document.getElementById("modules-config-modal");
+                if (target) target.style.display = "none";
+              }}
+              style={{ padding: "6px 12px", borderRadius: "6px" }}
+            >
+              Fechar e Salvar
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

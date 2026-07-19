@@ -15,10 +15,87 @@ export default function WmsModule({
   items, onUpdateStock, onUpdateWarehouseItem 
 }: WmsModuleProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<"all" | "ferramenta" | "mobiliario">("all");
+  const [categoryFilter, setCategoryFilter] = useState<"all" | "locacao" | "ferramenta" | "venda">("all");
   const [selectedItemId, setSelectedItemId] = useState<string>(items[0]?.id || "");
-  const [activeSubTab, setActiveSubTab] = useState<"inventario" | "locacoes">("inventario");
+  const [activeSubTab, setActiveSubTab] = useState<"inventario" | "locacoes" | "entradas" | "ajustes">("inventario");
   const [isLocacaoModalOpen, setIsLocacaoModalOpen] = useState(false);
+
+  // WMS logs state
+  const [entradasLog, setEntradasLog] = useState([
+    { id: "ent-1", tipo: "Compra", itemNome: "Furadeira de Impacto Bosch", qty: 2, responsavel: "Almoxarife", date: "2026-07-10" },
+    { id: "ent-2", tipo: "Devolução", itemNome: "Serra Circular Dewalt", qty: 1, responsavel: "José Alves de Oliveira", date: "2026-07-12" }
+  ]);
+
+  const [ajustesLog, setAjustesLog] = useState([
+    { id: "adj-1", itemNome: "Parafusadeira Makita 12V", qtyAnterior: 16, qtyNova: 15, justificativa: "Ajuste inventário rotativo - 1 unidade extraviada em obra", responsavel: "Almoxarife", date: "2026-07-14" }
+  ]);
+
+  // Entrada Form states
+  const [inItemId, setInItemId] = useState(items[0]?.id || "");
+  const [inTipo, setInTipo] = useState<"compra" | "devolucao" | "emprestimo" | "aluguel" | "transferencia">("compra");
+  const [inQty, setInQty] = useState(1);
+  const [inResp, setInResp] = useState("Almoxarife");
+
+  // Ajuste Form states
+  const [adjItemId, setAdjItemId] = useState(items[0]?.id || "");
+  const [adjNewQty, setAdjNewQty] = useState(0);
+  const [adjJustify, setAdjJustify] = useState("");
+  const [adjResp, setAdjResp] = useState("Almoxarife");
+
+  const handleRegisterEntry = (e: React.FormEvent) => {
+    e.preventDefault();
+    const item = items.find(i => i.id === inItemId);
+    if (!item || inQty <= 0) return;
+
+    onUpdateStock(inItemId, item.stock + inQty);
+
+    const labelMap = {
+      compra: "Compra",
+      devolucao: "Devolução",
+      emprestimo: "Empréstimo",
+      aluguel: "Aluguel",
+      transferencia: "Transferência"
+    };
+
+    setEntradasLog([
+      {
+        id: `ent-${Date.now()}`,
+        tipo: labelMap[inTipo],
+        itemNome: item.name,
+        qty: inQty,
+        responsavel: inResp,
+        date: new Date().toISOString().split("T")[0]
+      },
+      ...entradasLog
+    ]);
+
+    setInQty(1);
+    alert("Entrada de material registrada e estoque físico atualizado!");
+  };
+
+  const handleRegisterAdjustment = (e: React.FormEvent) => {
+    e.preventDefault();
+    const item = items.find(i => i.id === adjItemId);
+    if (!item || adjNewQty < 0 || !adjJustify) return;
+
+    onUpdateStock(adjItemId, adjNewQty);
+
+    setAjustesLog([
+      {
+        id: `adj-${Date.now()}`,
+        itemNome: item.name,
+        qtyAnterior: item.stock,
+        qtyNova: adjNewQty,
+        justificativa: adjJustify,
+        responsavel: adjResp,
+        date: new Date().toISOString().split("T")[0]
+      },
+      ...ajustesLog
+    ]);
+
+    setAdjJustify("");
+    alert("Correção de estoque registrada e saldo atualizado!");
+  };
 
   // New rental form states
   const [rentItemId, setRentItemId] = useState(items[0]?.id || "");
@@ -31,16 +108,24 @@ export default function WmsModule({
 
   const selectedItem = items.find(i => i.id === selectedItemId);
 
+  const getOperationalCategory = (item: WarehouseItem): "locacao" | "ferramenta" | "venda" => {
+    if (item.categoriaOperacional) return item.categoriaOperacional;
+    if (item.type === "tool") return "ferramenta";
+    return "locacao";
+  };
+
   const filteredItems = items.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || item.codigo.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === "all" ? true : item.type === categoryFilter;
+    const opCat = getOperationalCategory(item);
+    const matchesCategory = categoryFilter === "all" ? true : opCat === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 
-  // Calculate stats for overview
+  // Calculate stats for 3 WMS categories
   const totalItemsCount = items.reduce((acc, curr) => acc + curr.stock, 0);
-  const toolItemsCount = items.filter(i => i.type === "tool").reduce((acc, curr) => acc + curr.stock, 0);
-  const furnitureItemsCount = items.filter(i => i.type === "furniture").reduce((acc, curr) => acc + curr.stock, 0);
+  const locacaoItemsCount = items.filter(i => getOperationalCategory(i) === "locacao").reduce((acc, curr) => acc + curr.stock, 0);
+  const ferramentaItemsCount = items.filter(i => getOperationalCategory(i) === "ferramenta").reduce((acc, curr) => acc + curr.stock, 0);
+  const vendaItemsCount = items.filter(i => getOperationalCategory(i) === "venda").reduce((acc, curr) => acc + curr.stock, 0);
 
   // List all locacoes across all items
   const allLocacoes: { itemObj: WarehouseItem; loc: WmsLocacaoItem }[] = [];
@@ -155,29 +240,69 @@ export default function WmsModule({
         >
           Controle de Aluguel &amp; Saídas
         </button>
+        <button 
+          className={`tab-btn-link ${activeSubTab === "entradas" ? "active" : ""}`}
+          onClick={() => setActiveSubTab("entradas")}
+          style={{
+            padding: "10px 16px",
+            background: "none",
+            border: "none",
+            borderBottom: activeSubTab === "entradas" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
+            color: activeSubTab === "entradas" ? "var(--accent)" : "var(--text-muted)",
+            fontWeight: activeSubTab === "entradas" ? "600" : "500",
+            fontFamily: "var(--font)",
+            cursor: "pointer",
+            fontSize: "14px"
+          }}
+        >
+          Entrada de Insumos
+        </button>
+        <button 
+          className={`tab-btn-link ${activeSubTab === "ajustes" ? "active" : ""}`}
+          onClick={() => setActiveSubTab("ajustes")}
+          style={{
+            padding: "10px 16px",
+            background: "none",
+            border: "none",
+            borderBottom: activeSubTab === "ajustes" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
+            color: activeSubTab === "ajustes" ? "var(--accent)" : "var(--text-muted)",
+            fontWeight: activeSubTab === "ajustes" ? "600" : "500",
+            fontFamily: "var(--font)",
+            cursor: "pointer",
+            fontSize: "14px"
+          }}
+        >
+          Correção de Estoque
+        </button>
       </div>
 
       {activeSubTab === "inventario" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           
           {/* Stock Metrics summary */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
-            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifySpaceBetween: "space-between", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "16px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
               <div>
-                <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Total de Itens Físicos</span>
-                <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--accent)", marginTop: "4px" }}>{totalItemsCount} un</h3>
+                <span style={{ fontSize: "10px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Materiais p/ Locação</span>
+                <h3 style={{ fontSize: "18px", fontWeight: "700", color: "var(--accent)", marginTop: "4px" }}>{locacaoItemsCount} un</h3>
               </div>
             </div>
-            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifySpaceBetween: "space-between", boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "16px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
               <div>
-                <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Ferramentas Disponíveis</span>
-                <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--text-primary)", marginTop: "4px" }}>{toolItemsCount} un</h3>
+                <span style={{ fontSize: "10px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Ferramentas &amp; Equip.</span>
+                <h3 style={{ fontSize: "18px", fontWeight: "700", color: "var(--text-primary)", marginTop: "4px" }}>{ferramentaItemsCount} un</h3>
               </div>
             </div>
-            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifySpaceBetween: "space-between", boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "16px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
               <div>
-                <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Mobiliários no Galpão</span>
-                <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--text-primary)", marginTop: "4px" }}>{furnitureItemsCount} un</h3>
+                <span style={{ fontSize: "10px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Produtos p/ Venda</span>
+                <h3 style={{ fontSize: "18px", fontWeight: "700", color: "var(--text-primary)", marginTop: "4px" }}>{vendaItemsCount} un</h3>
+              </div>
+            </div>
+            <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", padding: "16px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
+              <div>
+                <span style={{ fontSize: "10px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Total Geral Estocado</span>
+                <h3 style={{ fontSize: "18px", fontWeight: "700", color: "var(--accent-secondary)", marginTop: "4px" }}>{totalItemsCount} un</h3>
               </div>
             </div>
           </div>
@@ -216,8 +341,9 @@ export default function WmsModule({
                   style={{ padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)", fontSize: "13px", color: "var(--text-primary)" }}
                 >
                   <option value="all">Todas Categorias</option>
-                  <option value="ferramenta">Ferramentas</option>
-                  <option value="mobiliario">Mobiliário</option>
+                  <option value="locacao">Materiais para Locação</option>
+                  <option value="ferramenta">Ferramentas &amp; Equipamentos</option>
+                  <option value="venda">Produtos para Venda</option>
                 </select>
               </div>
 
@@ -249,7 +375,7 @@ export default function WmsModule({
                           <strong style={{ display: "block", fontSize: "13px" }}>{item.name}</strong>
                         </td>
                         <td style={{ padding: "12px 16px", fontSize: "12px", color: "var(--text-secondary)" }}>
-                          {item.type === "ferramenta" ? "🛠️ Ferramenta" : "🛋️ Mobiliário"}
+                          {item.type === "tool" ? "🛠️ Ferramenta" : "🛋️ Mobiliário"}
                         </td>
                         <td style={{ padding: "12px 16px", textAlign: "center" }}>
                           <span style={{ fontWeight: "700", color: item.stock <= item.stockMinimo ? "var(--danger)" : "var(--text-primary)" }}>{item.stock}</span>
@@ -290,7 +416,7 @@ export default function WmsModule({
                     <div>
                       <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>ESTADO DE CONSERVAÇÃO</label>
                       <strong style={{ display: "block", fontSize: "14px", color: "var(--accent-secondary)", marginTop: "4px" }}>
-                        {selectedItem.estadoConservacao.toUpperCase()}
+                        {(selectedItem.estadoConservacao || "Excelente").toUpperCase()}
                       </strong>
                     </div>
                     
@@ -314,6 +440,76 @@ export default function WmsModule({
                     </div>
                   </div>
 
+                  {/* Refined operational category specifications */}
+                  <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--accent)", textTransform: "uppercase" }}>
+                      ESPECIFICAÇÕES OPERACIONAIS: {getOperationalCategory(selectedItem).toUpperCase()}
+                    </div>
+
+                    {getOperationalCategory(selectedItem) === "locacao" && (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "11px" }}>
+                        <div>
+                          <span style={{ color: "var(--text-secondary)" }}>Qtd Disponível:</span>
+                          <strong style={{ display: "block" }}>{selectedItem.qtdDisponivel ?? selectedItem.stock} un</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "var(--text-secondary)" }}>Qtd Reservada:</span>
+                          <strong style={{ display: "block" }}>{selectedItem.qtdReservada ?? 0} un</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "var(--text-secondary)" }}>Qtd Alugada:</span>
+                          <strong style={{ display: "block" }}>{selectedItem.qtdAlugada ?? 0} un</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "var(--text-secondary)" }}>Retorno Previsto:</span>
+                          <strong style={{ display: "block" }}>{selectedItem.retornoPrevisto || "Sem alugueis ativos"}</strong>
+                        </div>
+                      </div>
+                    )}
+
+                    {getOperationalCategory(selectedItem) === "ferramenta" && (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "11px" }}>
+                        <div>
+                          <span style={{ color: "var(--text-secondary)" }}>Responsável Atual:</span>
+                          <strong style={{ display: "block" }}>{selectedItem.colaboradorResponsavel || "Galpão Almoxarifado"}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "var(--text-secondary)" }}>Localização Atual:</span>
+                          <strong style={{ display: "block" }}>{selectedItem.localizacaoAtual || "Galpão Central"}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "var(--text-secondary)" }}>Data de Saída:</span>
+                          <strong style={{ display: "block" }}>{selectedItem.dataSaidaFerramenta || "-"}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "var(--text-secondary)" }}>Previsão Retorno:</span>
+                          <strong style={{ display: "block" }}>{selectedItem.dataRetornoFerramenta || "-"}</strong>
+                        </div>
+                      </div>
+                    )}
+
+                    {getOperationalCategory(selectedItem) === "venda" && (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "11px" }}>
+                        <div>
+                          <span style={{ color: "var(--text-secondary)" }}>Custo de Aquisição:</span>
+                          <strong style={{ display: "block" }}>R$ {(selectedItem.custoAquisicao ?? selectedItem.valorCompra).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "var(--text-secondary)" }}>Margem de Lucro (%):</span>
+                          <strong style={{ display: "block" }}>{selectedItem.margemLucro ?? 40}%</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "var(--text-secondary)" }}>Estoque Mínimo Alerta:</span>
+                          <strong style={{ display: "block", color: "var(--danger)" }}>{selectedItem.estoqueMinimo ?? selectedItem.stockMinimo} un</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "var(--text-secondary)" }}>Fornecedor Homologado:</span>
+                          <strong style={{ display: "block" }}>{selectedItem.fornecedores || "Fornecedor Geral"}</strong>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Physical Hierarchy display WMS */}
                   <div style={{ backgroundColor: "var(--bg-main)", borderRadius: "12px", padding: "16px" }}>
                     <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "6px", marginBottom: "12px" }}>
@@ -322,6 +518,18 @@ export default function WmsModule({
                     </span>
                     
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "12px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ color: "var(--text-secondary)" }}>Código de Barras:</span>
+                        <strong>{selectedItem.barcode || `789012${selectedItem.codigo.replace(/[^0-9]/g, "") || "9982"}`}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ color: "var(--text-secondary)" }}>Fornecedor Padrão:</span>
+                        <strong>{selectedItem.fornecedor || "Fornecedor Homologado JC"}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ color: "var(--text-secondary)" }}>Unidade de Medida:</span>
+                        <strong>{selectedItem.unidade || "unid"}</strong>
+                      </div>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ color: "var(--text-secondary)" }}>Setor Geral:</span>
                         <strong>Setor {selectedItem.localizacaoFisica.galpao}</strong>
@@ -501,6 +709,180 @@ export default function WmsModule({
                 <button type="button" className="btn-secondary" onClick={() => setIsLocacaoModalOpen(false)}>Cancelar</button>
                 <button type="submit" className="btn-primary">Registrar e Sair</button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Tab: Entrada de Insumos */}
+      {activeSubTab === "entradas" && (
+        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px" }}>
+          {/* List of entries */}
+          <div className="section-box" style={{ height: "auto" }}>
+            <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)", marginBottom: "16px" }}>Histórico de Entrada de Insumos</h4>
+            <div className="table-responsive">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                    <th>Material / Recurso</th>
+                    <th>Quantidade</th>
+                    <th>Responsável</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entradasLog.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>Nenhuma entrada registrada.</td>
+                    </tr>
+                  ) : (
+                    entradasLog.map((log) => (
+                      <tr key={log.id}>
+                        <td>{log.date}</td>
+                        <td>
+                          <span className={`badge badge-${log.tipo === "Compra" ? "success" : "muted"}`} style={{ fontSize: "9px" }}>
+                            {log.tipo.toUpperCase()}
+                          </span>
+                        </td>
+                        <td><strong>{log.itemNome}</strong></td>
+                        <td>{log.qty} unidades</td>
+                        <td>{log.responsavel}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Entry Form */}
+          <div className="section-box" style={{ height: "auto" }}>
+            <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)", marginBottom: "16px" }}>Registrar Nova Entrada</h4>
+            <form onSubmit={handleRegisterEntry} style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "12px" }}>
+              <div>
+                <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Material / Insumo</label>
+                <select 
+                  value={inItemId} 
+                  onChange={(e) => setInItemId(e.target.value)}
+                  style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }}
+                >
+                  {items.map(i => (
+                    <option key={i.id} value={i.id}>{i.name} (Saldo: {i.stock} un)</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Tipo de Entrada</label>
+                  <select 
+                    value={inTipo} 
+                    onChange={(e) => setInTipo(e.target.value as any)}
+                    style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }}
+                  >
+                    <option value="compra">Compra</option>
+                    <option value="devolucao">Devolução</option>
+                    <option value="emprestimo">Empréstimo</option>
+                    <option value="aluguel">Aluguel</option>
+                    <option value="transferencia">Transferência</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Quantidade</label>
+                  <input type="number" min="1" value={inQty} onChange={(e) => setInQty(parseInt(e.target.value) || 1)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+                </div>
+              </div>
+              <div>
+                <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Operador Responsável</label>
+                <input type="text" value={inResp} onChange={(e) => setInResp(e.target.value)} required style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+              </div>
+              <button type="submit" className="btn-primary" style={{ marginTop: "12px", padding: "10px" }}>Registrar Entrada Física</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Correção de Estoque */}
+      {activeSubTab === "ajustes" && (
+        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px" }}>
+          {/* List of adjustments */}
+          <div className="section-box" style={{ height: "auto" }}>
+            <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)", marginBottom: "16px" }}>Histórico de Ajustes e Correções</h4>
+            <div className="table-responsive">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Material</th>
+                    <th>Saldo Ant.</th>
+                    <th>Saldo Novo</th>
+                    <th>Justificativa</th>
+                    <th>Responsável</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ajustesLog.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>Nenhuma correção registrada.</td>
+                    </tr>
+                  ) : (
+                    ajustesLog.map((log) => (
+                      <tr key={log.id}>
+                        <td>{log.date}</td>
+                        <td><strong>{log.itemNome}</strong></td>
+                        <td>{log.qtyAnterior} un</td>
+                        <td><strong style={{ color: log.qtyNova > log.qtyAnterior ? "var(--success-text)" : "var(--danger)" }}>{log.qtyNova} un</strong></td>
+                        <td style={{ fontSize: "11px", color: "var(--text-secondary)", maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={log.justificativa}>
+                          {log.justificativa}
+                        </td>
+                        <td>{log.responsavel}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Adjustment Form */}
+          <div className="section-box" style={{ height: "auto" }}>
+            <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)", marginBottom: "16px" }}>Lançar Correção Física (Inventário)</h4>
+            <form onSubmit={handleRegisterAdjustment} style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "12px" }}>
+              <div>
+                <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Material / Ferramenta</label>
+                <select 
+                  value={adjItemId} 
+                  onChange={(e) => setAdjItemId(e.target.value)}
+                  style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }}
+                >
+                  {items.map(i => (
+                    <option key={i.id} value={i.id}>{i.name} (Estoque atual: {i.stock} un)</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Novo Saldo Físico</label>
+                  <input type="number" min="0" value={adjNewQty} onChange={(e) => setAdjNewQty(parseInt(e.target.value) || 0)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Auditor Responsável</label>
+                  <input type="text" value={adjResp} onChange={(e) => setAdjResp(e.target.value)} required style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+                </div>
+              </div>
+              <div>
+                <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Justificativa do Ajuste</label>
+                <textarea 
+                  value={adjJustify} 
+                  onChange={(e) => setAdjJustify(e.target.value)} 
+                  placeholder="Ex: Quebra de ferramenta em obra, erro de digitação de NF..."
+                  rows={3} 
+                  required
+                  style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)" }}
+                />
+              </div>
+              <button type="submit" className="btn-primary" style={{ marginTop: "12px", padding: "10px", backgroundColor: "var(--accent-secondary)" }}>
+                Confirmar Correção Física
+              </button>
             </form>
           </div>
         </div>

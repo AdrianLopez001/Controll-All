@@ -3,7 +3,7 @@ import {
   DollarSign, TrendingUp, TrendingDown, Wallet, Calendar, Plus, Tag, 
   X, FileText, Upload, Trash2, Link
 } from "lucide-react";
-import type { InvoiceLog, Project } from "../types";
+import type { InvoiceLog, Project, NotaFiscal, BoletoAdministrativo } from "../types";
 
 interface FinancialProps {
   invoices: InvoiceLog[];
@@ -15,7 +15,7 @@ interface FinancialProps {
 export default function Financial({ 
   invoices, events, onAddInvoice, onUpdateInvoice 
 }: FinancialProps) {
-  const [activeSubTab, setActiveSubTab] = useState<"fluxo" | "centro_custo" | "caixinha">("fluxo");
+  const [activeSubTab, setActiveSubTab] = useState<"fluxo" | "pagar" | "receber" | "boletos" | "nfe" | "centro_custo" | "caixinha">("fluxo");
   const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.id || "");
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceLog | null>(null);
@@ -30,6 +30,158 @@ export default function Financial({
   const [formaPagamento, setFormaPagamento] = useState<InvoiceLog["formaPagamento"]>("Pix");
   const [status, setStatus] = useState<InvoiceLog["status"]>("pago");
   const [eventoId, setEventoId] = useState("");
+
+  // 3.0 new form fields
+  const [parcelas, setParcelas] = useState(1);
+  const [recorrente, setRecorrente] = useState(false);
+  const [recebimentoParcial, setRecebimentoParcial] = useState(0);
+  const [inadimplente, setInadimplente] = useState(false);
+
+  // Nota Fiscal States
+  const [nfs, setNfs] = useState<NotaFiscal[]>([
+    { id: "nf-1", tipo: "NF-e", numero: "000.108.924", serie: "1", cliente: "Volkswagen do Brasil Ltda", valor: 90000.00, dataEmissao: "2026-07-08", produtos: ["Cenografia Estande Feicon 2026", "Painel de Madeira MDF"], osVinculada: "evt-2", status: "emitida", pdfAnexoNome: "nfe_108924_volkswagen.pdf", xmlAnexoNome: "nfe_108924_volkswagen.xml" },
+    { id: "nf-2", tipo: "NFS-e", numero: "2026.00941", serie: "1", cliente: "Nestlé S/A", valor: 80000.00, dataEmissao: "2026-07-15", produtos: ["Serviço de Montagem de Stand Bienal"], osVinculada: "evt-1", status: "emitida", pdfAnexoNome: "nfse_00941_nestle.pdf" }
+  ]);
+  const [isNfeModalOpen, setIsNfeModalOpen] = useState(false);
+  const [nfTipo, setNfTipo] = useState<NotaFiscal["tipo"]>("NF-e");
+  const [nfCliente, setNfCliente] = useState("");
+  const [nfValor, setNfValor] = useState(0);
+  const [nfOS, setNfOS] = useState("");
+  const [nfProdutos, setNfProdutos] = useState("");
+  const [nfNumeroInput, setNfNumeroInput] = useState("");
+  const [nfSerieInput, setNfSerieInput] = useState("1");
+  const [nfDataInput, setNfDataInput] = useState("");
+  const [nfPdfInput, setNfPdfInput] = useState("");
+  const [nfXmlInput, setNfXmlInput] = useState("");
+
+  // 3.1 Boleto state
+  const [boletos, setBoletos] = useState<BoletoAdministrativo[]>([
+    {
+      id: "bol-1",
+      numero: "34191.79001 01043.513184 91020.150008 7 98020000015000",
+      cliente: "Nestlé S/A",
+      valor: 1500.00,
+      vencimento: "2026-07-25",
+      status: "pendente",
+      pdfAnexoNome: "boleto_nestle_feicon.pdf",
+      historicoLogs: ["Boleto gerado pelo sistema e enviado em 2026-07-15"]
+    },
+    {
+      id: "bol-2",
+      numero: "00190.00009 02332.415617 89000.120042 1 97940000050000",
+      cliente: "Volkswagen do Brasil Ltda",
+      valor: 5000.00,
+      vencimento: "2026-07-18",
+      status: "pago",
+      pdfAnexoNome: "boleto_volkswagen_3d.pdf",
+      comprovanteAnexoNome: "comprovante_volkswagen_pix.pdf",
+      historicoLogs: [
+        "Boleto gerado em 2026-07-10",
+        "Pagamento confirmado via Pix e comprovante anexado em 2026-07-17"
+      ]
+    }
+  ]);
+  const [isBoletoModalOpen, setIsBoletoModalOpen] = useState(false);
+  const [bolNumero, setBolNumero] = useState("");
+  const [bolCliente, setBolCliente] = useState("");
+  const [bolValor, setBolValor] = useState(0);
+  const [bolVencimento, setBolVencimento] = useState("");
+  const [bolPdf, setBolPdf] = useState("");
+  const [bolComprovante, setBolComprovante] = useState("");
+
+  // Boleto filter
+  const [boletoStatusFilter, setBoletoStatusFilter] = useState<"all" | InvoiceLog["status"] | "vencido" | "cancelado">("all");
+
+  const handleEmitNFe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nfCliente || nfValor <= 0) return;
+
+    const newNf: NotaFiscal = {
+      id: `nf-${Date.now()}`,
+      tipo: nfTipo,
+      numero: nfNumeroInput || `000.${Math.floor(100000 + Math.random() * 900000)}`,
+      serie: nfSerieInput || "1",
+      cliente: nfCliente,
+      valor: nfValor,
+      dataEmissao: nfDataInput || new Date().toISOString().split("T")[0],
+      produtos: nfProdutos.split(",").map(p => p.trim()),
+      osVinculada: nfOS || undefined,
+      status: "emitida",
+      pdfAnexoNome: nfPdfInput || undefined,
+      xmlAnexoNome: nfXmlInput || undefined
+    };
+
+    setNfs([newNf, ...nfs]);
+    setIsNfeModalOpen(false);
+    setNfCliente("");
+    setNfValor(0);
+    setNfOS("");
+    setNfProdutos("");
+    setNfNumeroInput("");
+    setNfSerieInput("1");
+    setNfDataInput("");
+    setNfPdfInput("");
+    setNfXmlInput("");
+    alert("Nota Fiscal registrada com sucesso e armazenada administrativamente!");
+  };
+
+  const handleAddBoleto = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bolCliente || bolValor <= 0 || !bolVencimento) return;
+
+    const newBoleto: BoletoAdministrativo = {
+      id: `bol-${Date.now()}`,
+      numero: bolNumero || `34191.79001 ${Math.floor(10000 + Math.random() * 90000)}.${Math.floor(100000 + Math.random() * 900000)} ${Math.floor(100000 + Math.random() * 900000)} 7 ${Math.floor(90000000000000 + Math.random() * 9000000000000)}`,
+      cliente: bolCliente,
+      valor: bolValor,
+      vencimento: bolVencimento,
+      status: "pendente",
+      pdfAnexoNome: bolPdf || undefined,
+      comprovanteAnexoNome: bolComprovante || undefined,
+      historicoLogs: [`Boleto registrado administrativamente em ${new Date().toISOString().split("T")[0]}`]
+    };
+
+    setBoletos([newBoleto, ...boletos]);
+    setIsBoletoModalOpen(false);
+    setBolNumero("");
+    setBolCliente("");
+    setBolValor(0);
+    setBolVencimento("");
+    setBolPdf("");
+    setBolComprovante("");
+    alert("Boleto bancário registrado com sucesso!");
+  };
+
+  const handlePayBoleto = (id: string) => {
+    const receipt = prompt("Nome do arquivo do comprovante de pagamento (simulado):", "comprovante_pix.pdf");
+    if (!receipt) return;
+    setBoletos(boletos.map(b => {
+      if (b.id === id) {
+        return {
+          ...b,
+          status: "pago",
+          comprovanteAnexoNome: receipt,
+          historicoLogs: [...b.historicoLogs, `Pagamento confirmado administrativamente em ${new Date().toISOString().split("T")[0]}. Comprovante: ${receipt}`]
+        };
+      }
+      return b;
+    }));
+    alert("Boleto marcado como PAGO com comprovante de pagamento vinculado!");
+  };
+
+  const handleCancelBoleto = (id: string) => {
+    if (!window.confirm("Deseja realmente cancelar este boleto administrativamente?")) return;
+    setBoletos(boletos.map(b => {
+      if (b.id === id) {
+        return {
+          ...b,
+          status: "cancelado",
+          historicoLogs: [...b.historicoLogs, `Boleto cancelado administrativamente em ${new Date().toISOString().split("T")[0]}`]
+        };
+      }
+      return b;
+    }));
+  };
 
   // Edit Invoice states
   const [editVendor, setEditVendor] = useState("");
@@ -81,13 +233,21 @@ export default function Financial({
       categoria,
       formaPagamento,
       status,
-      eventoId: eventoId || undefined
+      eventoId: eventoId || undefined,
+      parcelas: parcelas || 1,
+      recorrente: recorrente || false,
+      recebimentoParcial: recebimentoParcial || 0,
+      inadimplente: inadimplente || false
     });
     setVendor("");
     setInvoiceNumber("");
     setValue(0);
     setDescription("");
     setEventoId("");
+    setParcelas(1);
+    setRecorrente(false);
+    setRecebimentoParcial(0);
+    setInadimplente(false);
     setIsInvoiceModalOpen(false);
   };
 
@@ -256,12 +416,12 @@ export default function Financial({
   return (
     <div className="financial-container" style={{ padding: "10px" }}>
       {/* Sub tabs header */}
-      <div className="sub-header-tabs" style={{ display: "flex", gap: "12px", borderBottom: "1px solid var(--border)", marginBottom: "24px" }}>
+      <div className="sub-header-tabs" style={{ display: "flex", gap: "10px", borderBottom: "1px solid var(--border)", marginBottom: "24px", overflowX: "auto" }}>
         <button 
           className={`tab-btn-link ${activeSubTab === "fluxo" ? "active" : ""}`}
           onClick={() => setActiveSubTab("fluxo")}
           style={{
-            padding: "10px 16px",
+            padding: "10px 12px",
             background: "none",
             border: "none",
             borderBottom: activeSubTab === "fluxo" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
@@ -269,16 +429,89 @@ export default function Financial({
             fontWeight: activeSubTab === "fluxo" ? "600" : "500",
             fontFamily: "var(--font)",
             cursor: "pointer",
-            fontSize: "14px"
+            fontSize: "13px",
+            whiteSpace: "nowrap"
           }}
         >
-          Fluxo de Caixa &amp; Lançamentos
+          Fluxo de Caixa
+        </button>
+        <button 
+          className={`tab-btn-link ${activeSubTab === "pagar" ? "active" : ""}`}
+          onClick={() => setActiveSubTab("pagar")}
+          style={{
+            padding: "10px 12px",
+            background: "none",
+            border: "none",
+            borderBottom: activeSubTab === "pagar" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
+            color: activeSubTab === "pagar" ? "var(--accent)" : "var(--text-muted)",
+            fontWeight: activeSubTab === "pagar" ? "600" : "500",
+            fontFamily: "var(--font)",
+            cursor: "pointer",
+            fontSize: "13px",
+            whiteSpace: "nowrap"
+          }}
+        >
+          Contas a Pagar
+        </button>
+        <button 
+          className={`tab-btn-link ${activeSubTab === "receber" ? "active" : ""}`}
+          onClick={() => setActiveSubTab("receber")}
+          style={{
+            padding: "10px 12px",
+            background: "none",
+            border: "none",
+            borderBottom: activeSubTab === "receber" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
+            color: activeSubTab === "receber" ? "var(--accent)" : "var(--text-muted)",
+            fontWeight: activeSubTab === "receber" ? "600" : "500",
+            fontFamily: "var(--font)",
+            cursor: "pointer",
+            fontSize: "13px",
+            whiteSpace: "nowrap"
+          }}
+        >
+          Contas a Receber
+        </button>
+        <button 
+          className={`tab-btn-link ${activeSubTab === "boletos" ? "active" : ""}`}
+          onClick={() => setActiveSubTab("boletos")}
+          style={{
+            padding: "10px 12px",
+            background: "none",
+            border: "none",
+            borderBottom: activeSubTab === "boletos" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
+            color: activeSubTab === "boletos" ? "var(--accent)" : "var(--text-muted)",
+            fontWeight: activeSubTab === "boletos" ? "600" : "500",
+            fontFamily: "var(--font)",
+            cursor: "pointer",
+            fontSize: "13px",
+            whiteSpace: "nowrap"
+          }}
+        >
+          Boletos
+        </button>
+        <button 
+          className={`tab-btn-link ${activeSubTab === "nfe" ? "active" : ""}`}
+          onClick={() => setActiveSubTab("nfe")}
+          style={{
+            padding: "10px 12px",
+            background: "none",
+            border: "none",
+            borderBottom: activeSubTab === "nfe" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
+            color: activeSubTab === "nfe" ? "var(--accent)" : "var(--text-muted)",
+            fontWeight: activeSubTab === "nfe" ? "600" : "500",
+            fontFamily: "var(--font)",
+            cursor: "pointer",
+            fontSize: "13px",
+            whiteSpace: "nowrap"
+          }}
+        >
+          Notas Fiscais
         </button>
         <button 
           className={`tab-btn-link ${activeSubTab === "centro_custo" ? "active" : ""}`}
           onClick={() => setActiveSubTab("centro_custo")}
           style={{
-            padding: "10px 16px",
+            padding: "10px 12px",
             background: "none",
             border: "none",
             borderBottom: activeSubTab === "centro_custo" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
@@ -286,16 +519,17 @@ export default function Financial({
             fontWeight: activeSubTab === "centro_custo" ? "600" : "500",
             fontFamily: "var(--font)",
             cursor: "pointer",
-            fontSize: "14px"
+            fontSize: "13px",
+            whiteSpace: "nowrap"
           }}
         >
-          Centro de Custos por Evento
+          Centro de Custos
         </button>
         <button 
           className={`tab-btn-link ${activeSubTab === "caixinha" ? "active" : ""}`}
           onClick={() => setActiveSubTab("caixinha")}
           style={{
-            padding: "10px 16px",
+            padding: "10px 12px",
             background: "none",
             border: "none",
             borderBottom: activeSubTab === "caixinha" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
@@ -303,10 +537,11 @@ export default function Financial({
             fontWeight: activeSubTab === "caixinha" ? "600" : "500",
             fontFamily: "var(--font)",
             cursor: "pointer",
-            fontSize: "14px"
+            fontSize: "13px",
+            whiteSpace: "nowrap"
           }}
         >
-          Caixinha &amp; Reembolsos Obra
+          Caixinha
         </button>
       </div>
 
@@ -410,6 +645,308 @@ export default function Financial({
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Contas a Pagar Tab */}
+      {activeSubTab === "pagar" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>Controle de Contas a Pagar (Despesas &amp; Custos)</h4>
+            <button className="btn-primary" onClick={() => setIsInvoiceModalOpen(true)}>
+              <Plus size={16} /> Nova Conta a Pagar
+            </button>
+          </div>
+
+          <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
+                  <th style={{ padding: "14px 20px" }}>Fornecedor</th>
+                  <th style={{ padding: "14px 20px" }}>Descrição / Centro Custo</th>
+                  <th style={{ padding: "14px 20px" }}>Forma / Recorrência</th>
+                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Valor</th>
+                  <th style={{ padding: "14px 20px" }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoices.filter(i => i.tipo === "despesa").map((inv) => {
+                  const linkedEvt = events.find(e => e.id === inv.eventoId);
+                  return (
+                    <tr key={inv.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td style={{ padding: "14px 20px" }}>
+                        <strong>{inv.vendor}</strong>
+                        <span style={{ display: "block", fontSize: "10px", color: "var(--text-muted)" }}>NF: {inv.invoiceNumber}</span>
+                      </td>
+                      <td style={{ padding: "14px 20px" }}>
+                        <span>{inv.description}</span>
+                        {linkedEvt && (
+                          <span style={{ display: "block", fontSize: "10px", color: "var(--accent)" }}>Centro de Custo: {linkedEvt.name}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "14px 20px", fontSize: "12px" }}>
+                        <span>{inv.formaPagamento}</span>
+                        {inv.recorrente ? (
+                          <span className="badge badge-warning" style={{ fontSize: "8px", marginLeft: "6px" }}>Mensal Recorrente</span>
+                        ) : (
+                          inv.parcelas && inv.parcelas > 1 && (
+                            <span className="badge badge-muted" style={{ fontSize: "8px", marginLeft: "6px" }}>{inv.parcelas}x Parcelado</span>
+                          )
+                        )}
+                      </td>
+                      <td style={{ padding: "14px 20px", textAlign: "right", fontWeight: "700", color: "var(--danger)" }}>
+                        - R$ {inv.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td style={{ padding: "14px 20px" }}>
+                        <span className={`badge badge-${inv.status === "pago" ? "success" : "warning"}`}>
+                          {inv.status.toUpperCase()}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Contas a Receber Tab */}
+      {activeSubTab === "receber" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>Faturamento Comercial &amp; Recebíveis</h4>
+            <button className="btn-primary" onClick={() => setIsInvoiceModalOpen(true)}>
+              <Plus size={16} /> Novo Contas a Receber
+            </button>
+          </div>
+
+          <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
+                  <th style={{ padding: "14px 20px" }}>Cliente / Contratante</th>
+                  <th style={{ padding: "14px 20px" }}>Descrição Faturamento</th>
+                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Valor Recebido</th>
+                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Valor Pendente</th>
+                  <th style={{ padding: "14px 20px" }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoices.filter(i => i.tipo === "receita").map((inv) => {
+                  const linkedEvt = events.find(e => e.id === inv.eventoId);
+                  const isLate = inv.status === "atrasado" || inv.inadimplente;
+                  return (
+                    <tr key={inv.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td style={{ padding: "14px 20px" }}>
+                        <strong>{inv.vendor}</strong>
+                        {isLate && (
+                          <span className="badge badge-danger" style={{ fontSize: "8px", marginLeft: "6px" }}>Inadimplente</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "14px 20px" }}>
+                        <span>{inv.description}</span>
+                        {linkedEvt && (
+                          <span style={{ display: "block", fontSize: "10px", color: "var(--accent)" }}>Projeto/OS: {linkedEvt.codigo}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "14px 20px", textAlign: "right", color: "var(--success-text)", fontWeight: "600" }}>
+                        R$ {(inv.recebimentoParcial || (inv.status === "pago" ? inv.value : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td style={{ padding: "14px 20px", textAlign: "right", fontWeight: "700" }}>
+                        R$ {(inv.value - (inv.recebimentoParcial || (inv.status === "pago" ? inv.value : 0))).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td style={{ padding: "14px 20px" }}>
+                        <span className={`badge badge-${inv.status === "pago" ? "success" : isLate ? "danger" : "warning"}`}>
+                          {inv.status.toUpperCase()}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Consulta de Boletos Tab */}
+      {activeSubTab === "boletos" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>Consulta Integrada de Boletos</h4>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <button className="btn-primary" onClick={() => setIsBoletoModalOpen(true)} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                <Plus size={14} /> Registrar Boleto Manual
+              </button>
+              <select 
+                value={boletoStatusFilter}
+                onChange={(e) => setBoletoStatusFilter(e.target.value as any)}
+                style={{ padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "white" }}
+              >
+                <option value="all">Filtrar por Status</option>
+                <option value="pago">Confirmados (Pagos)</option>
+                <option value="pendente">Abertos (Pendentes)</option>
+                <option value="atrasado">Vencidos (Atrasados)</option>
+                <option value="cancelado">Cancelados</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
+                  <th style={{ padding: "14px 20px" }}>Código / Linha Digitável</th>
+                  <th style={{ padding: "14px 20px" }}>Pagador (Cliente)</th>
+                  <th style={{ padding: "14px 20px" }}>Vencimento</th>
+                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Valor</th>
+                  <th style={{ padding: "14px 20px" }}>Anexos</th>
+                  <th style={{ padding: "14px 20px" }}>Status</th>
+                  <th style={{ padding: "14px 20px", textAlign: "center" }}>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {boletos.filter(b => {
+                  if (boletoStatusFilter === "all") return true;
+                  if (boletoStatusFilter === "atrasado") return b.status === "vencido";
+                  return b.status === boletoStatusFilter;
+                }).map((bol) => {
+                  return (
+                    <tr key={bol.id} style={{ borderBottom: "1px solid var(--border)", fontSize: "12px" }}>
+                      <td style={{ padding: "14px 20px", fontFamily: "monospace", maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis" }} title={bol.numero}>
+                        {bol.numero}
+                      </td>
+                      <td style={{ padding: "14px 20px" }}><strong>{bol.cliente}</strong></td>
+                      <td style={{ padding: "14px 20px" }}>{bol.vencimento}</td>
+                      <td style={{ padding: "14px 20px", textAlign: "right", fontWeight: "700" }}>
+                        R$ {bol.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td style={{ padding: "14px 20px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          {bol.pdfAnexoNome ? (
+                            <a href="#" onClick={(e) => { e.preventDefault(); alert(`Download do boleto PDF: ${bol.pdfAnexoNome}`); }} style={{ fontSize: "10px", color: "var(--accent)", textDecoration: "underline" }}>
+                              📄 Boleto PDF
+                            </a>
+                          ) : (
+                            <span className="text-muted" style={{ fontStyle: "italic", fontSize: "10px" }}>Sem PDF</span>
+                          )}
+                          {bol.comprovanteAnexoNome ? (
+                            <a href="#" onClick={(e) => { e.preventDefault(); alert(`Download do comprovante de pagamento: ${bol.comprovanteAnexoNome}`); }} style={{ fontSize: "10px", color: "var(--success-text)", textDecoration: "underline" }}>
+                              ✔ Comprovante
+                            </a>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td style={{ padding: "14px 20px" }}>
+                        <span className={`badge badge-${bol.status === "pago" ? "success" : bol.status === "vencido" ? "danger" : bol.status === "cancelado" ? "muted" : "warning"}`}>
+                          {bol.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td style={{ padding: "14px 20px", textAlign: "center" }}>
+                        <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
+                          <button 
+                            className="btn-secondary btn-xs"
+                            onClick={() => alert(`Histórico de logs do Boleto:\n\n${bol.historicoLogs.map((log: string, i: number) => `${i+1}. ${log}`).join("\n")}`)}
+                            title="Ver Histórico/Logs"
+                          >
+                            Histórico
+                          </button>
+                          {bol.status === "pendente" && (
+                            <button 
+                              className="btn-success btn-xs"
+                              onClick={() => handlePayBoleto(bol.id)}
+                            >
+                              Dar Baixa
+                            </button>
+                          )}
+                          {bol.status !== "cancelado" && bol.status !== "pago" && (
+                            <button 
+                              className="btn-danger btn-xs"
+                              onClick={() => handleCancelBoleto(bol.id)}
+                            >
+                              Cancelar
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Notas Fiscais Tab */}
+      {activeSubTab === "nfe" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>Histórico de Notas Fiscais Emitidas (SEFAZ)</h4>
+            <button className="btn-primary" onClick={() => setIsNfeModalOpen(true)}>
+              <Plus size={16} /> Emitir Nova Nota Fiscal
+            </button>
+          </div>
+
+          <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
+                  <th style={{ padding: "14px 20px" }}>Número / Série</th>
+                  <th style={{ padding: "14px 20px" }}>Cliente</th>
+                  <th style={{ padding: "14px 20px" }}>Tipo NF</th>
+                  <th style={{ padding: "14px 20px" }}>Itens Faturados</th>
+                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Valor</th>
+                  <th style={{ padding: "14px 20px" }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {nfs.map((nf) => {
+                  return (
+                    <tr key={nf.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td style={{ padding: "14px 20px", fontFamily: "monospace", fontSize: "12px" }}>
+                        NF {nf.numero} {nf.serie && `(Série ${nf.serie})`}
+                        <span style={{ display: "block", fontSize: "9px", color: "var(--text-muted)" }}>Emissão: {nf.dataEmissao}</span>
+                        {/* 3.1 file links */}
+                        <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
+                          {nf.pdfAnexoNome ? (
+                            <a href="#" onClick={(e) => { e.preventDefault(); alert(`Simulando download do PDF da Nota Fiscal: ${nf.pdfAnexoNome}`); }} style={{ fontSize: "9px", color: "var(--accent)", textDecoration: "underline" }}>
+                              PDF
+                            </a>
+                          ) : (
+                            <span style={{ fontSize: "9px", color: "var(--text-muted)", fontStyle: "italic" }}>Sem PDF</span>
+                          )}
+                          {nf.xmlAnexoNome ? (
+                            <a href="#" onClick={(e) => { e.preventDefault(); alert(`Simulando download do XML da Nota Fiscal: ${nf.xmlAnexoNome}`); }} style={{ fontSize: "9px", color: "var(--accent-secondary)", textDecoration: "underline" }}>
+                              XML
+                            </a>
+                          ) : (
+                            <span style={{ fontSize: "9px", color: "var(--text-muted)", fontStyle: "italic" }}>Sem XML</span>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ padding: "14px 20px" }}><strong>{nf.cliente}</strong></td>
+                      <td style={{ padding: "14px 20px" }}>
+                        <span className="badge badge-muted" style={{ fontSize: "10px" }}>{nf.tipo}</span>
+                      </td>
+                      <td style={{ padding: "14px 20px", fontSize: "12px", maxWidth: "250px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {nf.produtos.join(", ")}
+                      </td>
+                      <td style={{ padding: "14px 20px", textAlign: "right", fontWeight: "700" }}>
+                        R$ {nf.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td style={{ padding: "14px 20px" }}>
+                        <span className={`badge badge-${nf.status === "emitida" ? "success" : "danger"}`}>
+                          {nf.status === "emitida" ? "HOMOLOGADA" : "CANCELADA"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -768,6 +1305,30 @@ export default function Financial({
                 </select>
               </div>
 
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Número de Parcelas</label>
+                  <input type="number" min="1" max="24" value={parcelas} onChange={(e) => setParcelas(parseInt(e.target.value) || 1)} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text-primary)" }} />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "20px" }}>
+                  <input type="checkbox" checked={recorrente} onChange={(e) => setRecorrente(e.target.checked)} id="cbRecorrente" />
+                  <label htmlFor="cbRecorrente" style={{ fontSize: "12px", fontWeight: "600", cursor: "pointer" }}>Despesa Recorrente</label>
+                </div>
+              </div>
+
+              {tipo === "receita" && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", borderTop: "1px solid var(--border)", paddingTop: "10px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Valor Recebido Parcial</label>
+                    <input type="number" min="0" value={recebimentoParcial} onChange={(e) => setRecebimentoParcial(parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text-primary)" }} />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "20px" }}>
+                    <input type="checkbox" checked={inadimplente} onChange={(e) => setInadimplente(e.target.checked)} id="cbInadimplente" />
+                    <label htmlFor="cbInadimplente" style={{ fontSize: "12px", fontWeight: "600", color: "var(--danger)", cursor: "pointer" }}>Inadimplência Ativa</label>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Descrição do Material / Insumos</label>
                 <textarea 
@@ -797,7 +1358,7 @@ export default function Financial({
           >
             {/* Left Column: Form Edits */}
             <div>
-              <div style={{ display: "flex", justifySpaceBetween: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: "600", color: "var(--accent)" }}>Editar Transação Financeira</h3>
               </div>
 
@@ -891,7 +1452,7 @@ export default function Financial({
               <div>
                 <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Boleto PDF</label>
                 {selectedInvoice.pdfBoleto ? (
-                  <div style={{ display: "flex", alignItems: "center", justifySpaceBetween: "space-between", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", backgroundColor: "var(--bg-main)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", backgroundColor: "var(--bg-main)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
                       <FileText size={14} style={{ color: "var(--accent-secondary)" }} />
                       <span style={{ fontSize: "11px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{selectedInvoice.pdfBoleto}</span>
@@ -911,7 +1472,7 @@ export default function Financial({
               <div>
                 <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Nota Fiscal NFe (PDF / XML)</label>
                 {selectedInvoice.pdfNFe ? (
-                  <div style={{ display: "flex", alignItems: "center", justifySpaceBetween: "space-between", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", backgroundColor: "var(--bg-main)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", backgroundColor: "var(--bg-main)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
                       <FileText size={14} style={{ color: "var(--success-text)" }} />
                       <span style={{ fontSize: "11px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{selectedInvoice.pdfNFe}</span>
@@ -939,7 +1500,7 @@ export default function Financial({
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px", overflowY: "auto", maxHeight: "100px" }}>
                   {selectedInvoice.anexos && selectedInvoice.anexos.length > 0 ? (
                     selectedInvoice.anexos.map(anx => (
-                      <div key={anx.id} style={{ display: "flex", justifySpaceBetween: "space-between", alignItems: "center", padding: "6px 8px", border: "1px solid var(--border)", borderRadius: "6px", background: "#fff", fontSize: "10px" }}>
+                      <div key={anx.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", border: "1px solid var(--border)", borderRadius: "6px", background: "#fff", fontSize: "10px" }}>
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexGrow: 1 }}>{anx.name}</span>
                         <button onClick={() => handleDeleteAnexo(anx.id)} style={{ border: "none", background: "none", color: "var(--danger)", cursor: "pointer", marginLeft: "6px" }}><Trash2 size={10} /></button>
                       </div>
@@ -951,6 +1512,141 @@ export default function Financial({
               </div>
 
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Emitir Nova Nota Fiscal (NF-e, NFS-e, NFC-e) */}
+      {isNfeModalOpen && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "480px", boxShadow: "var(--shadow-lg)" }}>
+            <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>Registrar Nota Fiscal Comercial</h3>
+            
+            <form onSubmit={handleEmitNFe} style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Tipo de Nota</label>
+                  <select 
+                    value={nfTipo} 
+                    onChange={(e) => setNfTipo(e.target.value as any)}
+                    style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }}
+                  >
+                    <option value="NF-e">NF-e (Venda/Produtos)</option>
+                    <option value="NFS-e">NFS-e (Serviços Cenografia)</option>
+                    <option value="NFC-e">NFC-e (Consumidor Rápida)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Valor Total da Nota (R$)</label>
+                  <input type="number" min="1" value={nfValor} onChange={(e) => setNfValor(parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} required />
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Número NF</label>
+                  <input type="text" value={nfNumeroInput} onChange={(e) => setNfNumeroInput(e.target.value)} placeholder="Ex: 000.123.456" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Série</label>
+                  <input type="text" value={nfSerieInput} onChange={(e) => setNfSerieInput(e.target.value)} placeholder="Ex: 1" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Data de Emissão</label>
+                  <input type="date" value={nfDataInput} onChange={(e) => setNfDataInput(e.target.value)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Vincular a OS / Projeto</label>
+                  <select 
+                    value={nfOS} 
+                    onChange={(e) => setNfOS(e.target.value)}
+                    style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }}
+                  >
+                    <option value="">Não vincular a OS</option>
+                    {events.map(e => (
+                      <option key={e.id} value={e.id}>{e.name} ({e.client})</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Razão Social / Cliente Tomador</label>
+                <input type="text" value={nfCliente} onChange={(e) => setNfCliente(e.target.value)} required placeholder="Ex: Honda Automóveis Ltda" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Descrever Produtos / Serviços (separados por vírgula)</label>
+                <input type="text" value={nfProdutos} onChange={(e) => setNfProdutos(e.target.value)} required placeholder="Ex: Cenografia Stand Honda, Locação de mobiliário" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Simular XML Anexo</label>
+                  <input type="text" value={nfXmlInput} onChange={(e) => setNfXmlInput(e.target.value)} placeholder="Ex: nfe_honda.xml" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Simular PDF Anexo</label>
+                  <input type="text" value={nfPdfInput} onChange={(e) => setNfPdfInput(e.target.value)} placeholder="Ex: nfe_honda.pdf" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
+                <button type="button" className="btn-secondary" onClick={() => setIsNfeModalOpen(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary">Homologar Nota</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Registrar Novo Boleto Manual */}
+      {isBoletoModalOpen && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "480px", boxShadow: "var(--shadow-lg)" }}>
+            <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>Registrar Boleto Bancário Manual</h3>
+            
+            <form onSubmit={handleAddBoleto} style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "12px" }}>
+              <div>
+                <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Sacado / Sacador (Cliente Pagador)</label>
+                <input type="text" value={bolCliente} onChange={(e) => setBolCliente(e.target.value)} required placeholder="Ex: Honda Automóveis Ltda" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Valor do Boleto (R$)</label>
+                  <input type="number" min="1" value={bolValor} onChange={(e) => setBolValor(parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} required />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Data de Vencimento</label>
+                  <input type="date" value={bolVencimento} onChange={(e) => setBolVencimento(e.target.value)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} required />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Linha Digitável / Código de Barras (Opcional)</label>
+                <input type="text" value={bolNumero} onChange={(e) => setBolNumero(e.target.value)} placeholder="Ex: 34191.79001 01043..." style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Simular Boleto PDF</label>
+                  <input type="text" value={bolPdf} onChange={(e) => setBolPdf(e.target.value)} placeholder="Ex: boleto_honda_feicon.pdf" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Simular Comprovante PDF</label>
+                  <input type="text" value={bolComprovante} onChange={(e) => setBolComprovante(e.target.value)} placeholder="Ex: comprovante_honda.pdf" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "16px" }}>
+                <button type="button" className="btn-secondary" onClick={() => setIsBoletoModalOpen(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary">Registrar Boleto</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
