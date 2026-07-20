@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   LayoutDashboard, Briefcase, Archive, Users, LogOut, 
   Building2, DollarSign, Truck, Bot, Shield, FileText, CheckSquare, Calendar,
-  Sun, Moon, Bell, ClipboardCheck, Search, Settings, ChevronDown, Plus, Eye
+  Sun, Moon, Bell, ClipboardCheck, Search, Settings, ChevronDown, Plus, Eye,
+  AlertTriangle
 } from "lucide-react";
 import "./Dashboard.css";
+import "./Mobile.css";
+import logoImg from "./assets/logo.png";
 
 // Import our custom subcomponents
 import Overview from "./components/Overview";
@@ -20,6 +23,8 @@ import Auditoria from "./components/Auditoria";
 import Orcamentos from "./components/Orcamentos";
 import OrdensServico from "./components/OrdensServico";
 import Agenda from "./components/Agenda";
+import TasksModule from "./components/TasksModule";
+import Notifications from "./components/Notifications";
 
 // Import shared types
 import type { 
@@ -610,9 +615,18 @@ const INITIAL_AUDIT_LOGS: AuditoriaLog[] = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<
-    "overview" | "crm" | "orcamentos" | "os" | "kanban" | "agenda" | "warehouse" | "employees" | "financial" | "logistics" | "auditoria"
+    "overview" | "crm" | "orcamentos" | "os" | "kanban" | "agenda" | "tarefas" | "warehouse" | "employees" | "financial" | "logistics" | "auditoria" | "notifications"
   >("overview");
+  const [showMobileMoreMenu, setShowMobileMoreMenu] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+
+  // Detect mobile screen — updates on resize so layout switches cleanly
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [globalSearch, setGlobalSearch] = useState("");
@@ -660,7 +674,8 @@ export default function App() {
     logistics: true,
     financial: true,
     employees: true,
-    auditoria: true
+    auditoria: true,
+    notifications: true
   });
   
   // App Global State
@@ -671,6 +686,12 @@ export default function App() {
   const [leads, setLeads] = useState<LeadCRM[]>(INITIAL_LEADS);
   const [vehicles, setVehicles] = useState<VeiculoLogistica[]>(INITIAL_VEHICLES);
   const [auditLogs, setAuditLogs] = useState<AuditoriaLog[]>(INITIAL_AUDIT_LOGS);
+  const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>({
+    admin: ["overview", "crm", "orcamentos", "os", "kanban", "agenda", "warehouse", "logistics", "financial", "employees", "auditoria", "notifications", "tarefas"],
+    comercial: ["overview", "crm", "orcamentos", "agenda", "notifications"],
+    estoque: ["overview", "warehouse", "logistics", "agenda", "notifications"],
+    operador: ["overview", "os", "kanban", "agenda", "notifications", "tarefas"]
+  });
 
   const [clientes, setClientes] = useState(INITIAL_CLIENTS);
   const [fornecedores, setFornecedores] = useState(INITIAL_SUPPLIERS);
@@ -801,16 +822,8 @@ export default function App() {
   const hasAccess = (tab: string) => {
     if (!activeModules[tab]) return false;
     if (userRole === "admin") return true;
-    if (userRole === "comercial") {
-      return ["overview", "crm", "orcamentos", "agenda"].includes(tab);
-    }
-    if (userRole === "estoque") {
-      return ["overview", "warehouse", "logistics", "agenda"].includes(tab);
-    }
-    if (userRole === "operador") {
-      return ["overview", "os", "kanban", "agenda"].includes(tab);
-    }
-    return false;
+    const allowed = rolePermissions[userRole] || [];
+    return allowed.includes(tab);
   };
 
   // Add Event
@@ -1091,18 +1104,42 @@ export default function App() {
 
   if (!isLoggedIn) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", backgroundColor: "var(--bg-main)", fontFamily: "var(--font)", padding: "20px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", backgroundColor: "var(--bg-main)", fontFamily: "var(--font)", padding: "20px", position: "relative" }}>
+        {/* Floating Theme Switcher on Login Screen */}
+        <button 
+          type="button" 
+          onClick={toggleTheme} 
+          title={theme === "light" ? "Mudar para Modo Escuro" : "Mudar para Modo Claro"}
+          style={{
+            position: "absolute",
+            top: "24px",
+            right: "24px",
+            backgroundColor: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: "50%",
+            width: "42px",
+            height: "42px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            boxShadow: "var(--shadow-md)",
+            color: "var(--text-primary)",
+            transition: "var(--transition)"
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-card-hover)")}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-card)")}
+        >
+          {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+        </button>
+
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "40px", width: "100%", maxWidth: "420px", boxShadow: "var(--shadow-lg)", textAlign: "center", display: "flex", flexDirection: "column", gap: "24px" }}>
           
           {/* Logo JC Eventos */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
-            <svg width="60" height="60" viewBox="0 0 100 100" fill="none">
-              <rect width="100" height="100" rx="22" fill="var(--accent)" />
-              <path d="M35 30H52V60C52 66 47 70 40 70" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M72 35H58C52 35 48 40 48 48C48 56 52 61 58 61H72" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="80" cy="72" r="8" fill="var(--accent-secondary)" />
-            </svg>
-            <h1 style={{ fontSize: "22px", fontWeight: "800", letterSpacing: "1px", color: "var(--accent)", margin: 0 }}>JC EVENTOS</h1>
+            <div style={{ backgroundColor: "#144580", padding: "12px 24px", borderRadius: "12px", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+              <img src={logoImg} alt="JC Eventos" style={{ height: "35px", objectFit: "contain" }} />
+            </div>
             <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Controll-All ERP Portal</span>
           </div>
 
@@ -1162,18 +1199,12 @@ export default function App() {
   }
 
   return (
-    <div className="layout-wrapper">
+    <div className="layout-wrapper" data-mobile={isMobile ? "true" : undefined}>
       {/* Top Navigation Bar */}
       <header className="top-nav">
         <div className="top-nav-left">
           <a href="#" className="top-nav-logo" onClick={(e) => { e.preventDefault(); setActiveTab("overview"); }} style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-            <svg width="26" height="26" viewBox="0 0 100 100" fill="none" style={{ marginRight: "8px" }}>
-              <rect width="100" height="100" rx="22" fill="rgba(255,255,255,0.15)" />
-              <path d="M35 30H52V60C52 66 47 70 40 70" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M72 35H58C52 35 48 40 48 48C48 56 52 61 58 61H72" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="80" cy="72" r="8" fill="#C95D46" />
-            </svg>
-            <span style={{ fontWeight: "800", letterSpacing: "0.5px", color: "#ffffff" }}>JC EVENTOS</span>
+            <img src={logoImg} alt="JC Eventos" style={{ height: "26px", objectFit: "contain", marginRight: "8px" }} />
             <span style={{ fontSize: "10px", fontWeight: "400", color: "rgba(255,255,255,0.45)", marginLeft: "8px", borderLeft: "1px solid rgba(255,255,255,0.2)", paddingLeft: "8px", letterSpacing: "0.5px" }}>Controll-All</span>
           </a>
 
@@ -1182,18 +1213,18 @@ export default function App() {
             <button
               className={`menu-group-btn ${activeTab === "overview" ? "active" : ""}`}
               onClick={() => setActiveTab("overview")}
-              title="Dashboard"
+              title="Dashboard / Painel Geral"
             >
-              <LayoutDashboard size={14} /> Dashboard
+              <LayoutDashboard size={14} /> <span className="nav-text">Dashboard</span>
             </button>
 
             {hasAccess("kanban") && (
               <button
                 className={`menu-group-btn ${activeTab === "kanban" ? "active" : ""}`}
                 onClick={() => setActiveTab("kanban")}
-                title="Projetos / Kanban de Stands"
+                title="Quadro de Montagem & Projetos de Estandes"
               >
-                <Briefcase size={14} /> Projetos
+                <Briefcase size={14} /> <span className="nav-text">Montagem</span>
               </button>
             )}
 
@@ -1201,9 +1232,9 @@ export default function App() {
               <button
                 className={`menu-group-btn ${activeTab === "crm" ? "active" : ""}`}
                 onClick={() => setActiveTab("crm")}
-                title="CRM & Clientes"
+                title="CRM / Gestão de Oportunidades & Clientes"
               >
-                <Building2 size={14} /> CRM
+                <Building2 size={14} /> <span className="nav-text">CRM</span>
               </button>
             )}
 
@@ -1211,9 +1242,9 @@ export default function App() {
               <button
                 className={`menu-group-btn ${activeTab === "orcamentos" ? "active" : ""}`}
                 onClick={() => setActiveTab("orcamentos")}
-                title="Propostas Comerciais"
+                title="Orçamentos & Propostas"
               >
-                <FileText size={14} /> Propostas
+                <FileText size={14} /> <span className="nav-text">Orçamentos</span>
               </button>
             )}
 
@@ -1221,19 +1252,19 @@ export default function App() {
               <button
                 className={`menu-group-btn ${(activeTab === "os" || activeTab === "agenda") ? "active" : ""}`}
                 onClick={() => setActiveTab("os")}
-                title="Ordens de Serviço"
+                title="Ordens de Serviço (OS) & Vistorias"
               >
-                <CheckSquare size={14} /> OS
+                <CheckSquare size={14} /> <span className="nav-text">Ordens (OS)</span>
               </button>
             )}
 
             {hasAccess("warehouse") && (
               <button
-                className={`menu-group-btn ${(activeTab === "warehouse" || activeTab === "logistics") ? "active" : ""}`}
+                className={`menu-group-btn ${activeTab === "warehouse" ? "active" : ""}`}
                 onClick={() => setActiveTab("warehouse")}
-                title="Depósito & WMS"
+                title="Almoxarifado & Estoque WMS"
               >
-                <Archive size={14} /> Depósito
+                <Archive size={14} /> <span className="nav-text">Estoque</span>
               </button>
             )}
 
@@ -1241,9 +1272,9 @@ export default function App() {
               <button
                 className={`menu-group-btn ${activeTab === "financial" ? "active" : ""}`}
                 onClick={() => setActiveTab("financial")}
-                title="Financeiro"
+                title="Financeiro & Custos"
               >
-                <DollarSign size={14} /> Financeiro
+                <DollarSign size={14} /> <span className="nav-text">Financeiro</span>
               </button>
             )}
 
@@ -1251,9 +1282,9 @@ export default function App() {
               <button
                 className={`menu-group-btn ${activeTab === "employees" ? "active" : ""}`}
                 onClick={() => setActiveTab("employees")}
-                title="Equipe & RH"
+                title="Equipe, Escalas & Credenciamento"
               >
-                <Users size={14} /> Equipe
+                <Users size={14} /> <span className="nav-text">Equipe</span>
               </button>
             )}
 
@@ -1261,9 +1292,9 @@ export default function App() {
               <button
                 className={`menu-group-btn ${activeTab === "logistics" ? "active" : ""}`}
                 onClick={() => setActiveTab("logistics")}
-                title="Logística & Viagens"
+                title="Logística, Frota & Viagens"
               >
-                <Truck size={14} /> Logística
+                <Truck size={14} /> <span className="nav-text">Logística</span>
               </button>
             )}
           </nav>
@@ -1284,7 +1315,7 @@ export default function App() {
 
           {/* Theme switcher */}
           <button 
-            className="top-nav-icon-btn" 
+            className="top-nav-icon-btn theme-toggle-btn" 
             onClick={toggleTheme} 
             title={theme === "light" ? "Mudar para Modo Escuro" : "Mudar para Modo Claro"}
           >
@@ -1302,12 +1333,8 @@ export default function App() {
 
           {/* Quick task checklist access */}
           <button 
-            className="top-nav-icon-btn" 
-            onClick={() => {
-              const pendingChecklist = events.flatMap(evt => evt.checklist.filter(c => !c.done).map(c => `${evt.name}: ${c.text}`));
-              alert(`Tarefas Operacionais Pendentes (${pendingChecklist.length}):\n\n` + 
-                (pendingChecklist.length > 0 ? pendingChecklist.slice(0, 8).map((t, idx) => `${idx + 1}. ${t}`).join("\n") + (pendingChecklist.length > 8 ? "\n...e mais." : "") : "Nenhuma tarefa pendente!"));
-            }}
+            className={`top-nav-icon-btn ${activeTab === "tarefas" ? "active" : ""}`} 
+            onClick={() => setActiveTab("tarefas")}
             title="Tarefas Pendentes"
           >
             <ClipboardCheck size={18} />
@@ -1320,14 +1347,8 @@ export default function App() {
 
           {/* Notifications */}
           <button 
-            className="top-nav-icon-btn" 
-            onClick={() => {
-              const notifications = [];
-              if (lowStockCount > 0) notifications.push(`⚠️ Estoque Crítico: ${lowStockCount} itens abaixo do mínimo.`);
-              if (pendingDocsCount > 0) notifications.push(`📄 Documentação: ${pendingDocsCount} documentos de projetos pendentes.`);
-              notifications.push("📅 Agenda: Estande Feicon 2026 inicia montagem em breve.");
-              alert(`Painel de Notificações:\n\n` + notifications.map((n, idx) => `${idx + 1}. ${n}`).join("\n"));
-            }}
+            className={`top-nav-icon-btn ${activeTab === "notifications" ? "active" : ""}`} 
+            onClick={() => setActiveTab("notifications")}
             title="Notificações"
           >
             <Bell size={18} />
@@ -1392,17 +1413,19 @@ export default function App() {
         {/* Header */}
         <header className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "none", padding: "20px 24px 0 24px", background: "none", height: "auto" }}>
           <h2 className="page-title" style={{ fontSize: "20px", fontWeight: "700" }}>
-            {activeTab === "overview" && "Painel Executivo da JC Eventos"}
-            {activeTab === "crm" && "Gestão de Oportunidades & Leads"}
-            {activeTab === "orcamentos" && "Propostas Comerciais & Orçamentos"}
-            {activeTab === "os" && "Ordens de Serviço & Checklist Técnico"}
-            {activeTab === "kanban" && "Quadro Operacional de Montagem"}
-            {activeTab === "agenda" && "Calendário Integrado da JC"}
-            {activeTab === "warehouse" && "Depósito, Organização Física & WMS"}
-            {activeTab === "employees" && "Ficha de Equipe & Certificações NRs"}
-            {activeTab === "financial" && "Contabilidade, Caixa & Centro de Custos"}
-            {activeTab === "logistics" && "Coordenação de Frota, Voo & Hospedagem"}
-            {activeTab === "auditoria" && "Trilha de Segurança e Auditoria Geral"}
+            {activeTab === "overview" && "Painel Executivo (JC Eventos)"}
+            {activeTab === "crm" && "CRM & Oportunidades de Clientes"}
+            {activeTab === "orcamentos" && "Orçamentos, Propostas & Negociações"}
+            {activeTab === "os" && "Ordens de Serviço (OS) & Inspeção"}
+            {activeTab === "kanban" && "Quadro de Montagem & Projetos de Estandes"}
+            {activeTab === "agenda" && "Calendário Integrado & Escalas"}
+            {activeTab === "tarefas" && "Controle de Tarefas Operacionais (Checklist)"}
+            {activeTab === "warehouse" && "Almoxarifado & Controle de Estoque WMS"}
+            {activeTab === "employees" && "Equipe, RH & Certificações NR"}
+            {activeTab === "financial" && "Financeiro, Fluxo de Caixa & Custos"}
+            {activeTab === "logistics" && "Logística, Frota & Viagens"}
+            {activeTab === "auditoria" && "Segurança, Trilha de Auditoria & Configurações"}
+            {activeTab === "notifications" && "Central de Notificações, Alertas & Ações Rápidas"}
           </h2>
         </header>
 
@@ -1473,6 +1496,13 @@ export default function App() {
             />
           )}
 
+          {activeTab === "tarefas" && (
+            <TasksModule 
+              events={events}
+              onUpdateEvent={updateEventDetails}
+            />
+          )}
+
           {activeTab === "warehouse" && (
             <WmsModule 
               items={warehouseItems}
@@ -1513,9 +1543,26 @@ export default function App() {
           )}
 
 
+          {activeTab === "notifications" && (
+            <Notifications 
+              warehouseItems={warehouseItems}
+              events={events}
+              employees={employees}
+              userRole={userRole}
+              onUpdateStock={updateStock}
+              onUpdateEvent={updateEventDetails}
+              onToggleDocStatus={toggleDocStatus}
+              onNavigateToTab={(tab) => setActiveTab(tab as any)}
+            />
+          )}
+
           {activeTab === "auditoria" && (
             <Auditoria 
               logs={auditLogs}
+              rolePermissions={rolePermissions}
+              setRolePermissions={setRolePermissions}
+              userRole={userRole}
+              setUserRole={setUserRole}
             />
           )}
         </section>
@@ -1583,6 +1630,149 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* Bottom Navigation for Mobile Devices */}
+      <nav className="bottom-nav">
+        <button 
+          className={`bottom-nav-item ${activeTab === "overview" ? "active" : ""}`}
+          onClick={() => { setActiveTab("overview"); setShowMobileMoreMenu(false); }}
+        >
+          <LayoutDashboard size={20} />
+          <span>Início</span>
+        </button>
+        <button 
+          className={`bottom-nav-item ${activeTab === "kanban" ? "active" : ""}`}
+          onClick={() => { setActiveTab("kanban"); setShowMobileMoreMenu(false); }}
+        >
+          <Briefcase size={20} />
+          <span>Quadro</span>
+        </button>
+        <button 
+          className={`bottom-nav-item ${activeTab === "os" ? "active" : ""}`}
+          onClick={() => { setActiveTab("os"); setShowMobileMoreMenu(false); }}
+        >
+          <CheckSquare size={20} />
+          <span>OS</span>
+        </button>
+        <button 
+          className={`bottom-nav-item ${activeTab === "warehouse" ? "active" : ""}`}
+          onClick={() => { setActiveTab("warehouse"); setShowMobileMoreMenu(false); }}
+        >
+          <Archive size={20} />
+          <span>Estoque</span>
+        </button>
+        <button 
+          className={`bottom-nav-item ${activeTab === "employees" ? "active" : ""}`}
+          onClick={() => { setActiveTab("employees"); setShowMobileMoreMenu(false); }}
+        >
+          <Users size={20} />
+          <span>Equipe</span>
+        </button>
+        <button 
+          className={`bottom-nav-item ${["financial", "logistics", "crm", "orcamentos", "auditoria"].includes(activeTab) || showMobileMoreMenu ? "active" : ""}`}
+          onClick={() => setShowMobileMoreMenu(prev => !prev)}
+        >
+          <Settings size={20} />
+          <span>Mais</span>
+        </button>
+      </nav>
+
+      {/* Popover de Módulos adicionais para celular */}
+      {showMobileMoreMenu && (
+        <div 
+          style={{
+            position: "fixed",
+            bottom: "74px",
+            right: "12px",
+            backgroundColor: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: "12px",
+            boxShadow: "var(--shadow-lg)",
+            padding: "8px",
+            zIndex: 1001,
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+            minWidth: "180px"
+          }}
+        >
+          <div style={{ padding: "6px 12px", fontSize: "10px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase", borderBottom: "1px solid var(--border)" }}>
+            Outros Módulos
+          </div>
+          {hasAccess("crm") && (
+            <button 
+              className={`dropdown-item ${activeTab === "crm" ? "active" : ""}`}
+              onClick={() => { setActiveTab("crm"); setShowMobileMoreMenu(false); }}
+              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
+            >
+              <Building2 size={14} /> CRM & Clientes
+            </button>
+          )}
+          {hasAccess("orcamentos") && (
+            <button 
+              className={`dropdown-item ${activeTab === "orcamentos" ? "active" : ""}`}
+              onClick={() => { setActiveTab("orcamentos"); setShowMobileMoreMenu(false); }}
+              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
+            >
+              <FileText size={14} /> Orçamentos & Propostas
+            </button>
+          )}
+          {hasAccess("financial") && (
+            <button 
+              className={`dropdown-item ${activeTab === "financial" ? "active" : ""}`}
+              onClick={() => { setActiveTab("financial"); setShowMobileMoreMenu(false); }}
+              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
+            >
+              <DollarSign size={14} /> Financeiro & Custos
+            </button>
+          )}
+          {hasAccess("logistics") && (
+            <button 
+              className={`dropdown-item ${activeTab === "logistics" ? "active" : ""}`}
+              onClick={() => { setActiveTab("logistics"); setShowMobileMoreMenu(false); }}
+              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
+            >
+              <Truck size={14} /> Logística & Frota
+            </button>
+          )}
+          {hasAccess("auditoria") && (
+            <button 
+              className={`dropdown-item ${activeTab === "auditoria" ? "active" : ""}`}
+              onClick={() => { setActiveTab("auditoria"); setShowMobileMoreMenu(false); }}
+              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
+            >
+              <Shield size={14} /> Auditoria & Configs
+            </button>
+          )}
+          {hasAccess("agenda") && (
+            <button 
+              className={`dropdown-item ${activeTab === "agenda" ? "active" : ""}`}
+              onClick={() => { setActiveTab("agenda"); setShowMobileMoreMenu(false); }}
+              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
+            >
+              <Calendar size={14} /> Agenda do Dia
+            </button>
+          )}
+          {hasAccess("tarefas") && (
+            <button 
+              className={`dropdown-item ${activeTab === "tarefas" ? "active" : ""}`}
+              onClick={() => { setActiveTab("tarefas"); setShowMobileMoreMenu(false); }}
+              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
+            >
+              <ClipboardCheck size={14} /> Checklist de Tarefas
+            </button>
+          )}
+          {hasAccess("notifications") && (
+            <button 
+              className={`dropdown-item ${activeTab === "notifications" ? "active" : ""}`}
+              onClick={() => { setActiveTab("notifications"); setShowMobileMoreMenu(false); }}
+              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
+            >
+              <Bell size={14} /> Central de Notificações
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

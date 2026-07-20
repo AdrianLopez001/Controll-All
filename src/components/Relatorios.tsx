@@ -87,7 +87,7 @@ export default function Relatorios({
     <div style={{ padding: "10px" }}>
       {/* Top statistics summary row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", marginBottom: "24px" }}>
-        <div style={{ background: "white", padding: "16px", borderRadius: "12px", border: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ background: "var(--bg-card)", color: "var(--text-primary)", padding: "16px", borderRadius: "12px", border: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "12px" }}>
           <div style={{ padding: "8px", background: "var(--accent-glow)", color: "var(--accent)", borderRadius: "8px" }}>
             <DollarSign size={20} />
           </div>
@@ -97,7 +97,7 @@ export default function Relatorios({
           </div>
         </div>
 
-        <div style={{ background: "white", padding: "16px", borderRadius: "12px", border: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ background: "var(--bg-card)", color: "var(--text-primary)", padding: "16px", borderRadius: "12px", border: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "12px" }}>
           <div style={{ padding: "8px", background: "var(--danger-glow)", color: "var(--danger)", borderRadius: "8px" }}>
             <TrendingUp size={20} />
           </div>
@@ -107,7 +107,7 @@ export default function Relatorios({
           </div>
         </div>
 
-        <div style={{ background: "white", padding: "16px", borderRadius: "12px", border: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ background: "var(--bg-card)", color: "var(--text-primary)", padding: "16px", borderRadius: "12px", border: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "12px" }}>
           <div style={{ padding: "8px", background: "var(--success-glow)", color: "var(--success-text)", borderRadius: "8px" }}>
             <ShieldCheck size={20} />
           </div>
@@ -117,7 +117,7 @@ export default function Relatorios({
           </div>
         </div>
 
-        <div style={{ background: "white", padding: "16px", borderRadius: "12px", border: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ background: "var(--bg-card)", color: "var(--text-primary)", padding: "16px", borderRadius: "12px", border: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "12px" }}>
           <div style={{ padding: "8px", background: "var(--warning-glow)", color: "var(--warning)", borderRadius: "8px" }}>
             <Archive size={20} />
           </div>
@@ -193,7 +193,7 @@ export default function Relatorios({
                   const profit = e.valorContratado - e.custoRealizado;
                   const profitPercent = e.valorContratado > 0 ? (profit / e.valorContratado) * 100 : 0;
                   return (
-                    <div key={e.id} style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "12px", background: "white" }}>
+                    <div key={e.id} style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "12px", background: "var(--bg-card)", color: "var(--text-primary)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "13px" }}>
                         <strong>{e.name}</strong>
                         <span className="semibold" style={{ color: profit > 0 ? "var(--success-text)" : "var(--danger)" }}>
@@ -254,7 +254,7 @@ export default function Relatorios({
             <div>
               <h4 className="text-sm font-semibold" style={{ marginBottom: "12px" }}>Alertas do Almoxarifado / Estoque Mínimo</h4>
               <div className="table-responsive">
-                <table className="data-table">
+                <table className="sheet-table">
                   <thead>
                     <tr>
                       <th>Código</th>
@@ -269,11 +269,11 @@ export default function Relatorios({
                       const isLow = item.stock <= item.stockMinimo;
                       return (
                         <tr key={item.id} style={{ background: isLow ? "var(--warning-glow)" : "none" }}>
-                          <td><strong>{item.codigo}</strong></td>
-                          <td>{item.name}</td>
-                          <td><strong>{item.stock} unid</strong></td>
-                          <td>{item.stockMinimo} unid</td>
-                          <td>
+                          <td data-label="Código"><strong>{item.codigo}</strong></td>
+                          <td data-label="Material">{item.name}</td>
+                          <td data-label="Estoque Físico"><strong>{item.stock} unid</strong></td>
+                          <td data-label="Estoque Mínimo">{item.stockMinimo} unid</td>
+                          <td data-label="Status">
                             <span className={`badge badge-${isLow ? "danger" : "success"}`} style={{ fontSize: "9px" }}>
                               {isLow ? "ESTOQUE BAIXO" : "ABASTECIDO"}
                             </span>
@@ -301,7 +301,7 @@ export default function Relatorios({
                 {exportLoading === "wms" ? "Processando..." : <><Download size={16} /> Exportar Inventário Físico do Galpão (CSV)</>}
               </button>
 
-              <div style={{ padding: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "white", fontSize: "11px", color: "var(--text-secondary)" }}>
+              <div style={{ padding: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", color: "var(--text-primary)", fontSize: "11px" }}>
                 <strong>Patrimônio totalizado:</strong>
                 <p style={{ marginTop: "4px" }}>• Ferramentas e andaimes ativos: <strong>{warehouseItems.filter(i => i.type === "tool").length} modelos</strong></p>
                 <p>• Itens de mobília cenográfica: <strong>{warehouseItems.filter(i => i.type === "furniture").length} modelos</strong></p>
@@ -327,7 +327,7 @@ export default function Relatorios({
                   };
 
                   return (
-                    <div key={emp.id} style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "12px", background: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div key={emp.id} style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "12px", background: "var(--bg-card)", color: "var(--text-primary)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         <div style={{ 
                           width: "24px", 
@@ -378,7 +378,7 @@ export default function Relatorios({
                 {exportLoading === "staff" ? "Processando..." : <><Download size={16} /> Exportar Produtividade e Diárias (CSV)</>}
               </button>
 
-              <div style={{ padding: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "white", fontSize: "11px", color: "var(--text-secondary)" }}>
+              <div style={{ padding: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", color: "var(--text-primary)", fontSize: "11px" }}>
                 <strong>Indicadores de RH JC Eventos:</strong>
                 <p style={{ marginTop: "4px" }}>• Total homologado no sistema: <strong>{employees.length} montadores</strong></p>
                 <p>• Certificados NR-35 em dia: <strong>{employees.filter(e => e.hasSafetyCert).length} colaboradores</strong></p>

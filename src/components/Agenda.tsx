@@ -352,8 +352,7 @@ export default function Agenda({
             {dayItems.slice(0, 3).map(item => (
               <div 
                 key={item.id} 
-                className="calendar-dot-item"
-                style={{ background: item.cor }}
+                className={`event-badge event-type-${item.tipo}`}
                 onClick={() => setSelectedItem(item)}
                 title={item.titulo}
               >
@@ -392,15 +391,15 @@ export default function Agenda({
             <strong className="text-sm block">{thisDate.toLocaleDateString("pt-BR", { weekday: "short" })}</strong>
             <span className="text-xs text-muted block">{thisDate.getDate()}</span>
           </div>
-          <div className="week-col-body" style={{ minHeight: "250px", padding: "8px", background: "white" }}>
-            {dayItems.map(item => (
+          <div className="week-col-body" style={{ flexGrow: 1, padding: "8px" }}>
+             {dayItems.map(item => (
               <div 
                 key={item.id} 
-                className="week-event-card" 
-                style={{ borderLeft: `3px solid ${item.cor}`, background: "rgba(0,0,0,0.02)", padding: "6px", borderRadius: "4px", marginBottom: "8px", fontSize: "11px", cursor: "pointer" }}
+                className={`event-badge event-type-${item.tipo}`}
+                style={{ marginBottom: "8px" }}
                 onClick={() => setSelectedItem(item)}
               >
-                <div style={{ display: "flex", gap: "4px", color: "var(--text-secondary)", fontWeight: "600" }}>
+                <div style={{ display: "flex", gap: "4px", color: "inherit", opacity: 0.85, fontWeight: "600", marginBottom: "2px" }}>
                   <Clock size={10} style={{ marginTop: "1px" }} />
                   <span>{item.horario || "Dia todo"}</span>
                 </div>
@@ -420,7 +419,7 @@ export default function Agenda({
     const dayItems = filteredItems.filter(item => isSameDay(currentDate, item.data));
 
     return (
-      <div style={{ background: "white", borderRadius: "12px", border: "1px solid var(--border)", padding: "20px" }}>
+      <div style={{ background: "var(--bg-card)", borderRadius: "12px", border: "1px solid var(--border)", padding: "20px", color: "var(--text-primary)" }}>
         <h4 className="text-sm font-semibold" style={{ display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid var(--border)", paddingBottom: "10px", marginBottom: "16px" }}>
           <CalendarIcon size={16} /> compromissos de {currentDate.toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })}
         </h4>
@@ -541,7 +540,7 @@ export default function Agenda({
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         
         {/* Calendar Nav Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "white", padding: "12px 20px", borderRadius: "12px", border: "1px solid var(--border)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--bg-card)", padding: "12px 20px", borderRadius: "12px", border: "1px solid var(--border)", color: "var(--text-primary)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button className="btn-secondary btn-sm" onClick={() => {
               if (viewMode === "mes") setCurrentDate(addMonths(currentDate, -1));
@@ -581,9 +580,9 @@ export default function Agenda({
 
         {/* Calendar Body Rendering */}
         {viewMode === "mes" && (
-          <div style={{ background: "white", borderRadius: "12px", border: "1px solid var(--border)", overflow: "hidden" }}>
+          <div style={{ background: "var(--bg-card)", borderRadius: "12px", border: "1px solid var(--border)", overflow: "hidden", color: "var(--text-primary)" }}>
             {/* Weekdays Labels */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", background: "#f5f5f5", borderBottom: "1px solid var(--border)", textAlign: "center", fontWeight: "600", fontSize: "12px", padding: "8px 0" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", background: "var(--bg-main)", borderBottom: "1px solid var(--border)", textAlign: "center", fontWeight: "600", fontSize: "12px", padding: "8px 0" }}>
               <span>Dom</span>
               <span>Seg</span>
               <span>Ter</span>
@@ -593,14 +592,14 @@ export default function Agenda({
               <span>Sáb</span>
             </div>
             {/* Days Grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gridAutoRows: "100px", borderRight: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }} className="calendar-month-grid-wrapper">
+            <div className="calendar-month-grid-wrapper">
               {renderMonthGrid()}
             </div>
           </div>
         )}
 
         {viewMode === "semana" && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden", background: "white" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden", background: "var(--bg-card)", color: "var(--text-primary)" }}>
             {renderWeekGrid()}
           </div>
         )}

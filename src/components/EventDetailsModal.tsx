@@ -831,7 +831,7 @@ export default function EventDetailsModal({
 
                         {/* Document completion status */}
                         <div style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}>
-                          <span className="status-dot" style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: emp.documentStatus === "complete" ? "var(--success-text)" : "var(--warning)" }}></span>
+                          <span className="status-dot" style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: emp.documentStatus === "complete" ? "var(--success-text)" : "var(--warning-text)" }}></span>
                           <span className="text-muted">Docs {emp.documentStatus === "complete" ? "OK" : "Pendente"}</span>
                         </div>
 

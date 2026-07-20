@@ -218,7 +218,7 @@ export default function Overview({
       </div>
 
       {/* Two-column layout */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "20px" }}>
+      <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "20px" }}>
 
         {/* Projects Timeline */}
         <div style={{
@@ -333,13 +333,13 @@ export default function Overview({
                 <div key={i} style={{
                   display: "flex", gap: "8px", alignItems: "flex-start",
                   padding: "9px 11px", borderRadius: "8px",
-                  backgroundColor: a.type === "danger" ? "#fef2f2" : a.type === "warn" ? "#fffbeb" : "#f0fdf4",
-                  border: `1px solid ${a.type === "danger" ? "#fecaca" : a.type === "warn" ? "#fde68a" : "#bbf7d0"}`
+                  backgroundColor: a.type === "danger" ? "var(--danger-glow)" : a.type === "warn" ? "var(--warning-glow)" : "var(--success-glow)",
+                  border: `1px solid ${a.type === "danger" ? "var(--danger)" : a.type === "warn" ? "var(--warning)" : "var(--success)"}`
                 }}>
                   <span style={{ fontSize: "13px", flexShrink: 0 }}>
                     {a.type === "danger" ? "🔴" : a.type === "warn" ? "⚠️" : "✅"}
                   </span>
-                  <span style={{ fontSize: "11px", color: "#374151", lineHeight: "1.5" }}>{a.msg}</span>
+                  <span style={{ fontSize: "11px", color: "var(--text-primary)", lineHeight: "1.5" }}>{a.msg}</span>
                 </div>
               ))}
             </div>

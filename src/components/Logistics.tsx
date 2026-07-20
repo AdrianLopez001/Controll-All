@@ -159,7 +159,7 @@ export default function Logistics({
                 onClick={() => handleOpenVehicleEdit(v)}
                 style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "12px", display: "flex", alignItems: "center", gap: "12px", backgroundColor: "var(--bg-card-hover)", cursor: "pointer" }}
               >
-                <div style={{ width: "36px", height: "36px", borderRadius: "8px", background: "var(--accent-glow)", color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: "36px", height: "36px", borderRadius: "8px", background: "var(--accent-glow)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Truck size={18} />
                 </div>
                 
@@ -180,7 +180,7 @@ export default function Logistics({
                         v.status === "manutencao" ? "var(--danger-glow)" : "var(--accent-glow)",
                       color: 
                         v.status === "disponivel" ? "var(--success-text)" : 
-                        v.status === "manutencao" ? "var(--danger)" : "var(--accent)"
+                        v.status === "manutencao" ? "var(--danger-text)" : "var(--accent-text)"
                     }}
                   >
                     {v.status.toUpperCase()}
@@ -216,8 +216,10 @@ export default function Logistics({
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", fontSize: "12px" }}>
-                  <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
-                    <Hotel size={16} style={{ color: "var(--accent-secondary)", flexShrink: 0, marginTop: "2px" }} />
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "rgba(237, 106, 82, 0.12)", color: "var(--accent-secondary)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Hotel size={14} />
+                    </div>
                     <div>
                       <strong style={{ display: "block", color: "var(--text-primary)" }}>Hospedagem:</strong>
                       <span style={{ color: "var(--text-secondary)" }}>{evt.hotelName || "Não definida"}</span>
@@ -225,8 +227,10 @@ export default function Logistics({
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
-                    <Plane size={16} style={{ color: "var(--accent)", flexShrink: 0, marginTop: "2px" }} />
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "var(--accent-glow)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Plane size={14} />
+                    </div>
                     <div>
                       <strong style={{ display: "block", color: "var(--text-primary)" }}>Voo &amp; Passagens:</strong>
                       <span style={{ color: "var(--text-secondary)", display: "block" }}>{evt.flightDetails || "Não definidas"}</span>

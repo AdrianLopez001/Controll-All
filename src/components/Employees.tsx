@@ -234,7 +234,7 @@ export default function Employees({
                       <span className="semibold">NR-35 Ativa</span>
                     </div>
                   ) : (
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "var(--danger)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "var(--danger-text)" }}>
                       <ShieldAlert size={14} />
                       <span className="semibold">Sem Certificação</span>
                     </div>
@@ -248,9 +248,9 @@ export default function Employees({
                   title="Clique para alterar status de documentos"
                   style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}
                 >
-                  <span className="status-dot" style={{ background: emp.documentStatus === "complete" ? "var(--success-text)" : "var(--warning)" }}></span>
+                  <span className="status-dot" style={{ background: emp.documentStatus === "complete" ? "var(--success-text)" : "var(--warning-text)" }}></span>
                   <span className="text-muted">Docs: </span>
-                  <strong style={{ color: emp.documentStatus === "complete" ? "var(--success-text)" : "var(--warning)" }}>
+                  <strong style={{ color: emp.documentStatus === "complete" ? "var(--success-text)" : "var(--warning-text)" }}>
                     {emp.documentStatus === "complete" ? "Completos" : "Pendentes"}
                   </strong>
                 </div>
@@ -326,7 +326,7 @@ export default function Employees({
         </form>
 
         <div style={{ padding: "12px", border: "1px solid var(--border)", borderRadius: "10px", background: "rgba(255, 255, 255, 0.01)", marginTop: "24px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--warning)", marginBottom: "4px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--warning-text)", marginBottom: "4px" }}>
             <AlertTriangle size={14} />
             <strong className="text-xs uppercase">Aviso de Segurança (NR-35)</strong>
           </div>
@@ -508,7 +508,7 @@ export default function Employees({
                   };
 
                   return (
-                    <div key={emp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "white" }}>
+                    <div key={emp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", color: "var(--text-primary)" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         <div style={{ 
                           width: "24px", 

@@ -597,13 +597,13 @@ export default function Financial({
       {activeSubTab === "fluxo" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           {/* Metrics grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
+          <div className="responsive-layout-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
             <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
               <div>
                 <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Receitas Acumuladas</span>
-                <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--accent)", marginTop: "4px" }}>R$ {totalReceitas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h3>
+                <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--accent-text)", marginTop: "4px" }}>R$ {totalReceitas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h3>
               </div>
-              <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--accent-glow)", color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--accent-glow)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <TrendingUp size={20} />
               </div>
             </div>
@@ -613,7 +613,7 @@ export default function Financial({
                 <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Despesas Acumuladas</span>
                 <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--accent-secondary)", marginTop: "4px" }}>R$ {totalDespesas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h3>
               </div>
-              <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--warning-glow)", color: "var(--warning)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--danger-glow)", color: "var(--danger-text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <TrendingDown size={20} />
               </div>
             </div>
@@ -667,7 +667,7 @@ export default function Financial({
                           padding: "2px 6px",
                           borderRadius: "4px",
                           backgroundColor: inv.tipo === "receita" ? "var(--success-glow)" : "var(--danger-glow)",
-                          color: inv.tipo === "receita" ? "var(--success-text)" : "var(--danger)"
+                          color: inv.tipo === "receita" ? "var(--success-text)" : "var(--danger-text)"
                         }}
                       >
                         {inv.tipo === "receita" ? "Receita" : "Despesa"}
@@ -688,7 +688,7 @@ export default function Financial({
                         {!inv.pdfBoleto && !inv.pdfNFe && <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>Nenhum</span>}
                       </div>
                     </td>
-                    <td style={{ padding: "14px 20px", fontWeight: "700", textAlign: "right", color: inv.tipo === "receita" ? "var(--accent)" : "var(--text-primary)" }}>
+                    <td style={{ padding: "14px 20px", fontWeight: "700", textAlign: "right", color: inv.tipo === "receita" ? "var(--accent-text)" : "var(--text-primary)" }}>
                       {inv.tipo === "receita" ? "+" : "-"} R$ {inv.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
@@ -709,7 +709,7 @@ export default function Financial({
             </button>
           </div>
 
-          <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
@@ -745,7 +745,7 @@ export default function Financial({
                           )
                         )}
                       </td>
-                      <td style={{ padding: "14px 20px", textAlign: "right", fontWeight: "700", color: "var(--danger)" }}>
+                      <td style={{ padding: "14px 20px", textAlign: "right", fontWeight: "700", color: "var(--danger-text)" }}>
                         - R$ {inv.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </td>
                       <td style={{ padding: "14px 20px" }}>
@@ -772,7 +772,7 @@ export default function Financial({
             </button>
           </div>
 
-          <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
@@ -833,7 +833,7 @@ export default function Financial({
               <select 
                 value={boletoStatusFilter}
                 onChange={(e) => setBoletoStatusFilter(e.target.value as any)}
-                style={{ padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "white" }}
+                style={{ padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "var(--bg-card)", color: "var(--text-primary)" }}
               >
                 <option value="all">Filtrar por Status</option>
                 <option value="pago">Confirmados (Pagos)</option>
@@ -844,7 +844,7 @@ export default function Financial({
             </div>
           </div>
 
-          <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
@@ -876,7 +876,7 @@ export default function Financial({
                       <td style={{ padding: "14px 20px" }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                           {bol.pdfAnexoNome ? (
-                            <a href="#" onClick={(e) => { e.preventDefault(); alert(`Download do boleto PDF: ${bol.pdfAnexoNome}`); }} style={{ fontSize: "10px", color: "var(--accent)", textDecoration: "underline" }}>
+                            <a href="#" onClick={(e) => { e.preventDefault(); alert(`Download do boleto PDF: ${bol.pdfAnexoNome}`); }} style={{ fontSize: "10px", color: "var(--accent-text)", textDecoration: "underline" }}>
                               📄 Boleto PDF
                             </a>
                           ) : (
@@ -940,7 +940,7 @@ export default function Financial({
             </button>
           </div>
 
-          <div style={{ backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
@@ -1027,7 +1027,7 @@ export default function Financial({
 
           {/* Breakdown cards & indicators */}
           {selectedEvent ? (
-            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "24px" }}>
+            <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "24px" }}>
               {/* Detailed Category Table */}
               <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
                 <h5 style={{ fontSize: "14px", fontWeight: "600", borderBottom: "1px solid var(--border)", paddingBottom: "10px", color: "var(--text-primary)" }}>Detalhamento por Linha de Despesa</h5>
@@ -1094,7 +1094,7 @@ export default function Financial({
                 <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "var(--shadow-sm)" }}>
                   <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Margem de Lucro Bruto</span>
                   <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
-                    <h3 style={{ fontSize: "28px", fontWeight: "800", color: lucroRealizado >= 0 ? "var(--success-text)" : "var(--danger)" }}>
+                    <h3 style={{ fontSize: "28px", fontWeight: "800", color: lucroRealizado >= 0 ? "var(--success-text)" : "var(--danger-text)" }}>
                       {margemLucro.toFixed(1)}%
                     </h3>
                     <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-muted)" }}>
@@ -1108,7 +1108,7 @@ export default function Financial({
                       style={{ 
                         height: "100%", 
                         width: `${Math.max(0, Math.min(100, margemLucro))}%`, 
-                        background: margemLucro >= 30 ? "var(--success-text)" : margemLucro >= 10 ? "var(--accent-secondary)" : "var(--danger)" 
+                        background: margemLucro >= 30 ? "var(--success-text)" : margemLucro >= 10 ? "var(--accent-secondary)" : "var(--danger-text)" 
                       }}
                     ></div>
                   </div>
@@ -1130,7 +1130,7 @@ export default function Financial({
                           <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>Custo: R$ {item.totalCost.toLocaleString("pt-BR")}</span>
                         </div>
                         <div style={{ textAlign: "right" }}>
-                          <span style={{ display: "block", fontSize: "12px", fontWeight: "700", color: item.profit >= 0 ? "var(--success-text)" : "var(--danger)" }}>
+                          <span style={{ display: "block", fontSize: "12px", fontWeight: "700", color: item.profit >= 0 ? "var(--success-text)" : "var(--danger-text)" }}>
                             R$ {item.profit.toLocaleString("pt-BR")}
                           </span>
                           <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>{item.margin.toFixed(0)}% margem</span>
@@ -1149,7 +1149,7 @@ export default function Financial({
 
       {/* Caixinha & Reembolsos Tab */}
       {activeSubTab === "caixinha" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "24px" }}>
+        <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "24px" }}>
           {/* Left Form launch */}
           <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)", height: "fit-content" }}>
             <h5 style={{ fontSize: "14px", fontWeight: "600", color: "var(--accent)", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>Adiantamento / Vale Obra</h5>
@@ -1232,7 +1232,7 @@ export default function Financial({
                         padding: "2px 6px",
                         borderRadius: "4px",
                         backgroundColor: log.status === "prestado" ? "var(--success-glow)" : "var(--warning-glow)",
-                        color: log.status === "prestado" ? "var(--success-text)" : "var(--warning)"
+                        color: log.status === "prestado" ? "var(--success-text)" : "var(--warning-text)"
                       }}
                     >
                       {log.status === "prestado" ? "Prestado" : "Pendente"}

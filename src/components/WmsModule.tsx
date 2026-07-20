@@ -280,7 +280,7 @@ export default function WmsModule({
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           
           {/* Stock Metrics summary */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+          <div className="responsive-layout-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
             <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "16px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
               <div>
                 <span style={{ fontSize: "10px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Materiais p/ Locação</span>
@@ -343,7 +343,7 @@ export default function WmsModule({
 
               {/* List Table */}
               <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                <table className="table-responsive-cards" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
                   <thead>
                     <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
                       <th style={{ padding: "12px 16px", color: "var(--text-primary)", fontWeight: "600", fontSize: "13px" }}>Cód</th>
@@ -364,18 +364,18 @@ export default function WmsModule({
                           backgroundColor: selectedItemId === item.id ? "var(--bg-main)" : "transparent"
                         }}
                       >
-                        <td style={{ padding: "12px 16px", fontFamily: "monospace", fontSize: "12px" }}>{item.codigo}</td>
-                        <td style={{ padding: "12px 16px" }}>
+                        <td data-label="Cód" style={{ padding: "12px 16px", fontFamily: "monospace", fontSize: "12px" }}>{item.codigo}</td>
+                        <td data-label="Item" style={{ padding: "12px 16px" }}>
                           <strong style={{ display: "block", fontSize: "13px" }}>{item.name}</strong>
                         </td>
-                        <td style={{ padding: "12px 16px", fontSize: "12px", color: "var(--text-secondary)" }}>
+                        <td data-label="Categoria" style={{ padding: "12px 16px", fontSize: "12px", color: "var(--text-secondary)" }}>
                           {item.type === "tool" ? "🛠️ Ferramenta" : "🛋️ Mobiliário"}
                         </td>
-                        <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <td data-label="Disponível" style={{ padding: "12px 16px", textAlign: "center" }}>
                           <span style={{ fontWeight: "700", color: item.stock <= item.stockMinimo ? "var(--danger)" : "var(--text-primary)" }}>{item.stock}</span>
                           {item.stock <= item.stockMinimo && <span title="Estoque Crítico!" style={{ marginLeft: "4px", color: "var(--warning)" }}>⚠️</span>}
                         </td>
-                        <td style={{ padding: "12px 16px" }}>
+                        <td data-label="Origem" style={{ padding: "12px 16px" }}>
                           <span style={{ fontSize: "10px", fontWeight: "600", textTransform: "uppercase", padding: "2px 6px", borderRadius: "4px", backgroundColor: item.origem === "proprio" ? "var(--success-glow)" : "var(--accent-glow)", color: item.origem === "proprio" ? "var(--success-text)" : "var(--accent)" }}>{item.origem}</span>
                         </td>
                       </tr>
@@ -582,7 +582,7 @@ export default function WmsModule({
           </div>
 
           <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+            <table className="table-responsive-cards" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
                   <th style={{ padding: "14px 20px", color: "var(--text-primary)", fontWeight: "600", fontSize: "13px" }}>Locatário / Projeto</th>
@@ -603,13 +603,13 @@ export default function WmsModule({
                 ) : (
                   allLocacoes.map(({ itemObj, loc }) => (
                     <tr key={loc.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                      <td style={{ padding: "14px 20px", fontWeight: "600" }}>{loc.responsavel}</td>
-                      <td style={{ padding: "14px 20px" }}>{itemObj.name}</td>
-                      <td style={{ padding: "14px 20px", color: "var(--text-secondary)", fontSize: "12px" }}>{loc.dataSaida}</td>
-                      <td style={{ padding: "14px 20px", color: "var(--text-secondary)", fontSize: "12px" }}>{loc.dataRetorno}</td>
-                      <td style={{ padding: "14px 20px", textAlign: "center", fontSize: "12px" }}>{loc.dias} dias</td>
-                      <td style={{ padding: "14px 20px", textAlign: "right", fontWeight: "700", color: "var(--success-text)" }}>R$ {loc.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                      <td style={{ padding: "14px 20px" }}>
+                      <td data-label="Locatário" style={{ padding: "14px 20px", fontWeight: "600" }}>{loc.responsavel}</td>
+                      <td data-label="Equipamento" style={{ padding: "14px 20px" }}>{itemObj.name}</td>
+                      <td data-label="Saída" style={{ padding: "14px 20px", color: "var(--text-secondary)", fontSize: "12px" }}>{loc.dataSaida}</td>
+                      <td data-label="Retorno" style={{ padding: "14px 20px", color: "var(--text-secondary)", fontSize: "12px" }}>{loc.dataRetorno}</td>
+                      <td data-label="Período" style={{ padding: "14px 20px", textAlign: "center", fontSize: "12px" }}>{loc.dias} dias</td>
+                      <td data-label="Valor Receber" style={{ padding: "14px 20px", textAlign: "right", fontWeight: "700", color: "var(--success-text)" }}>R$ {loc.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                      <td data-label="Contrato" style={{ padding: "14px 20px" }}>
                         {loc.contratoAnexo ? (
                           <span 
                             title="Ver contrato locação" 
@@ -622,7 +622,7 @@ export default function WmsModule({
                           <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>Nenhum</span>
                         )}
                       </td>
-                      <td style={{ padding: "14px 20px", textAlign: "center" }}>
+                      <td data-label="Ação" style={{ padding: "14px 20px", textAlign: "center" }}>
                         <button 
                           onClick={() => handleDevolucao(itemObj, loc.id)}
                           style={{ border: "none", background: "none", color: "var(--success-text)", cursor: "pointer", fontWeight: "600", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "4px" }}
@@ -709,12 +709,12 @@ export default function WmsModule({
       )}
       {/* Tab: Entrada de Insumos */}
       {activeSubTab === "entradas" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px" }}>
+        <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px" }}>
           {/* List of entries */}
           <div className="section-box" style={{ height: "auto" }}>
             <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)", marginBottom: "16px" }}>Histórico de Entrada de Insumos</h4>
             <div className="table-responsive">
-              <table className="data-table">
+              <table className="sheet-table">
                 <thead>
                   <tr>
                     <th>Data</th>
@@ -732,15 +732,15 @@ export default function WmsModule({
                   ) : (
                     entradasLog.map((log) => (
                       <tr key={log.id}>
-                        <td>{log.date}</td>
-                        <td>
+                        <td data-label="Data">{log.date}</td>
+                        <td data-label="Tipo">
                           <span className={`badge badge-${log.tipo === "Compra" ? "success" : "muted"}`} style={{ fontSize: "9px" }}>
                             {log.tipo.toUpperCase()}
                           </span>
                         </td>
-                        <td><strong>{log.itemNome}</strong></td>
-                        <td>{log.qty} unidades</td>
-                        <td>{log.responsavel}</td>
+                        <td data-label="Material / Recurso"><strong>{log.itemNome}</strong></td>
+                        <td data-label="Quantidade">{log.qty} unidades</td>
+                        <td data-label="Responsável">{log.responsavel}</td>
                       </tr>
                     ))
                   )}
@@ -797,12 +797,12 @@ export default function WmsModule({
 
       {/* Tab: Correção de Estoque */}
       {activeSubTab === "ajustes" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px" }}>
+        <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px" }}>
           {/* List of adjustments */}
           <div className="section-box" style={{ height: "auto" }}>
             <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)", marginBottom: "16px" }}>Histórico de Ajustes e Correções</h4>
             <div className="table-responsive">
-              <table className="data-table">
+              <table className="sheet-table">
                 <thead>
                   <tr>
                     <th>Data</th>
@@ -821,14 +821,14 @@ export default function WmsModule({
                   ) : (
                     ajustesLog.map((log) => (
                       <tr key={log.id}>
-                        <td>{log.date}</td>
-                        <td><strong>{log.itemNome}</strong></td>
-                        <td>{log.qtyAnterior} un</td>
-                        <td><strong style={{ color: log.qtyNova > log.qtyAnterior ? "var(--success-text)" : "var(--danger)" }}>{log.qtyNova} un</strong></td>
-                        <td style={{ fontSize: "11px", color: "var(--text-secondary)", maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={log.justificativa}>
+                        <td data-label="Data">{log.date}</td>
+                        <td data-label="Material"><strong>{log.itemNome}</strong></td>
+                        <td data-label="Saldo Ant.">{log.qtyAnterior} un</td>
+                        <td data-label="Saldo Novo"><strong style={{ color: log.qtyNova > log.qtyAnterior ? "var(--success-text)" : "var(--danger-text)" }}>{log.qtyNova} un</strong></td>
+                        <td data-label="Justificativa" style={{ fontSize: "11px", color: "var(--text-secondary)", maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={log.justificativa}>
                           {log.justificativa}
                         </td>
-                        <td>{log.responsavel}</td>
+                        <td data-label="Responsável">{log.responsavel}</td>
                       </tr>
                     ))
                   )}

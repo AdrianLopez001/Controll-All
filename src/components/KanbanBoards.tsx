@@ -19,6 +19,7 @@ export default function KanbanBoards({
   const [name, setName] = useState("");
   const [client, setClient] = useState("");
   const [startDate, setStartDate] = useState("");
+  const [activeMobileColumn, setActiveMobileColumn] = useState<"no_event" | "during" | "post">("no_event");
 
   const handleAddSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -100,9 +101,34 @@ export default function KanbanBoards({
         </button>
       </div>
 
+      {/* Seletor Mobile de Colunas do Kanban */}
+      <div className="mobile-kanban-tabs" style={{ display: "none", marginBottom: "16px", gap: "6px" }}>
+        <button 
+          className={`btn-secondary text-xs ${activeMobileColumn === "no_event" ? "active" : ""}`} 
+          style={{ flex: 1, padding: "8px 4px", borderBottom: activeMobileColumn === "no_event" ? "3px solid var(--accent)" : "none", borderRadius: "8px", fontWeight: "600" }}
+          onClick={() => setActiveMobileColumn("no_event")}
+        >
+          Depósito ({noEventList.length})
+        </button>
+        <button 
+          className={`btn-secondary text-xs ${activeMobileColumn === "during" ? "active" : ""}`} 
+          style={{ flex: 1, padding: "8px 4px", borderBottom: activeMobileColumn === "during" ? "3px solid var(--accent)" : "none", borderRadius: "8px", fontWeight: "600" }}
+          onClick={() => setActiveMobileColumn("during")}
+        >
+          Montagem ({duringList.length})
+        </button>
+        <button 
+          className={`btn-secondary text-xs ${activeMobileColumn === "post" ? "active" : ""}`} 
+          style={{ flex: 1, padding: "8px 4px", borderBottom: activeMobileColumn === "post" ? "3px solid var(--accent)" : "none", borderRadius: "8px", fontWeight: "600" }}
+          onClick={() => setActiveMobileColumn("post")}
+        >
+          Retorno ({postList.length})
+        </button>
+      </div>
+
       <div className="kanban-grid">
         {/* Column 1 - No Event */}
-        <div className="kanban-column">
+        <div className={`kanban-column mobile-kanban-col ${activeMobileColumn === "no_event" ? "mobile-show" : ""}`}>
           <div className="kanban-column-header">
             <div className="kanban-column-title-box">
               <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--text-muted)", display: "inline-block" }}></span>
@@ -116,7 +142,7 @@ export default function KanbanBoards({
         </div>
 
         {/* Column 2 - During Event */}
-        <div className="kanban-column">
+        <div className={`kanban-column mobile-kanban-col ${activeMobileColumn === "during" ? "mobile-show" : ""}`}>
           <div className="kanban-column-header">
             <div className="kanban-column-title-box">
               <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--accent)", display: "inline-block" }}></span>
@@ -130,7 +156,7 @@ export default function KanbanBoards({
         </div>
 
         {/* Column 3 - Post Event */}
-        <div className="kanban-column">
+        <div className={`kanban-column mobile-kanban-col ${activeMobileColumn === "post" ? "mobile-show" : ""}`}>
           <div className="kanban-column-header">
             <div className="kanban-column-title-box">
               <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--success)", display: "inline-block" }}></span>

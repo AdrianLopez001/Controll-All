@@ -4,15 +4,16 @@
   --bg-main: #f4f6fb;           /* Azul muito claro — derivado do azul institucional */
   --bg-card: #ffffff;
   --bg-card-hover: #eef1f9;
-  --bg-sidebar: #293B8F;        /* Azul institucional JC Eventos */
+  --bg-sidebar: #144580;        /* Novo azul institucional JC Eventos */
   
   --border: #e0e5f0;
   --border-hover: #c5ccdf;
   
-  --accent: #293B8F;            /* Azul Institucional JC Eventos */
-  --accent-secondary: #C95D46;  /* Terracota JC Eventos */
-  --accent-glow: #eaedfa;       /* Azul bem claro */
-  --accent-hover: #1e2b6b;
+  --accent: #144580;            /* Novo azul institucional JC Eventos */
+  --accent-secondary: #ED6A52;  /* Novo laranja coral JC Eventos */
+  --accent-glow: #e8eff7;       /* Novo azul bem claro */
+  --accent-text: #144580;
+  --accent-hover: #0e305a;
   
   --text-primary: #1a2133;
   --text-secondary: #3d4f72;
@@ -23,10 +24,12 @@
   --success-glow: #f0fdf4;
   
   --warning: #fef3c7;
+  --warning-text: #b45309;
   --warning-glow: #fffdf5;
   
   --danger: #fee2e2;
-  --danger-glow: #fef2f2;
+  --danger-text: #b91c1c;
+  --danger-glow: rgba(239, 68, 68, 0.08);
   
   --shadow-sm: 0 1px 3px rgba(41, 59, 143, 0.06), 0 1px 2px rgba(0,0,0,0.03);
   --shadow-md: 0 4px 12px rgba(41, 59, 143, 0.1), 0 2px 4px rgba(0,0,0,0.04);
@@ -36,6 +39,8 @@
   --transition: all 0.18s ease-in-out;
   --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-title: 'Inter', sans-serif;
+
+  --bg-kanban-col: rgba(255, 255, 255, 0.75);
 }
 
 [data-theme='dark'] {
@@ -47,10 +52,11 @@
   --border: #334155;            /* Slate-700 border */
   --border-hover: #475569;
   
-  --accent: #38bdf8;            /* Cyan/Sky accent */
-  --accent-secondary: #f43f5e;  /* Coral/Rose accent */
-  --accent-glow: rgba(56, 189, 248, 0.1);
-  --accent-hover: #0ea5e9;
+  --accent: #144580;            /* Azul Oficial JC Eventos (Igual ao modo claro) */
+  --accent-secondary: #ED6A52;  /* Laranja Coral JC Eventos */
+  --accent-glow: rgba(20, 69, 128, 0.15);
+  --accent-text: #93c5fd;
+  --accent-hover: #0e305a;
   
   --text-primary: #f8fafc;      /* Slate-50 text */
   --text-secondary: #cbd5e1;    /* Slate-300 text */
@@ -61,10 +67,14 @@
   --success-glow: rgba(16, 185, 129, 0.1);
   
   --warning: #92400e;
+  --warning-text: #fcd34d;
   --warning-glow: rgba(245, 158, 11, 0.1);
   
   --danger: #7f1d1d;
+  --danger-text: #fca5a5;
   --danger-glow: rgba(239, 68, 68, 0.1);
+
+  --bg-kanban-col: rgba(30, 41, 59, 0.45);
 }
 
 body.dark-mode {
@@ -77,10 +87,11 @@ body.dark-mode {
   --border: #2b2b33;            /* Dark mode border */
   --border-hover: #3d3d49;
   
-  --accent: #4c63d2;            /* Brighter blue for better contrast */
-  --accent-secondary: #e06d53;  /* Brighter terracotta */
-  --accent-glow: #1a1b2b;       /* Dark tint glow */
-  --accent-hover: #5d75e3;
+  --accent: #144580;            /* Azul Oficial JC Eventos (Igual ao modo claro) */
+  --accent-secondary: #ED6A52;  /* Laranja Coral JC Eventos */
+  --accent-glow: rgba(20, 69, 128, 0.15);
+  --accent-text: #93c5fd;
+  --accent-hover: #0e305a;
   
   --text-primary: #f1f1f5;      /* Lighter text for high readability */
   --text-secondary: #a0a0ab;    /* Zinc secondary text */
@@ -91,10 +102,14 @@ body.dark-mode {
   --success-glow: #12221e;
   
   --warning: #ad503d;           /* Muted terracotta warning */
+  --warning-text: #fcd34d;
   --warning-glow: #311b17;
   
   --danger: #9c2e2e;
+  --danger-text: #fca5a5;
   --danger-glow: #2d1313;
+
+  --bg-kanban-col: rgba(29, 29, 34, 0.45);
 }
 
 * {
@@ -146,21 +161,23 @@ body {
   right: 0;
   height: 60px;
   /* Gradiente com o azul institucional JC Eventos */
-  background: linear-gradient(135deg, #293B8F 0%, #1e2b6b 100%);
-  border-bottom: 3px solid #C95D46;  /* Borda terracota */
+  background: linear-gradient(135deg, #144580 0%, #0e305a 100%);
+  border-bottom: 3px solid #ED6A52;  /* Borda laranja coral */
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
   z-index: 1000;
-  box-shadow: 0 4px 16px rgba(41, 59, 143, 0.3);
+  box-shadow: 0 4px 16px rgba(20, 69, 128, 0.3);
   transition: var(--transition);
 }
 
 .top-nav-left {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .top-nav-logo {
@@ -184,7 +201,9 @@ body {
 .top-nav-menu {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .menu-group {
@@ -217,8 +236,20 @@ body {
 .menu-group-btn.active {
   color: #ffffff;
   background-color: rgba(255,255,255,0.15);
-  box-shadow: inset 0 -2px 0 #C95D46; /* sublinhado terracota no item ativo */
+  box-shadow: inset 0 -2px 0 #ED6A52; /* sublinhado laranja coral no item ativo */
   border-radius: 8px 8px 0 0;
+}
+
+/* Links de abas secundárias (sub-navegação) */
+.tab-btn-link {
+  color: var(--text-secondary) !important;
+  font-family: var(--font);
+}
+.tab-btn-link:hover {
+  color: var(--text-primary) !important;
+}
+.tab-btn-link.active {
+  color: var(--accent) !important;
 }
 
 /* Dropdown list */
@@ -241,6 +272,11 @@ body {
 @keyframes dropdownFade {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .menu-group:hover .menu-dropdown {
@@ -276,10 +312,15 @@ body {
   font-weight: 600;
 }
 
-/* Global search */
+/* Global search — compact by default, expands on focus */
 .top-nav-search {
   position: relative;
   width: 100%;
+  max-width: 120px;
+  transition: max-width 0.2s ease;
+}
+
+.top-nav-search:focus-within {
   max-width: 200px;
 }
 
@@ -310,11 +351,12 @@ body {
   pointer-events: none;
 }
 
-/* Actions right */
+/* Actions right — never shrinks so user avatar is always visible */
 .top-nav-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .top-nav-icon-btn {
@@ -376,7 +418,7 @@ body {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background-color: #C95D46;  /* Terracota JC Eventos */
+  background-color: #ED6A52;  /* Laranja Coral JC Eventos */
   color: #fff;
   font-size: 11px;
   font-weight: bold;
@@ -571,7 +613,7 @@ body {
   border-radius: 100px;
   background-color: transparent;
   border: 1px solid var(--border);
-  color: var(--accent);
+  color: var(--accent-text);
   font-family: var(--font-title);
   font-weight: 500;
   font-size: 14px;
@@ -592,7 +634,7 @@ body {
   border-radius: 100px;
   background-color: transparent;
   border: 1px solid var(--border);
-  color: var(--danger);
+  color: var(--danger-text);
   font-family: var(--font-title);
   font-weight: 500;
   font-size: 14px;
@@ -602,7 +644,40 @@ body {
 
 .btn-danger:hover {
   background-color: var(--danger-glow);
-  border-color: var(--danger);
+  border-color: var(--danger-text);
+}
+
+.btn-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: 100px;
+  background-color: transparent;
+  border: 1px solid var(--border);
+  color: var(--success-text);
+  font-family: var(--font-title);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-success:hover {
+  background-color: var(--success);
+  border-color: var(--success-text);
+}
+
+.btn-sm {
+  padding: 6px 16px !important;
+  font-size: 12px !important;
+  gap: 6px !important;
+}
+
+.btn-xs {
+  padding: 4px 10px !important;
+  font-size: 10px !important;
+  gap: 4px !important;
 }
 
 /* Main Content Wrapper */
@@ -792,12 +867,36 @@ body {
   letter-spacing: 0.5px;
 }
 
-.badge-pt { background-color: var(--accent-glow); color: var(--accent); border: 1px solid rgba(41, 59, 143, 0.2); }
-.badge-en { background-color: var(--warning-glow); color: var(--warning); border: 1px solid rgba(201, 93, 70, 0.2); }
+.badge-pt { background-color: var(--accent-glow); color: var(--accent-text); border: 1px solid rgba(41, 59, 143, 0.2); }
+.badge-en { background-color: var(--warning-glow); color: var(--warning-text); border: 1px solid rgba(201, 93, 70, 0.2); }
 
 .badge-no-event { background-color: var(--bg-card-hover); color: var(--text-secondary); border: 1px solid var(--border); }
-.badge-during { background-color: var(--accent-glow); color: var(--accent); border: 1px solid rgba(41, 59, 143, 0.2); }
+.badge-during { background-color: var(--accent-glow); color: var(--accent-text); border: 1px solid rgba(41, 59, 143, 0.2); }
 .badge-post { background-color: var(--success-glow); color: var(--success-text); border: 1px solid var(--success); }
+
+.badge-success {
+  background-color: var(--success-glow) !important;
+  color: var(--success-text) !important;
+  border: 1px solid var(--success) !important;
+}
+
+.badge-warning {
+  background-color: var(--warning-glow) !important;
+  color: var(--warning-text) !important;
+  border: 1px solid var(--warning) !important;
+}
+
+.badge-danger {
+  background-color: var(--danger-glow) !important;
+  color: var(--danger-text) !important;
+  border: 1px solid var(--danger) !important;
+}
+
+.badge-muted {
+  background-color: var(--bg-card-hover) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border) !important;
+}
 
 /* Kanban Columns */
 .kanban-grid {
@@ -816,14 +915,15 @@ body {
 }
 
 .kanban-column {
-  background-color: rgba(255, 255, 255, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background-color: var(--bg-kanban-col);
+  border: 1px solid var(--border);
   backdrop-filter: blur(8px);
   border-radius: 16px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   height: 100%;
+  box-shadow: 0 4px 12px rgba(41, 59, 143, 0.03);
 }
 
 .kanban-column-header {
@@ -843,10 +943,10 @@ body {
 .kanban-column-title {
   font-family: var(--font-title);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  color: var(--accent);
+  color: var(--text-primary);
 }
 
 .kanban-column-count {
@@ -854,9 +954,27 @@ body {
   font-family: var(--font-title);
   font-weight: 700;
   color: var(--accent);
-  background-color: rgba(41, 59, 143, 0.1);
+  background-color: var(--accent-glow);
   padding: 2px 8px;
   border-radius: 10px;
+}
+
+/* Avatar de Fornecedores */
+.supplier-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: rgba(201, 93, 70, 0.12);
+  color: var(--accent-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+[data-theme='dark'] .supplier-avatar,
+body.dark-mode .supplier-avatar {
+  background-color: rgba(244, 63, 94, 0.15);
 }
 
 .kanban-cards-container {
@@ -1314,36 +1432,67 @@ body {
   cursor: pointer;
 }
 
-/* Responsive Top Navigation Rules */
-@media (max-width: 900px) {
-  .top-nav-menu {
-    gap: 2px;
-  }
+/* Responsive Navigation & Layout Rules */
+/* Mostra os textos das abas por padrão no desktop */
+.top-nav-menu .nav-text {
+  display: inline !important;
+}
+.menu-group-btn {
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.top-nav-logo span:last-child {
+  display: inline !important;
+}
+.top-nav-search {
+  max-width: 100px;
+}
+
+@media (max-width: 1320px) {
   .menu-group-btn {
-    padding: 6px 8px;
+    padding: 6px 6px;
     font-size: 11px;
   }
+  .top-nav-logo span:last-child {
+    display: none !important;
+  }
   .top-nav-search {
-    max-width: 140px;
+    max-width: 90px;
   }
 }
 
-@media (max-width: 768px) {
-  .top-nav {
-    padding: 0 12px;
+@media (max-width: 1150px) {
+  /* Em telas muito estreitas de desktop, oculta o texto e mostra apenas ícones com tooltips */
+  .top-nav-menu .nav-text {
+    display: none !important;
   }
-  .top-nav-logo span {
-    display: none; /* Hide brand name Controll-All in mobile to avoid overlap */
+  .menu-group-btn {
+    padding: 8px 12px;
+    justify-content: center;
   }
-  .top-nav-logo-dot {
-    display: none;
-  }
+}
+
+@media (max-width: 1000px) {
   .top-nav-search {
-    display: none;
+    display: none !important;
   }
+}
+
+@media (max-width: 900px) {
   .top-nav-user-info {
-    display: none;
+    display: none !important;
   }
+}
+
+/* Base Bottom Nav styling (hidden by default on desktop) */
+.bottom-nav {
+  display: none;
+}
+
+/* Mobile layout styles moved to Mobile.css — scoped under [data-mobile="true"] */
+/* Bottom nav is hidden by default on desktop */
+.bottom-nav {
+  display: none;
 }
 
 /* Global Form Input and Select styles for theme compatibility */
@@ -1356,3 +1505,338 @@ select option {
   background-color: var(--bg-card);
   color: var(--text-primary);
 }
+
+/* Estilos da Agenda / Calendário */
+.calendar-month-grid-wrapper {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 120px;
+  background-color: var(--border);
+  gap: 1px;
+  border: 1px solid var(--border);
+}
+
+.calendar-cell {
+  background-color: var(--bg-card);
+  padding: 8px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 120px;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.calendar-cell.empty {
+  background-color: var(--bg-main);
+  opacity: 0.4;
+}
+
+.calendar-cell:hover:not(.empty) {
+  background-color: var(--bg-card-hover);
+}
+
+.calendar-cell.today {
+  background-color: var(--accent-glow);
+}
+
+.calendar-cell.today .cell-day-num {
+  background-color: var(--accent);
+  color: #ffffff !important;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.cell-day-num {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  align-self: flex-start;
+  margin-bottom: 4px;
+}
+
+.cell-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-grow: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.cell-items-container::-webkit-scrollbar {
+  display: none;
+}
+
+.event-badge {
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  transition: var(--transition);
+  border-left: 3px solid transparent;
+}
+
+.event-badge:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.95);
+}
+
+/* 1. Evento (Blue) */
+.event-type-evento {
+  background-color: var(--accent-glow) !important;
+  color: var(--accent-text) !important;
+  border-left-color: var(--accent) !important;
+}
+
+/* 2. Equipe (Green) */
+.event-type-equipe {
+  background-color: var(--success) !important;
+  color: var(--success-text) !important;
+  border-left-color: var(--success-text) !important;
+}
+[data-theme='dark'] .event-type-equipe {
+  background-color: rgba(6, 95, 70, 0.2) !important;
+  color: #34d399 !important;
+  border-left-color: #34d399 !important;
+}
+
+/* 3. Logística (Yellow / Gold) */
+.event-type-logistica {
+  background-color: var(--warning) !important;
+  color: var(--warning-text) !important;
+  border-left-color: var(--warning-text) !important;
+}
+[data-theme='dark'] .event-type-logistica {
+  background-color: rgba(217, 119, 6, 0.2) !important;
+  color: #fbbf24 !important;
+  border-left-color: #fbbf24 !important;
+}
+
+/* 4. CRM (Purple) */
+.event-type-crm {
+  background-color: rgba(192, 132, 252, 0.15) !important;
+  color: #7c3aed !important;
+  border-left-color: #c084fc !important;
+}
+[data-theme='dark'] .event-type-crm {
+  background-color: rgba(192, 132, 252, 0.2) !important;
+  color: #d8b4fe !important;
+  border-left-color: #c084fc !important;
+}
+
+/* 5. Prazo (Coral/Grey) */
+.event-type-prazo {
+  background-color: rgba(237, 106, 82, 0.1) !important;
+  color: #ED6A52 !important;
+  border-left-color: #ED6A52 !important;
+}
+[data-theme='dark'] .event-type-prazo {
+  background-color: rgba(237, 106, 82, 0.2) !important;
+  color: #ff8a75 !important;
+  border-left-color: #ED6A52 !important;
+}
+
+/* 6. Compra (Red) */
+.event-type-compra {
+  background-color: var(--danger) !important;
+  color: var(--danger-text) !important;
+  border-left-color: var(--danger-text) !important;
+}
+[data-theme='dark'] .event-type-compra {
+  background-color: rgba(185, 28, 28, 0.2) !important;
+  color: #fca5a5 !important;
+  border-left-color: #ef4444 !important;
+}
+
+.week-event-card {
+  border-left: 3px solid var(--border);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.week-event-card:hover {
+  background-color: var(--bg-card-hover);
+  transform: translateY(-1px);
+}
+
+/* Folha de Estilos para Impressão (PDF/Impressora) */
+@media print {
+  /* 0. Forçar variáveis de tema claro para todos os componentes na folha de impressão */
+  :root, body, html {
+    --border: #dddddd !important;
+    --bg-card: #ffffff !important;
+    --text-primary: #000000 !important;
+    --text-secondary: #333333 !important;
+    --text-muted: #666666 !important;
+    --success: #e6f4ea !important;
+    --success-text: #137333 !important;
+  }
+
+  /* 1. Ocultar completamente a árvore React principal da aplicação */
+  #root, .layout-wrapper {
+    display: none !important;
+  }
+  
+  /* 2. Tornar visível apenas o modal de impressão anexado diretamente ao body */
+  body > .modal-overlay {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body > .modal-overlay .modal-content {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* 3. Tornar o documento e seus descendentes perfeitamente visíveis */
+  .printable-document,
+  .printable-document * {
+    visibility: visible !important;
+  }
+
+  .printable-document {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0px !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* 4. Cancelar a visualização de cartões (mobile responsivo) e restaurar tabela tradicional */
+  .printable-document table,
+  .printable-document thead,
+  .printable-document tbody,
+  .printable-document th,
+  .printable-document td,
+  .printable-document tr {
+    display: table !important;
+  }
+  
+  .printable-document table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  
+  .printable-document thead {
+    display: table-header-group !important;
+  }
+  
+  .printable-document tbody {
+    display: table-row-group !important;
+  }
+  
+  .printable-document tr {
+    display: table-row !important;
+    background: none !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid #dddddd !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+  
+  .printable-document th {
+    display: table-cell !important;
+    background-color: #f8fafc !important;
+    color: #144580 !important;
+    font-weight: 700 !important;
+    border-bottom: 2px solid #144580 !important;
+    padding: 8px !important;
+    text-align: left !important;
+  }
+  
+  .printable-document td {
+    display: table-cell !important;
+    border-bottom: 1px solid #dddddd !important;
+    padding: 8px !important;
+    text-align: left !important;
+    background: none !important;
+    background-color: transparent !important;
+    color: #000000 !important;
+  }
+
+  .printable-document td:last-child {
+    border-bottom: 1px solid #dddddd !important;
+  }
+
+  .printable-document td::before {
+    display: none !important;
+    content: none !important;
+  }
+
+  /* Ocultar barra de ações do modal, botões, fechar e outros elementos indesejados */
+  .no-print,
+  .no-print *,
+  button,
+  .modal-close {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Fundo de página em branco puro e remover margens/paddings fantasmas do body */
+  body, html {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Forçar impressão de cores de fundo (como cabeçalhos das tabelas) */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+}
+
+/* Mobile layout overrides moved to Mobile.css — scoped under [data-mobile="true"] */

@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { 
   FileText, CheckSquare, Plus, Trash2, Camera, ShieldAlert, 
   User, MapPin, PenTool, CheckCircle, ChevronRight, X, Clock, HelpCircle, Printer
 } from "lucide-react";
 import type { Project, Employee, WarehouseItem, OSComentario, OSFoto, OSAssinaturas } from "../types";
+import logoImg from "../assets/logo.png";
 
 interface OrdensServicoProps {
   events: Project[];
@@ -195,7 +197,7 @@ export default function OrdensServico({
 
     const rect = canvas.getBoundingClientRect();
     ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-    ctx.strokeStyle = "#293B8F";
+    ctx.strokeStyle = "#144580";
     ctx.lineWidth = 2;
     ctx.stroke();
   };
@@ -283,9 +285,9 @@ export default function OrdensServico({
   });
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.8fr", gap: "24px", padding: "10px" }}>
+    <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: "1.2fr 1.8fr", gap: "24px", padding: "10px" }}>
       {/* Left Column: OS List */}
-      <div className="section-box" style={{ height: "auto" }}>
+      <div className="section-box no-print" style={{ height: "auto" }}>
         <div className="section-box-header">
           <h3 className="section-box-title">
             <FileText size={16} style={{ color: "var(--accent)" }} />
@@ -305,12 +307,12 @@ export default function OrdensServico({
           <select 
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value as any)}
-            style={{ padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", background: "white" }}
+            style={{ padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", color: "var(--text-primary)" }}
           >
-            <option value="all">Todas Prioridades</option>
-            <option value="alta">Alta</option>
-            <option value="media">Média</option>
-            <option value="baixa">Baixa</option>
+            <option value="all" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Todas Prioridades</option>
+            <option value="alta" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Alta</option>
+            <option value="media" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Média</option>
+            <option value="baixa" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Baixa</option>
           </select>
         </div>
 
@@ -325,7 +327,8 @@ export default function OrdensServico({
                 padding: "12px", 
                 borderRadius: "8px", 
                 border: selectedOsId === os.id ? "1.5px solid var(--accent)" : "1px solid var(--border)",
-                background: selectedOsId === os.id ? "rgba(41, 59, 143, 0.05)" : "white"
+                background: selectedOsId === os.id ? "var(--accent-glow)" : "var(--bg-card)",
+                color: "var(--text-primary)"
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
@@ -353,7 +356,7 @@ export default function OrdensServico({
       </div>
 
       {/* Right Column: OS detailed View & Edit form */}
-      <div className="section-box" style={{ height: "auto" }}>
+      <div className="section-box no-print" style={{ height: "auto" }}>
         {selectedOS ? (
           <div>
             {/* Header section of selected OS */}
@@ -379,19 +382,19 @@ export default function OrdensServico({
                     <select 
                       value={selectedOS.phase}
                       onChange={(e) => handleOSFieldUpdate("phase", e.target.value)}
-                      style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid var(--border)" }}
+                      style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-primary)" }}
                     >
-                      <option value="Novo orçamento">Novo orçamento</option>
-                      <option value="Em negociação">Em negociação</option>
-                      <option value="Aprovado">Aprovado</option>
-                      <option value="Projeto">Projeto</option>
-                      <option value="Produção">Produção</option>
-                      <option value="Compras">Compras</option>
-                      <option value="Logística">Logística</option>
-                      <option value="Evento acontecendo">Evento acontecendo</option>
-                      <option value="Desmontagem">Desmontagem</option>
-                      <option value="Finalizado">Finalizado</option>
-                      <option value="Cancelado">Cancelado</option>
+                      <option value="Novo orçamento" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Novo orçamento</option>
+                      <option value="Em negociação" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Em negociação</option>
+                      <option value="Aprovado" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Aprovado</option>
+                      <option value="Projeto" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Projeto</option>
+                      <option value="Produção" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Produção</option>
+                      <option value="Compras" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Compras</option>
+                      <option value="Logística" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Logística</option>
+                      <option value="Evento acontecendo" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Evento acontecendo</option>
+                      <option value="Desmontagem" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Desmontagem</option>
+                      <option value="Finalizado" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Finalizado</option>
+                      <option value="Cancelado" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Cancelado</option>
                     </select>
                   </div>
                   <div>
@@ -399,11 +402,11 @@ export default function OrdensServico({
                     <select 
                       value={selectedOS.prioridade || "media"}
                       onChange={(e) => handleOSFieldUpdate("prioridade", e.target.value)}
-                      style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid var(--border)" }}
+                      style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-primary)" }}
                     >
-                      <option value="baixa">Baixa</option>
-                      <option value="media">Média</option>
-                      <option value="alta">Alta</option>
+                      <option value="baixa" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Baixa</option>
+                      <option value="media" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Média</option>
+                      <option value="alta" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Alta</option>
                     </select>
                   </div>
                 </div>
@@ -540,7 +543,7 @@ export default function OrdensServico({
 
                 {/* List of allocated tools */}
                 <div className="table-responsive">
-                  <table className="data-table">
+                  <table className="sheet-table">
                     <thead>
                       <tr>
                         <th>Nome do Recurso</th>
@@ -559,10 +562,10 @@ export default function OrdensServico({
                       ) : (
                         selectedOS.assignedTools.map(tool => (
                           <tr key={tool.id}>
-                            <td>{tool.name}</td>
-                            <td>{tool.type === "tool" ? "Ferramenta" : "Mobiliário"}</td>
-                            <td><strong>{tool.allocatedQty} unidades</strong></td>
-                            <td>
+                            <td data-label="Nome do Recurso">{tool.name}</td>
+                            <td data-label="Tipo">{tool.type === "tool" ? "Ferramenta" : "Mobiliário"}</td>
+                            <td data-label="Qtd Alocada"><strong>{tool.allocatedQty} unidades</strong></td>
+                            <td data-label="Ações">
                               <button 
                                 className="btn-secondary btn-xs" 
                                 onClick={() => handleRemoveMaterial(tool.id)}
@@ -588,7 +591,7 @@ export default function OrdensServico({
                     <p className="text-sm text-muted" style={{ padding: "20px 0", textAlign: "center" }}>Nenhum montador escalado nesta OS. Utilize a escala no Kanban ou o botão de Escala Geral.</p>
                   ) : (
                     selectedOS.assignedEmployees.map((emp) => (
-                      <div key={emp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px", border: "1px solid var(--border)", borderRadius: "8px", background: "white" }}>
+                      <div key={emp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", color: "var(--text-primary)" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                           <div style={{ width: "30px", height: "30px", background: "var(--accent)", color: "white", borderRadius: "50%", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", fontWeight: "600", fontSize: "12px" }}>
                             {emp.name.substring(0, 2).toUpperCase()}
@@ -630,7 +633,7 @@ export default function OrdensServico({
                     </div>
                   ) : (
                     selectedOS.fotos.map((photo) => (
-                      <div key={photo.id} style={{ border: "1px solid var(--border)", borderRadius: "8px", overflow: "hidden", position: "relative", background: "white" }}>
+                      <div key={photo.id} style={{ border: "1px solid var(--border)", borderRadius: "8px", overflow: "hidden", position: "relative", background: "var(--bg-card)", color: "var(--text-primary)" }}>
                         <img 
                           src={photo.url} 
                           alt={photo.name} 
@@ -659,7 +662,7 @@ export default function OrdensServico({
                 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                   {/* Client Signature Box */}
-                  <div style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "16px", textAlign: "center", background: "white" }}>
+                  <div style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "16px", textAlign: "center", background: "var(--bg-card)", color: "var(--text-primary)" }}>
                     <strong className="text-sm" style={{ display: "block", marginBottom: "8px" }}>Assinatura do Cliente</strong>
                     {selectedOS.assinaturas?.clienteAssinatura ? (
                       <div>
@@ -688,7 +691,7 @@ export default function OrdensServico({
                   </div>
 
                   {/* Responsible Signature Box */}
-                  <div style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "16px", textAlign: "center", background: "white" }}>
+                  <div style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "16px", textAlign: "center", background: "var(--bg-card)", color: "var(--text-primary)" }}>
                     <strong className="text-sm" style={{ display: "block", marginBottom: "8px" }}>Assinatura do Responsável</strong>
                     {selectedOS.assinaturas?.responsavelAssinatura ? (
                       <div>
@@ -826,12 +829,11 @@ export default function OrdensServico({
       )}
 
       {/* Modal Visualizar Dossiê OS (Impressão Oficial JC Eventos) */}
-      {isPrintModalOpen && selectedOS && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 110, padding: "20px" }}>
-          <div style={{ backgroundColor: "#fff", padding: "30px", borderRadius: "16px", width: "100%", maxWidth: "800px", height: "90%", overflowY: "auto", boxShadow: "0 10px 25px rgba(0,0,0,0.15)", fontFamily: "var(--font)", color: "#1e293b" }}>
-            
+      {isPrintModalOpen && selectedOS && createPortal(
+        <div className="modal-overlay" onClick={() => setIsPrintModalOpen(false)}>
+          <div className="modal-content" style={{ backgroundColor: "#fff", padding: "30px", width: "100%", maxWidth: "800px", height: "90%", overflowY: "auto", fontFamily: "var(--font)", color: "#1e293b" }} onClick={(e) => e.stopPropagation()}>
             {/* Action Bar */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", borderBottom: "1px solid var(--border)", paddingBottom: "12px", marginBottom: "20px" }}>
+            <div className="no-print" style={{ display: "flex", justifyContent: "flex-end", gap: "10px", borderBottom: "1px solid var(--border)", paddingBottom: "12px", marginBottom: "20px" }}>
               <button 
                 type="button" 
                 className="btn-primary" 
@@ -844,18 +846,14 @@ export default function OrdensServico({
             </div>
 
             {/* Document Print Container */}
-            <div id="print-os-dossier" style={{ padding: "10px" }}>
+            <div id="print-os-dossier" className="printable-document" style={{ padding: "10px" }}>
               {/* Header */}
-              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "2px solid #293B8F", paddingBottom: "16px", marginBottom: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "2px solid #144580", paddingBottom: "16px", marginBottom: "20px" }}>
                 <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
-                      <rect width="100" height="100" rx="22" fill="#293B8F" />
-                      <path d="M35 30H52V60C52 66 47 70 40 70" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M72 35H58C52 35 48 40 48 48C48 56 52 61 58 61H72" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-                      <circle cx="80" cy="72" r="8" fill="#C95D46" />
-                    </svg>
-                    <h2 style={{ margin: 0, fontSize: "18px", color: "#293B8F", fontWeight: "800", letterSpacing: "0.5px" }}>JC EVENTOS</h2>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                    <div style={{ backgroundColor: "#144580", padding: "6px 16px", borderRadius: "8px", display: "inline-flex", alignItems: "center" }}>
+                      <img src={logoImg} alt="JC Eventos" style={{ height: "24px", objectFit: "contain" }} />
+                    </div>
                   </div>
                   <p style={{ margin: "4px 0 0 0", fontSize: "11px", color: "#666", fontWeight: "600" }}>JC Design de Stands Ltda | CNPJ: 23.471.817/0001-43</p>
                   <p style={{ margin: "2px 0 0 0", fontSize: "11px", color: "#666" }}>Rua Caetano Sanches, 1807 – Candelária, Natal/RN | CEP: 59065-710</p>
@@ -863,7 +861,7 @@ export default function OrdensServico({
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <h3 style={{ margin: 0, fontSize: "13px", color: "#333", letterSpacing: "1px", fontWeight: "700" }}>DOSSIÊ OPERACIONAL</h3>
-                  <span style={{ fontSize: "14px", fontWeight: "800", color: "#293B8F" }}>OS: {selectedOS.codigo}</span>
+                  <span style={{ fontSize: "14px", fontWeight: "800", color: "#144580" }}>OS: {selectedOS.codigo}</span>
                   <p style={{ margin: "4px 0 0 0", fontSize: "11px", color: "#666" }}>Fase: <strong>{selectedOS.phase.toUpperCase()}</strong></p>
                 </div>
               </div>
@@ -871,13 +869,13 @@ export default function OrdensServico({
               {/* OS Meta Details */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px", fontSize: "12px" }}>
                 <div style={{ border: "1px solid var(--border)", padding: "12px", borderRadius: "8px" }}>
-                  <strong style={{ display: "block", color: "#293B8F", fontSize: "10px", textTransform: "uppercase", marginBottom: "6px" }}>Especificações da Obra</strong>
+                  <strong style={{ display: "block", color: "#144580", fontSize: "10px", textTransform: "uppercase", marginBottom: "6px" }}>Especificações da Obra</strong>
                   <p style={{ margin: "3px 0" }}><strong>Estande/Projeto:</strong> {selectedOS.name}</p>
                   <p style={{ margin: "3px 0" }}><strong>Cliente:</strong> {selectedOS.client}</p>
                   <p style={{ margin: "3px 0" }}><strong>Local de Montagem:</strong> {selectedOS.mapsRoute.endereco}</p>
                 </div>
                 <div style={{ border: "1px solid var(--border)", padding: "12px", borderRadius: "8px" }}>
-                  <strong style={{ display: "block", color: "#293B8F", fontSize: "10px", textTransform: "uppercase", marginBottom: "6px" }}>Cronograma &amp; Equipe</strong>
+                  <strong style={{ display: "block", color: "#144580", fontSize: "10px", textTransform: "uppercase", marginBottom: "6px" }}>Cronograma &amp; Equipe</strong>
                   <p style={{ margin: "3px 0" }}><strong>Coordenador Geral:</strong> {selectedOS.responsavel}</p>
                   <p style={{ margin: "3px 0" }}><strong>Montagem:</strong> {selectedOS.dataMontagem} a {selectedOS.startDate}</p>
                   <p style={{ margin: "3px 0" }}><strong>Desmontagem:</strong> {selectedOS.dataDesmontagem}</p>
@@ -886,8 +884,8 @@ export default function OrdensServico({
 
               {/* Materials allocated */}
               <div style={{ marginBottom: "20px" }}>
-                <h4 style={{ fontSize: "12px", fontWeight: "700", borderBottom: "1px solid #293B8F", paddingBottom: "6px", color: "#293B8F", textTransform: "uppercase", marginBottom: "8px" }}>Insumos &amp; Mobiliário Separados no WMS</h4>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+                <h4 style={{ fontSize: "12px", fontWeight: "700", borderBottom: "1px solid #144580", paddingBottom: "6px", color: "#144580", textTransform: "uppercase", marginBottom: "8px" }}>Insumos &amp; Mobiliário Separados no WMS</h4>
+                <table className="table-responsive-cards" style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                   <thead>
                     <tr style={{ backgroundColor: "#f8fafc", textAlign: "left", borderBottom: "1.5px solid #293B8F" }}>
                       <th style={{ padding: "6px" }}>Descrição do Insumo / Item</th>
@@ -899,9 +897,9 @@ export default function OrdensServico({
                     {selectedOS.assignedTools && selectedOS.assignedTools.length > 0 ? (
                       selectedOS.assignedTools.map(item => (
                         <tr key={item.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                          <td style={{ padding: "6px" }}>{item.name}</td>
-                          <td style={{ padding: "6px", textTransform: "capitalize" }}>{item.type === "tool" ? "Ferramenta / Equipamento" : "Mobiliário / Cenografia"}</td>
-                          <td style={{ padding: "6px", textAlign: "right", fontWeight: "700" }}>{item.allocatedQty} un</td>
+                          <td data-label="Descrição" style={{ padding: "6px" }}>{item.name}</td>
+                          <td data-label="Tipo" style={{ padding: "6px", textTransform: "capitalize" }}>{item.type === "tool" ? "Ferramenta / Equipamento" : "Mobiliário / Cenografia"}</td>
+                          <td data-label="Quantidade" style={{ padding: "6px", textAlign: "right", fontWeight: "700" }}>{item.allocatedQty} un</td>
                         </tr>
                       ))
                     ) : (
@@ -915,10 +913,10 @@ export default function OrdensServico({
 
               {/* Escalated staff members */}
               <div style={{ marginBottom: "20px" }}>
-                <h4 style={{ fontSize: "12px", fontWeight: "700", borderBottom: "1px solid #293B8F", paddingBottom: "6px", color: "#293B8F", textTransform: "uppercase", marginBottom: "8px" }}>Equipe Técnica Escalada em Campo</h4>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+                <h4 style={{ fontSize: "12px", fontWeight: "700", borderBottom: "1px solid #144580", paddingBottom: "6px", color: "#144580", textTransform: "uppercase", marginBottom: "8px" }}>Equipe Técnica Escalada em Campo</h4>
+                <table className="table-responsive-cards" style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                   <thead>
-                    <tr style={{ backgroundColor: "#f8fafc", textAlign: "left", borderBottom: "1.5px solid #293B8F" }}>
+                    <tr style={{ backgroundColor: "#f8fafc", textAlign: "left", borderBottom: "1.5px solid #144580" }}>
                       <th style={{ padding: "6px" }}>Colaborador</th>
                       <th style={{ padding: "6px" }}>Função / Cargo</th>
                       <th style={{ padding: "6px", textAlign: "right" }}>Documentação Operacional</th>
@@ -928,10 +926,10 @@ export default function OrdensServico({
                     {selectedOS.assignedEmployees && selectedOS.assignedEmployees.length > 0 ? (
                       selectedOS.assignedEmployees.map(emp => (
                         <tr key={emp.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                          <td style={{ padding: "6px" }}><strong>{emp.name}</strong></td>
-                          <td style={{ padding: "6px" }}>{emp.role}</td>
-                          <td style={{ padding: "6px", textAlign: "right", color: emp.documentStatus === "complete" ? "green" : "red", fontWeight: "600" }}>
-                            {emp.documentStatus === "complete" ? "LIBERADO (ASO/NRs em dia)" : "PENDENTE DE ASO/NR"}
+                          <td data-label="Colaborador" style={{ padding: "6px" }}><strong>{emp.name}</strong></td>
+                          <td data-label="Função" style={{ padding: "6px" }}>{emp.role}</td>
+                          <td data-label="Documentação" style={{ padding: "6px", textAlign: "right", color: emp.documentStatus === "complete" ? "green" : "red", fontWeight: "600" }}>
+                            {emp.documentStatus === "complete" ? "LIBERADO" : "PENDENTE"}
                           </td>
                         </tr>
                       ))
@@ -946,7 +944,7 @@ export default function OrdensServico({
 
               {/* OS Checklist Status */}
               <div style={{ marginBottom: "20px" }}>
-                <h4 style={{ fontSize: "12px", fontWeight: "700", borderBottom: "1px solid #293B8F", paddingBottom: "6px", color: "#293B8F", textTransform: "uppercase", marginBottom: "8px" }}>Cronograma de Atividades &amp; Checklist (Completo: {selectedOS.completionRate}%)</h4>
+                <h4 style={{ fontSize: "12px", fontWeight: "700", borderBottom: "1px solid #144580", paddingBottom: "6px", color: "#144580", textTransform: "uppercase", marginBottom: "8px" }}>Cronograma de Atividades &amp; Checklist (Completo: {selectedOS.completionRate}%)</h4>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "11px" }}>
                   {selectedOS.checklist.map(item => (
                     <div key={item.id} style={{ padding: "6px", border: "1px solid var(--border)", borderRadius: "4px", backgroundColor: item.done ? "#f0fdf4" : "#fff", display: "flex", alignItems: "center", gap: "6px" }}>
@@ -958,7 +956,7 @@ export default function OrdensServico({
               </div>
 
               {/* Signatures Mirror */}
-              <div style={{ borderTop: "2px solid #293B8F", paddingTop: "20px", marginTop: "30px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", fontSize: "11px", textAlign: "center" }}>
+              <div style={{ borderTop: "2px solid #144580", paddingTop: "20px", marginTop: "30px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", fontSize: "11px", textAlign: "center" }}>
                 <div>
                   <div style={{ height: "60px", display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "1px solid #ccc", marginBottom: "6px" }}>
                     {selectedOS.assinaturas?.clienteAssinatura ? (
@@ -985,7 +983,8 @@ export default function OrdensServico({
 
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -38,7 +38,7 @@ export default function Warehouse({
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "24px" }}>
+    <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "24px" }}>
       {/* Left Column: Inventory List */}
       <div className="section-box" style={{ height: "auto" }}>
         <div className="section-box-header">
@@ -48,7 +48,7 @@ export default function Warehouse({
           </h3>
         </div>
 
-        <table className="sheet-table">
+        <table className="sheet-table table-responsive-cards">
           <thead>
             <tr>
               <th>Item</th>
@@ -60,13 +60,13 @@ export default function Warehouse({
           <tbody>
             {warehouseItems.map((item) => (
               <tr key={item.id} className="sheet-row">
-                <td className="semibold">{item.name}</td>
-                <td>
+                <td data-label="Item" className="semibold">{item.name}</td>
+                <td data-label="Tipo">
                   <span className={`badge ${item.type === "tool" ? "badge-pt" : "badge-en"}`}>
                     {item.type === "tool" ? "Ferramenta" : "Mobiliário"}
                   </span>
                 </td>
-                <td className={item.stock < 5 ? "semibold text-danger" : ""}>
+                <td data-label="Estoque Disponível" className={item.stock < 5 ? "semibold text-danger" : ""}>
                   {item.stock} unidades
                   {item.stock < 5 && (
                     <span className="text-xs text-danger" style={{ display: "block", fontWeight: "normal" }}>
@@ -74,7 +74,7 @@ export default function Warehouse({
                     </span>
                   )}
                 </td>
-                <td style={{ textAlign: "center" }}>
+                <td data-label="Ações" style={{ textAlign: "center" }}>
                   <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
                     <button 
                       className="btn-secondary text-xs" 

@@ -1,9 +1,11 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { 
   FileText, Plus, Trash2, Mail, Eye, Check, X, 
-  Send, Printer, FileDown, History, RefreshCw 
+  Send, Printer, FileDown, History, RefreshCw, Loader 
 } from "lucide-react";
 import type { Orcamento, WarehouseItem, OrcamentoItemDetalhado } from "../types";
+import logoImg from "../assets/logo.png";
 
 interface OrcamentosProps {
   orcamentos: Orcamento[];
@@ -68,6 +70,39 @@ export default function Orcamentos({
   const [emailTo, setEmailTo] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
+
+  // PDF generation state
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
+
+  // Real PDF generation using html2pdf.js
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById("print-proposal-dossier");
+    if (!element || !selectedOrc) return;
+
+    setIsPdfLoading(true);
+    try {
+      const html2pdfModule = await import("html2pdf.js");
+      const html2pdfFn = (html2pdfModule.default || html2pdfModule) as (
+        el: HTMLElement,
+        opts: Record<string, unknown>
+      ) => { save(): Promise<void> };
+
+      const filename = `Proposta_${selectedOrc.codigo}_${selectedOrc.cliente.replace(/\s+/g, "_")}.pdf`;
+
+      await html2pdfFn(element, {
+        margin: [10, 10, 10, 10],
+        filename,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      }).save();
+    } catch (err) {
+      console.error("Erro ao gerar PDF:", err);
+      alert("Erro ao gerar o PDF. Tente usar \"Imprimir Proposta\" como alternativa.");
+    } finally {
+      setIsPdfLoading(false);
+    }
+  };
 
   const handleAddProduct = () => {
     const prod = warehouseItems.find(p => p.id === selectedProdId);
@@ -251,10 +286,10 @@ export default function Orcamentos({
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: selectedOrc ? "340px 1fr" : "1fr", gap: "20px", padding: "10px", minHeight: "80vh" }}>
+    <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: selectedOrc ? "340px 1fr" : "1fr", gap: "20px", padding: "10px", minHeight: "80vh" }}>
 
       {/* ── Left: Minimal List ── */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+      <div className="no-print" style={{ display: "flex", flexDirection: "column", gap: "0" }}>
 
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
@@ -335,13 +370,14 @@ export default function Orcamentos({
                     </div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
-                    <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--accent)" }}>
+                    <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--accent-text)" }}>
                       {fmtBrl(orc.total)}
                     </span>
-                    <span style={{
-                      fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "20px",
-                      backgroundColor: cfg.bg, color: cfg.color
-                    }}>
+                    <span className={`badge ${
+                      orc.status === "aprovado" ? "badge-success" :
+                      orc.status === "negociacao" ? "badge-warning" :
+                      orc.status === "recusado" ? "badge-danger" : "badge-muted"
+                    }`} style={{ fontSize: "9px" }}>
                       {cfg.label}
                     </span>
                   </div>
@@ -356,7 +392,7 @@ export default function Orcamentos({
       {selectedOrc && (() => {
         const cfg = statusCfg[selectedOrc.status];
         return (
-          <div style={{
+          <div className="no-print" style={{
             background: "var(--bg-card)", border: "1px solid var(--border)",
             borderRadius: "16px", padding: "24px", boxShadow: "var(--shadow-md)",
             overflowY: "auto", maxHeight: "calc(100vh - 130px)"
@@ -462,7 +498,7 @@ export default function Orcamentos({
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px" }}>
                     <span>Impostos ({selectedOrc.impostos}%)</span>
-                    <span style={{ color: "#C95D46" }}>+ {fmtBrl(selectedOrc.total * (selectedOrc.impostos / 100))}</span>
+                    <span style={{ color: "#ED6A52" }}>+ {fmtBrl(selectedOrc.total * (selectedOrc.impostos / 100))}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", borderTop: "1px solid var(--border)", paddingTop: "10px" }}>
                     <span style={{ fontSize: "13px" }}>Valor Final</span>
@@ -796,31 +832,37 @@ export default function Orcamentos({
       )}
 
       {/* PDF PREVIEW MODAL */}
-      {isPdfModalOpen && selectedOrc && (
+      {isPdfModalOpen && selectedOrc && createPortal(
         <div className="modal-overlay" onClick={() => setIsPdfModalOpen(false)}>
-          <div className="modal-content" style={{ maxWidth: "800px", padding: "40px", background: "white", color: "#333", border: "1px solid #aaa" }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={{ maxWidth: "800px", padding: "40px", background: "white", color: "#333", border: "1px solid #aaa", maxHeight: "90vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
             {/* Action Bar for Printing / Simulating PDF */}
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginBottom: "30px", borderBottom: "1px solid #eee", paddingBottom: "10px" }} className="no-print">
               <button type="button" className="btn-secondary" style={{ display: "flex", alignItems: "center", gap: "4px" }} onClick={() => window.print()}>
                 <Printer size={14} /> Imprimir Proposta
               </button>
-              <button type="button" className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "4px" }} onClick={() => alert("PDF gerado e salvo com sucesso na pasta Downloads (Simulado)!")}>
-                <FileDown size={14} /> Download PDF
+              <button
+                type="button"
+                className="btn-primary"
+                style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: "140px", justifyContent: "center" }}
+                onClick={handleDownloadPDF}
+                disabled={isPdfLoading}
+              >
+                {isPdfLoading
+                  ? <><Loader size={14} style={{ animation: "spin 1s linear infinite" }} /> Gerando PDF...</>
+                  : <><FileDown size={14} /> Download PDF</>
+                }
               </button>
               <button type="button" className="btn-secondary" onClick={() => setIsPdfModalOpen(false)}>Fechar</button>
             </div>
 
-            {/* Document Header */}
-            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "2px solid #333", paddingBottom: "20px", marginBottom: "20px" }}>
+            <div id="print-proposal-dossier" className="printable-document">
+              {/* Document Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "2px solid #144580", paddingBottom: "20px", marginBottom: "20px" }}>
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <svg width="28" height="28" viewBox="0 0 100 100" fill="none">
-                    <rect width="100" height="100" rx="22" fill="#293B8F" />
-                    <path d="M35 30H52V60C52 66 47 70 40 70" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M72 35H58C52 35 48 40 48 48C48 56 52 61 58 61H72" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-                    <circle cx="80" cy="72" r="8" fill="#C95D46" />
-                  </svg>
-                  <h2 style={{ margin: 0, color: "#293B8F", fontWeight: 800, fontSize: "18px", letterSpacing: "0.5px" }}>JC EVENTOS</h2>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                  <div style={{ backgroundColor: "#144580", padding: "6px 16px", borderRadius: "8px", display: "inline-flex", alignItems: "center" }}>
+                    <img src={logoImg} alt="JC Eventos" style={{ height: "24px", objectFit: "contain" }} />
+                  </div>
                 </div>
                 <p style={{ margin: "4px 0 0 0", fontSize: "11px", color: "#666", fontWeight: "600" }}>JC Design de Stands Ltda | CNPJ: 23.471.817/0001-43</p>
                 <p style={{ margin: "2px 0 0 0", fontSize: "11px", color: "#666" }}>Rua Caetano Sanches, 1807 – Candelária, Natal/RN | CEP: 59065-710</p>
@@ -940,8 +982,10 @@ export default function Orcamentos({
                 <p style={{ margin: 0, color: "#777" }}>Assinatura de Aceite e Contratação</p>
               </div>
             </div>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* EMAIL SEND DIALOG */}

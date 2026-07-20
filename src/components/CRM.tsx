@@ -25,6 +25,7 @@ export default function CRM({
   onUpdateClient, onUpdateSupplier, onAddClient, onAddSupplier
 }: CRMProps) {
   const [activeSubTab, setActiveSubTab] = useState<"pipeline" | "clientes" | "fornecedores">("pipeline");
+  const [activeMobileStage, setActiveMobileStage] = useState<"briefing" | "orcamento" | "aprovado" | "perdido">("briefing");
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClientIndex, setSelectedClientIndex] = useState<number | null>(null);
@@ -524,120 +525,153 @@ export default function CRM({
 
       {/* Pipeline sub tab */}
       {activeSubTab === "pipeline" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", overflowX: "auto", paddingBottom: "12px" }}>
-          {/* Colunas */}
-          {(["briefing", "orcamento", "aprovado", "perdido"] as const).map((stage) => (
-            <div 
-              key={stage} 
-              style={{
-                backgroundColor: "rgba(255,255,255,0.45)",
-                border: "1px solid rgba(255,255,255,0.5)",
-                backdropFilter: "blur(8px)",
-                borderRadius: "16px",
-                padding: "16px",
-                minHeight: "450px",
-                display: "flex",
-                flexDirection: "column"
-              }}
+        <div>
+          {/* Seletor Mobile de Estágios do Pipeline */}
+          <div className="mobile-kanban-tabs" style={{ display: "none", marginBottom: "16px", gap: "4px" }}>
+            <button 
+              className={`btn-secondary text-xs ${activeMobileStage === "briefing" ? "active" : ""}`} 
+              style={{ flex: 1, padding: "8px 2px", borderBottom: activeMobileStage === "briefing" ? "3px solid var(--accent)" : "none", borderRadius: "8px", fontWeight: "600", fontSize: "11px" }}
+              onClick={() => setActiveMobileStage("briefing")}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                <span 
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    color: 
-                      stage === "aprovado" ? "var(--success-text)" :
-                      stage === "perdido" ? "var(--danger)" : "var(--accent)"
-                  }}
-                >
-                  {stage === "briefing" && "Fase 1: Prospecção"}
-                  {stage === "orcamento" && "Fase 2: Negociação"}
-                  {stage === "aprovado" && "Fase 3: Fechado"}
-                  {stage === "perdido" && "Arquivado: Perdido"}
-                </span>
-                <span 
-                  style={{
-                    backgroundColor: "rgba(41, 59, 143, 0.08)",
-                    color: "var(--accent)",
-                    fontSize: "11px",
-                    fontWeight: "700",
-                    padding: "2px 8px",
-                    borderRadius: "10px"
-                  }}
-                >
-                  {getLeadsByEstagio(stage).length}
-                </span>
-              </div>
+              Prospecção ({getLeadsByEstagio("briefing").length})
+            </button>
+            <button 
+              className={`btn-secondary text-xs ${activeMobileStage === "orcamento" ? "active" : ""}`} 
+              style={{ flex: 1, padding: "8px 2px", borderBottom: activeMobileStage === "orcamento" ? "3px solid var(--accent)" : "none", borderRadius: "8px", fontWeight: "600", fontSize: "11px" }}
+              onClick={() => setActiveMobileStage("orcamento")}
+            >
+              Negociação ({getLeadsByEstagio("orcamento").length})
+            </button>
+            <button 
+              className={`btn-secondary text-xs ${activeMobileStage === "aprovado" ? "active" : ""}`} 
+              style={{ flex: 1, padding: "8px 2px", borderBottom: activeMobileStage === "aprovado" ? "3px solid var(--accent)" : "none", borderRadius: "8px", fontWeight: "600", fontSize: "11px" }}
+              onClick={() => setActiveMobileStage("aprovado")}
+            >
+              Fechado ({getLeadsByEstagio("aprovado").length})
+            </button>
+            <button 
+              className={`btn-secondary text-xs ${activeMobileStage === "perdido" ? "active" : ""}`} 
+              style={{ flex: 1, padding: "8px 2px", borderBottom: activeMobileStage === "perdido" ? "3px solid var(--accent)" : "none", borderRadius: "8px", fontWeight: "600", fontSize: "11px" }}
+              onClick={() => setActiveMobileStage("perdido")}
+            >
+              Perdido ({getLeadsByEstagio("perdido").length})
+            </button>
+          </div>
 
-              {/* Cards de Lead */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px", flexGrow: 1, overflowY: "auto" }}>
-                {getLeadsByEstagio(stage).length === 0 ? (
-                  <div style={{ border: "1px dashed var(--border)", borderRadius: "12px", padding: "20px", textAlign: "center", color: "var(--text-muted)", fontSize: "11px", marginTop: "10px" }}>
-                    Nenhum lead nesta fase
-                  </div>
-                ) : (
-                  getLeadsByEstagio(stage).map(lead => (
-                    <div 
-                      key={lead.id} 
-                      style={{
-                        backgroundColor: "var(--bg-card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "12px",
-                        padding: "16px",
-                        boxShadow: "var(--shadow-sm)",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "10px"
-                      }}
-                    >
-                      <div onClick={() => handleOpenLead(lead)} style={{ cursor: "pointer" }} title="Ver detalhes do Lead">
-                        <strong style={{ display: "block", fontSize: "14px", color: "var(--accent)", textDecoration: "underline" }}>{lead.empresa}</strong>
-                        <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{lead.contato} ({lead.cargo})</span>
-                      </div>
+          <div className="crm-pipeline-grid">
+            {/* Colunas */}
+            {(["briefing", "orcamento", "aprovado", "perdido"] as const).map((stage) => (
+              <div 
+                key={stage} 
+                className={`mobile-crm-col ${activeMobileStage === stage ? "mobile-show" : ""}`}
+                style={{
+                  backgroundColor: "var(--bg-kanban-col)",
+                  border: "1px solid var(--border)",
+                  backdropFilter: "blur(8px)",
+                  borderRadius: "16px",
+                  padding: "16px",
+                  minHeight: "450px",
+                  display: "flex",
+                  flexDirection: "column"
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                  <span 
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      color: "var(--text-primary)"
+                    }}
+                  >
+                    {stage === "briefing" && "Fase 1: Prospecção"}
+                    {stage === "orcamento" && "Fase 2: Negociação"}
+                    {stage === "aprovado" && "Fase 3: Fechado"}
+                    {stage === "perdido" && "Arquivado: Perdido"}
+                  </span>
+                  <span 
+                    style={{
+                      backgroundColor: "var(--accent-glow)",
+                      color: "var(--accent)",
+                      fontSize: "11px",
+                      fontWeight: "700",
+                      padding: "2px 8px",
+                      borderRadius: "10px"
+                    }}
+                  >
+                    {getLeadsByEstagio(stage).length}
+                  </span>
+                </div>
 
-                      {/* Ações de movimentação */}
-                      <div style={{ display: "flex", gap: "6px", marginTop: "4px", borderTop: "1px solid var(--border)", paddingTop: "8px" }}>
-                        {stage !== "briefing" && (
-                          <button 
-                            onClick={() => onUpdateLeadEstagio(lead.id, stage === "orcamento" ? "briefing" : stage === "aprovado" ? "orcamento" : "orcamento")}
-                            style={{ flexGrow: 1, padding: "4px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--border)", background: "var(--bg-card)", cursor: "pointer", color: "var(--text-primary)" }}
-                          >
-                            ◄ Recuar
-                          </button>
-                        )}
-                        {stage !== "aprovado" && stage !== "perdido" && (
-                          <button 
-                            onClick={() => onUpdateLeadEstagio(lead.id, stage === "briefing" ? "orcamento" : "aprovado")}
-                            style={{ flexGrow: 1, padding: "4px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--border)", background: "var(--accent-glow)", color: "var(--accent)", cursor: "pointer", fontWeight: 600 }}
-                          >
-                            Avançar ►
-                          </button>
-                        )}
-                        {stage !== "perdido" && stage !== "aprovado" && (
-                          <button 
-                            onClick={() => onUpdateLeadEstagio(lead.id, "perdido")}
-                            style={{ padding: "4px 8px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--border)", background: "var(--danger-glow)", color: "var(--danger)", cursor: "pointer" }}
-                            title="Perdido"
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
+                {/* Cards de Lead */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", flexGrow: 1, overflowY: "auto" }}>
+                  {getLeadsByEstagio(stage).length === 0 ? (
+                    <div style={{ border: "1px dashed var(--border)", borderRadius: "12px", padding: "20px", textAlign: "center", color: "var(--text-muted)", fontSize: "11px", marginTop: "10px" }}>
+                      Nenhum lead nesta fase
                     </div>
-                  ))
-                )}
+                  ) : (
+                    getLeadsByEstagio(stage).map(lead => (
+                      <div 
+                        key={lead.id} 
+                        style={{
+                          backgroundColor: "var(--bg-card)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "12px",
+                          padding: "16px",
+                          boxShadow: "var(--shadow-sm)",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "10px"
+                        }}
+                      >
+                        <div onClick={() => handleOpenLead(lead)} style={{ cursor: "pointer" }} title="Ver detalhes do Lead">
+                          <strong style={{ display: "block", fontSize: "14px", color: "var(--accent)", textDecoration: "underline" }}>{lead.empresa}</strong>
+                          <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{lead.contato} ({lead.cargo})</span>
+                        </div>
+
+                        {/* Ações de movimentação */}
+                        <div style={{ display: "flex", gap: "6px", marginTop: "4px", borderTop: "1px solid var(--border)", paddingTop: "8px" }}>
+                          {stage !== "briefing" && (
+                            <button 
+                              onClick={() => onUpdateLeadEstagio(lead.id, stage === "orcamento" ? "briefing" : stage === "aprovado" ? "orcamento" : "orcamento")}
+                              style={{ flexGrow: 1, padding: "4px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--text-muted)", background: "var(--bg-card)", cursor: "pointer", color: "var(--text-primary)" }}
+                            >
+                              ◄ Recuar
+                            </button>
+                          )}
+                          {stage !== "aprovado" && stage !== "perdido" && (
+                            <button 
+                              onClick={() => onUpdateLeadEstagio(lead.id, stage === "briefing" ? "orcamento" : "aprovado")}
+                              style={{ flexGrow: 1, padding: "4px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--accent-text)", background: "var(--accent-glow)", color: "var(--accent-text)", cursor: "pointer", fontWeight: 600 }}
+                            >
+                              Avançar ►
+                            </button>
+                          )}
+                          {stage !== "perdido" && stage !== "aprovado" && (
+                            <button 
+                              onClick={() => onUpdateLeadEstagio(lead.id, "perdido")}
+                              style={{ padding: "4px 8px", fontSize: "10px", borderRadius: "4px", border: "1px solid var(--danger-text)", background: "var(--danger-glow)", color: "var(--danger-text)", cursor: "pointer" }}
+                              title="Perdido"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
       {/* Clientes tab */}
       {activeSubTab === "clientes" && (
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+          <table className="table-responsive-cards" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
               <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
                 <th style={{ padding: "16px 24px", color: "var(--text-primary)", fontWeight: "600", fontSize: "13px" }}>Cliente</th>
@@ -681,7 +715,7 @@ export default function CRM({
       {/* Fornecedores tab */}
       {activeSubTab === "fornecedores" && (
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+          <table className="table-responsive-cards" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
               <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
                 <th style={{ padding: "16px 24px", color: "var(--text-primary)", fontWeight: "600", fontSize: "13px" }}>Fornecedor</th>
@@ -698,7 +732,7 @@ export default function CRM({
                   style={{ borderBottom: "1px solid var(--border)", cursor: "pointer" }}
                 >
                   <td style={{ padding: "16px 24px", display: "flex", alignItems: "center", gap: "10px" }}>
-                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--warning-glow)", color: "var(--warning)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700" }}>
+                    <div className="supplier-avatar">
                       {f.name.substring(0, 1)}
                     </div>
                     <strong>{f.name}</strong>
