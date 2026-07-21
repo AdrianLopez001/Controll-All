@@ -12,15 +12,22 @@ interface OrdensServicoProps {
   allEmployees: Employee[];
   allWarehouseItems: WarehouseItem[];
   onUpdateEvent: (updated: Project) => void;
+  initialOsId?: string;
 }
 
 export default function OrdensServico({
   events,
   allEmployees,
   allWarehouseItems,
-  onUpdateEvent
+  onUpdateEvent,
+  initialOsId = ""
 }: OrdensServicoProps) {
-  const [selectedOsId, setSelectedOsId] = useState<string>("");
+  const [selectedOsId, setSelectedOsId] = useState<string>(initialOsId);
+
+  // Deep-link: when parent sets initialOsId (from notifications/tasks panel), open that OS
+  useEffect(() => {
+    if (initialOsId) setSelectedOsId(initialOsId);
+  }, [initialOsId]);
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<"all" | "muito_alta" | "alta" | "media" | "baixa">("all");
   const [sortByPriority, setSortByPriority] = useState(false);

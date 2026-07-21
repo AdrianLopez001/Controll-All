@@ -1146,6 +1146,7 @@ export default function App() {
   // Panel visibility flags
   const [showTasksPanel, setShowTasksPanel] = useState(false);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
+  const [deepLinkOsId, setDeepLinkOsId] = useState<string>("");
 
   // Password recovery states
   const [showPasswordRecovery, setShowPasswordRecovery] = useState(false);
@@ -1570,51 +1571,71 @@ export default function App() {
               const pendingTasks = events.flatMap(evt =>
                 evt.checklist
                   .filter(c => !c.done)
-                  .map(c => ({ evtName: evt.name, evtCodigo: evt.codigo, text: c.text, id: c.id, evtId: evt.id }))
+                  .map(c => ({ evtName: evt.name, evtCodigo: evt.codigo, text: c.text, id: c.id, evtId: evt.id, phase: evt.phase }))
               );
               return (
                 <div style={{
                   position: "absolute", top: "calc(100% + 10px)", right: 0,
-                  width: "360px", maxHeight: "480px", overflowY: "auto",
+                  width: "380px", maxHeight: "520px",
                   background: "var(--bg-card)", border: "1px solid var(--border)",
-                  borderRadius: "14px", boxShadow: "0 12px 40px rgba(0,0,0,0.18)",
-                  zIndex: 9999
+                  borderRadius: "16px", boxShadow: "0 16px 48px rgba(0,0,0,0.18)",
+                  zIndex: 9999, overflow: "hidden", display: "flex", flexDirection: "column"
                 }}>
-                  <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                      <span style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)" }}>Tarefas Operacionais Pendentes</span>
-                      <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "2px 0 0" }}>{pendingTasks.length} itens não concluídos</p>
+                  {/* Panel header — section-box-header style */}
+                  <div className="section-box-header" style={{ padding: "16px 18px", margin: 0, borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "var(--accent-glow)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <ClipboardCheck size={16} style={{ color: "var(--accent)" }} />
+                      </div>
+                      <div>
+                        <span className="section-box-title" style={{ fontSize: "13px" }}>Tarefas Pendentes</span>
+                        <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: 0 }}>{pendingTasks.length} itens não concluídos</p>
+                      </div>
                     </div>
-                    <button onClick={() => setShowTasksPanel(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "18px", lineHeight: 1 }}>✕</button>
+                    <button onClick={() => setShowTasksPanel(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "16px", lineHeight: 1, padding: "4px" }}>✕</button>
                   </div>
-                  {pendingTasks.length === 0 ? (
-                    <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: "13px" }}>
-                      ✅ Nenhuma tarefa pendente!
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
-                      {pendingTasks.map((t) => (
-                        <div key={`${t.evtId}-${t.id}`} style={{
-                          padding: "10px 16px",
-                          borderBottom: "1px solid var(--border)",
-                          display: "flex", alignItems: "flex-start", gap: "10px"
-                        }}>
-                          <div style={{
-                            width: "8px", height: "8px", borderRadius: "50%",
-                            background: "var(--accent)", marginTop: "5px", flexShrink: 0
-                          }} />
-                          <div style={{ flex: 1 }}>
-                            <p style={{ fontSize: "12px", color: "var(--text-primary)", margin: 0, lineHeight: 1.4 }}>{t.text}</p>
-                            <span style={{ fontSize: "10px", color: "var(--text-muted)", fontFamily: "monospace" }}>{t.evtCodigo} · {t.evtName}</span>
+
+                  {/* Scrollable list */}
+                  <div style={{ overflowY: "auto", flex: 1 }}>
+                    {pendingTasks.length === 0 ? (
+                      <div style={{ padding: "36px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: "13px" }}>
+                        ✅ Nenhuma tarefa pendente!
+                      </div>
+                    ) : (
+                      <div className="event-feed-list" style={{ padding: "10px 12px", gap: "6px" }}>
+                        {pendingTasks.map((t) => (
+                          <div
+                            key={`${t.evtId}-${t.id}`}
+                            className="event-feed-card"
+                            onClick={() => {
+                              setDeepLinkOsId(t.evtId);
+                              setActiveTab("os");
+                              setShowTasksPanel(false);
+                            }}
+                            style={{ padding: "10px 12px", gap: "10px" }}
+                          >
+                            <div className="event-feed-info">
+                              <div className="event-feed-avatar color-0" style={{ width: "34px", height: "34px", fontSize: "12px", borderRadius: "8px", flexShrink: 0 }}>
+                                ✓
+                              </div>
+                              <div className="event-feed-meta">
+                                <span className="event-feed-title" style={{ fontSize: "12px" }}>{t.text}</span>
+                                <span className="event-feed-date">{t.evtCodigo} · {t.evtName}</span>
+                              </div>
+                            </div>
+                            <span className="badge badge-warning" style={{ fontSize: "9px", whiteSpace: "nowrap", flexShrink: 0 }}>{t.phase}</span>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border)" }}>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div style={{ padding: "10px 14px", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
                     <button
-                      onClick={() => { setActiveTab("os"); setShowTasksPanel(false); }}
-                      style={{ width: "100%", padding: "8px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}
+                      onClick={() => { setDeepLinkOsId(""); setActiveTab("os"); setShowTasksPanel(false); }}
+                      className="btn-primary"
+                      style={{ width: "100%", padding: "8px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}
                     >
                       Ver todas as OSs →
                     </button>
@@ -1640,89 +1661,110 @@ export default function App() {
             </button>
 
             {showNotifPanel && (() => {
-              const notifs: { icon: string; title: string; desc: string; tab?: string; type: "danger" | "warning" | "info" }[] = [];
+              type NotifItem = {
+                icon: string;
+                title: string;
+                desc: string;
+                tab?: string;
+                osId?: string;
+                badgeClass: string;
+                badgeTxt: string;
+                avatarClass: string;
+              };
+              const notifs: NotifItem[] = [];
+
               if (lowStockCount > 0) notifs.push({
-                icon: "⚠️", title: "Estoque Crítico",
+                icon: "📦", title: "Estoque Crítico",
                 desc: `${lowStockCount} ${lowStockCount === 1 ? "item abaixo" : "itens abaixo"} do estoque mínimo`,
-                tab: "warehouse", type: "danger"
+                tab: "warehouse", badgeClass: "badge-danger", badgeTxt: "URGENTE", avatarClass: "color-1"
               });
               if (pendingDocsCount > 0) notifs.push({
                 icon: "📄", title: "Documentos Pendentes",
-                desc: `${pendingDocsCount} documento(s) aguardando envio ou aprovação`,
-                tab: "os", type: "warning"
+                desc: `${pendingDocsCount} documento(s) aguardando aprovação`,
+                tab: "os", badgeClass: "badge-warning", badgeTxt: "ATENÇÃO", avatarClass: "color-3"
               });
+
               events
                 .filter(e => e.phase !== "Finalizado")
                 .forEach(e => {
                   const daysUntil = Math.ceil((new Date(e.dataMontagem || e.startDate).getTime() - Date.now()) / 86400000);
                   if (daysUntil >= 0 && daysUntil <= 7) {
                     notifs.push({
-                      icon: "📅", title: `Montagem em ${daysUntil === 0 ? "hoje" : daysUntil + (daysUntil === 1 ? " dia" : " dias")}`,
+                      icon: "📅",
+                      title: `Montagem em ${daysUntil === 0 ? "hoje!" : daysUntil + (daysUntil === 1 ? " dia" : " dias")}`,
                       desc: `${e.name} — ${e.cidadeEvento || ""}`,
-                      tab: "os", type: "info"
+                      tab: "os", osId: e.id,
+                      badgeClass: daysUntil <= 1 ? "badge-danger" : "badge-warning",
+                      badgeTxt: e.codigo, avatarClass: daysUntil <= 1 ? "color-1" : "color-3"
                     });
                   }
                 });
+
               const empPending = employees.filter(e => e.documentStatus === "pending");
               if (empPending.length > 0) notifs.push({
-                icon: "👤", title: "Colaboradores com Doc. Pendente",
-                desc: `${empPending.length} colaborador(es) com documentação incompleta`,
-                tab: "employees", type: "warning"
+                icon: "👤", title: "Documentação de Colaboradores",
+                desc: `${empPending.length} colaborador(es) com ficha incompleta`,
+                tab: "employees", badgeClass: "badge-muted", badgeTxt: "PENDENTE", avatarClass: "color-2"
               });
-
-              const badgeColor = { danger: "#ef4444", warning: "#f97316", info: "var(--accent)" };
 
               return (
                 <div style={{
                   position: "absolute", top: "calc(100% + 10px)", right: 0,
-                  width: "360px", maxHeight: "480px", overflowY: "auto",
+                  width: "380px", maxHeight: "520px",
                   background: "var(--bg-card)", border: "1px solid var(--border)",
-                  borderRadius: "14px", boxShadow: "0 12px 40px rgba(0,0,0,0.18)",
-                  zIndex: 9999
+                  borderRadius: "16px", boxShadow: "0 16px 48px rgba(0,0,0,0.18)",
+                  zIndex: 9999, overflow: "hidden", display: "flex", flexDirection: "column"
                 }}>
-                  <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                      <span style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)" }}>Notificações do Sistema</span>
-                      <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "2px 0 0" }}>{notifs.length} alerta(s) ativo(s)</p>
+                  {/* Panel header */}
+                  <div className="section-box-header" style={{ padding: "16px 18px", margin: 0, borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "var(--danger-glow)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Bell size={16} style={{ color: "var(--danger)" }} />
+                      </div>
+                      <div>
+                        <span className="section-box-title" style={{ fontSize: "13px" }}>Notificações</span>
+                        <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: 0 }}>{notifs.length} alerta(s) ativo(s)</p>
+                      </div>
                     </div>
-                    <button onClick={() => setShowNotifPanel(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "18px", lineHeight: 1 }}>✕</button>
+                    <button onClick={() => setShowNotifPanel(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "16px", lineHeight: 1, padding: "4px" }}>✕</button>
                   </div>
-                  {notifs.length === 0 ? (
-                    <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: "13px" }}>
-                      ✅ Nenhuma notificação pendente!
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
-                      {notifs.map((n, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => { if (n.tab) { setActiveTab(n.tab as any); setShowNotifPanel(false); } }}
-                          style={{
-                            padding: "12px 16px",
-                            borderBottom: "1px solid var(--border)",
-                            display: "flex", alignItems: "flex-start", gap: "12px",
-                            cursor: n.tab ? "pointer" : "default",
-                            transition: "background 0.15s"
-                          }}
-                          onMouseEnter={e => { if (n.tab) (e.currentTarget as HTMLDivElement).style.background = "var(--bg-main)"; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
-                        >
-                          <div style={{
-                            width: "10px", height: "10px", borderRadius: "50%",
-                            background: badgeColor[n.type], marginTop: "4px", flexShrink: 0
-                          }} />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                              <span style={{ fontSize: "14px" }}>{n.icon}</span>
-                              <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--text-primary)" }}>{n.title}</span>
+
+                  {/* Scrollable list */}
+                  <div style={{ overflowY: "auto", flex: 1 }}>
+                    {notifs.length === 0 ? (
+                      <div style={{ padding: "36px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: "13px" }}>
+                        ✅ Nenhuma notificação pendente!
+                      </div>
+                    ) : (
+                      <div className="event-feed-list" style={{ padding: "10px 12px", gap: "6px" }}>
+                        {notifs.map((n, idx) => (
+                          <div
+                            key={idx}
+                            className="event-feed-card"
+                            onClick={() => {
+                              if (n.tab) {
+                                setActiveTab(n.tab as any);
+                                if (n.osId) setDeepLinkOsId(n.osId);
+                              }
+                              setShowNotifPanel(false);
+                            }}
+                            style={{ padding: "10px 12px", gap: "10px", cursor: n.tab ? "pointer" : "default" }}
+                          >
+                            <div className="event-feed-info">
+                              <div className={`event-feed-avatar ${n.avatarClass}`} style={{ width: "34px", height: "34px", fontSize: "16px", borderRadius: "8px", flexShrink: 0 }}>
+                                {n.icon}
+                              </div>
+                              <div className="event-feed-meta">
+                                <span className="event-feed-title" style={{ fontSize: "12px" }}>{n.title}</span>
+                                <span className="event-feed-date">{n.desc}</span>
+                              </div>
                             </div>
-                            <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "2px 0 0" }}>{n.desc}</p>
+                            <span className={`badge ${n.badgeClass}`} style={{ fontSize: "9px", whiteSpace: "nowrap", flexShrink: 0 }}>{n.badgeTxt}</span>
                           </div>
-                          {n.tab && <span style={{ fontSize: "11px", color: "var(--accent)", fontWeight: 600, whiteSpace: "nowrap", alignSelf: "center" }}>Ver →</span>}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })()}
@@ -1839,6 +1881,7 @@ export default function App() {
               allEmployees={employees}
               allWarehouseItems={warehouseItems}
               onUpdateEvent={updateEventDetails}
+              initialOsId={deepLinkOsId}
             />
           )}
 
