@@ -369,8 +369,9 @@ export default function OrdensServico({
   }
 
   return (
-    <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: selectedOS ? "360px 1fr" : "1fr", gap: "20px", padding: "10px", minHeight: "80vh" }}>
-      {/* Left Column: OS List */}
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px", padding: "10px" }}>
+
+      {/* OS List — full width, cards in horizontal row */}
       <div className="section-box no-print" style={{ height: "auto" }}>
         <div className="section-box-header" style={{ marginBottom: "14px" }}>
           <div>
@@ -380,40 +381,40 @@ export default function OrdensServico({
             </h3>
             <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>{filteredOSs.length} OS encontrada(s)</p>
           </div>
-          <span className="kanban-column-count">{events.length} Ativas</span>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+            <input 
+              type="text" 
+              placeholder="Buscar OS, evento ou cliente..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "var(--bg-card)", color: "var(--text-primary)", width: "200px" }}
+            />
+            <select 
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value as any)}
+              style={{ padding: "6px 10px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", color: "var(--text-primary)", fontSize: "12px" }}
+            >
+              <option value="all">Todas Prioridades</option>
+              <option value="muito_alta">🔴 Muito Alta</option>
+              <option value="alta">🟧 Alta</option>
+              <option value="media">🟡 Média</option>
+              <option value="baixa">🔵 Baixa</option>
+            </select>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setSortByPriority(!sortByPriority)}
+              style={{ padding: "6px 12px", fontSize: "11px", backgroundColor: sortByPriority ? "var(--accent)" : "transparent", color: sortByPriority ? "#fff" : "var(--text-primary)" }}
+              title="Ordenar pela prioridade"
+            >
+              {sortByPriority ? "Prioridade ⬆️" : "Ordenar Prio"}
+            </button>
+            <span className="kanban-column-count">{events.length} Ativas</span>
+          </div>
         </div>
 
-        <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
-          <input 
-            type="text" 
-            placeholder="Buscar por código, evento ou cliente..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ flexGrow: 1, minWidth: "140px", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "var(--bg-card)", color: "var(--text-primary)" }}
-          />
-          <select 
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value as any)}
-            style={{ padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", color: "var(--text-primary)", fontSize: "12px" }}
-          >
-            <option value="all">Todas Prioridades</option>
-            <option value="muito_alta">🔴 Muito Alta</option>
-            <option value="alta">🟧 Alta</option>
-            <option value="media">🟡 Média</option>
-            <option value="baixa">🔵 Baixa</option>
-          </select>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => setSortByPriority(!sortByPriority)}
-            style={{ padding: "6px 12px", fontSize: "11px", backgroundColor: sortByPriority ? "var(--accent)" : "transparent", color: sortByPriority ? "#fff" : "var(--text-primary)" }}
-            title="Ordenar a lista pela prioridade das OSs"
-          >
-            {sortByPriority ? "Prioridade ⬆️" : "Ordenar Prio"}
-          </button>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        {/* Horizontal scrollable row of OS cards */}
+        <div style={{ display: "flex", gap: "14px", overflowX: "auto", paddingBottom: "8px" }}>
           {filteredOSs.map((os) => {
             const prio = getOSPriority(os);
             const prioBadge = prio === "muito_alta" ? "badge-danger" : prio === "alta" ? "badge-warning" : prio === "media" ? "badge-info" : "badge-muted";
@@ -421,54 +422,61 @@ export default function OrdensServico({
             return (
               <div 
                 key={os.id} 
-                className={`staff-row ${isSelected ? "active-row" : ""}`}
                 onClick={() => setSelectedOsId(isSelected ? "" : os.id)}
                 style={{
-                  cursor: "pointer", 
-                  padding: "14px 16px", 
-                  borderRadius: "10px", 
+                  cursor: "pointer",
+                  minWidth: "280px",
+                  maxWidth: "320px",
+                  flexShrink: 0,
+                  padding: "14px 16px",
+                  borderRadius: "12px",
                   border: `1px solid ${isSelected ? "var(--accent)" : "var(--border)"}`,
-                  borderLeft: `4px solid ${isSelected ? "var(--accent)" : "transparent"}`,
+                  borderTop: `4px solid ${isSelected ? "var(--accent)" : prio === "muito_alta" ? "#ef4444" : prio === "alta" ? "#f97316" : prio === "media" ? "#eab308" : "#6b7280"}`,
                   background: isSelected ? "var(--accent-glow)" : "var(--bg-card)",
                   color: "var(--text-primary)",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "8px",
+                  gap: "10px",
+                  boxShadow: isSelected ? "0 0 0 2px var(--accent)" : "var(--shadow-sm)",
                   transition: "all 0.15s ease"
                 }}
               >
-                {/* Header line of card */}
+                {/* Top row: código + badges */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <strong style={{ fontSize: "13px", fontFamily: "monospace", letterSpacing: "0.5px" }}>{os.codigo}</strong>
-                    <span className="badge badge-secondary" style={{ fontSize: "9px" }}>
-                      {os.phase}
-                    </span>
-                  </div>
+                  <strong style={{ fontSize: "12px", fontFamily: "monospace", letterSpacing: "0.5px", color: "var(--accent)" }}>{os.codigo}</strong>
                   <span className={`badge ${prioBadge}`} style={{ fontSize: "9px", padding: "2px 8px" }}>
                     {priorityLabel[prio] || prio.toUpperCase()}
                   </span>
                 </div>
 
-                {/* Event Name */}
-                <h4 style={{ fontSize: "14px", fontWeight: "700", margin: 0, color: "var(--text-primary)", lineHeight: "1.3" }}>
+                {/* Event name */}
+                <h4 style={{ fontSize: "13px", fontWeight: "700", margin: 0, lineHeight: "1.35", color: "var(--text-primary)" }}>
                   {os.name}
                 </h4>
 
-                {/* Details subtitle */}
-                <div style={{ fontSize: "11px", color: "var(--text-muted)", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                  <span>Cliente: <strong style={{ color: "var(--text-secondary)" }}>{os.client}</strong></span>
-                  <span>Início: <strong>{os.startDate}</strong></span>
-                  {os.dataMontagem && <span>Montagem: <strong>{os.dataMontagem}</strong></span>}
+                {/* Client + Dates — left to right inline */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span style={{ fontWeight: 600, color: "var(--text-secondary)" }}>Cliente:</span>
+                    <span>{os.client}</span>
+                  </div>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)", display: "flex", gap: "14px" }}>
+                    <span><span style={{ fontWeight: 600 }}>Início:</span> {os.startDate}</span>
+                    {os.dataMontagem && <span><span style={{ fontWeight: 600 }}>Mont.:</span> {os.dataMontagem}</span>}
+                  </div>
                 </div>
 
-                {/* Progress bar line */}
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px" }}>
+                {/* Status badge */}
+                <span className="badge badge-secondary" style={{ fontSize: "10px", alignSelf: "flex-start", padding: "3px 10px" }}>
+                  {os.phase}
+                </span>
+
+                {/* Progress bar */}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <div style={{ flexGrow: 1, height: "5px", background: "var(--border)", borderRadius: "3px", overflow: "hidden" }}>
                     <div style={{ width: `${os.completionRate}%`, height: "100%", background: "var(--accent)", transition: "width 0.3s" }}></div>
                   </div>
-                  <span className="text-xs text-muted" style={{ fontSize: "10px", fontWeight: "600" }}>{os.completionRate}% checklist</span>
-                  <ChevronRight size={14} className="text-muted" style={{ transform: isSelected ? "rotate(90deg)" : "none", transition: "transform 0.2s" }} />
+                  <span style={{ fontSize: "10px", fontWeight: "600", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{os.completionRate}%</span>
                 </div>
               </div>
             );
