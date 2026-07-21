@@ -7,18 +7,18 @@ import type { AuditoriaLog } from "../types";
 
 interface AuditoriaProps {
   logs: AuditoriaLog[];
-  rolePermissions: Record<string, string[]>;
-  setRolePermissions: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
-  userRole: string;
-  setUserRole: React.Dispatch<React.SetStateAction<"admin" | "comercial" | "estoque" | "operador">>;
+  rolePermissions?: Record<string, string[]>;
+  setRolePermissions?: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
+  userRole?: string;
+  setUserRole?: React.Dispatch<React.SetStateAction<"admin" | "comercial" | "estoque" | "operador">>;
 }
 
 export default function Auditoria({ 
   logs, 
-  rolePermissions, 
-  setRolePermissions, 
-  userRole, 
-  setUserRole 
+  rolePermissions = {}, 
+  setRolePermissions = () => {}, 
+  userRole = "admin", 
+  setUserRole = () => {}
 }: AuditoriaProps) {
   const [activeSubTab, setActiveSubTab] = useState<"logs" | "permissions">("logs");
   const [searchTerm, setSearchTerm] = useState("");

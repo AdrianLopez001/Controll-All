@@ -83,24 +83,10 @@ export default function Orcamentos({
 
     setIsPdfLoading(true);
     try {
-      const html2pdfModule = await import("html2pdf.js");
-      const html2pdfFn = (html2pdfModule.default || html2pdfModule) as (
-        el: HTMLElement,
-        opts: Record<string, unknown>
-      ) => { save(): Promise<void> };
-
-      const filename = `Proposta_${selectedOrc.codigo}_${selectedOrc.cliente.replace(/\s+/g, "_")}.pdf`;
-
-      await html2pdfFn(element, {
-        margin: [10, 10, 10, 10],
-        filename,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      }).save();
+      window.print();
     } catch (err) {
       console.error("Erro ao gerar PDF:", err);
-      alert("Erro ao gerar o PDF. Tente usar \"Imprimir Proposta\" como alternativa.");
+      alert("Utilize a opção Salvar como PDF na janela de impressão do navegador.");
     } finally {
       setIsPdfLoading(false);
     }
