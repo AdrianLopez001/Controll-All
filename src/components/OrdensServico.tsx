@@ -4,7 +4,7 @@ import {
   FileText, CheckSquare, Plus, Trash2, Camera, ShieldAlert, 
   User, MapPin, PenTool, CheckCircle, ChevronRight, X, Clock, HelpCircle, Printer
 } from "lucide-react";
-import type { Project, Employee, WarehouseItem, OSComentario, OSFoto, OSAssinaturas } from "../types";
+import type { Project, Employee, WarehouseItem, OSComentario, OSFoto, OSAssinaturas, AssignedEmployee } from "../types";
 import logoImg from "../assets/logo.png";
 
 interface OrdensServicoProps {
@@ -22,11 +22,90 @@ export default function OrdensServico({
 }: OrdensServicoProps) {
   const [selectedOsId, setSelectedOsId] = useState<string>(events[0]?.id || "");
   const [searchTerm, setSearchTerm] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState<"all" | "baixa" | "media" | "alta">("all");
+  const [priorityFilter, setPriorityFilter] = useState<"all" | "muito_alta" | "alta" | "media" | "baixa">("all");
+  const [sortByPriority, setSortByPriority] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState<"checklist" | "items" | "team" | "photos" | "signatures" | "logs">("checklist");
   const selectedOS = events.find(o => o.id === selectedOsId);
+
+  // Priority calculation & sorting helpers
+  const calcAutoPriority = (dataMontagemStr: string): "muito_alta" | "alta" | "media" | "baixa" => {
+    if (!dataMontagemStr) return "media";
+    const montagem = new Date(dataMontagemStr);
+    const now = new Date();
+    const diffDays = Math.ceil((montagem.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 3) return "muito_alta";
+    if (diffDays <= 7) return "alta";
+    if (diffDays <= 15) return "media";
+    return "baixa";
+  };
+
+  const getOSPriority = (os: Project): "muito_alta" | "alta" | "media" | "baixa" => {
+    if (os.prioridadeModo === "manual" && os.prioridade) {
+      return os.prioridade;
+    }
+    return calcAutoPriority(os.dataMontagem);
+  };
+
+  const priorityWeight: Record<string, number> = {
+    muito_alta: 4,
+    alta: 3,
+    media: 2,
+    baixa: 1
+  };
+
+  const priorityLabel: Record<string, string> = {
+    muito_alta: "🔴 Muito Alta",
+    alta: "🟧 Alta",
+    media: "🟡 Média",
+    baixa: "🔵 Baixa"
+  };
+
+  // Team addition form state
+  const [addEmpId, setAddEmpId] = useState(allEmployees[0]?.id || "");
+  const [addEmpRole, setAddEmpRole] = useState("Montador Cenográfico");
+  const [addEmpEquipe, setAddEmpEquipe] = useState("Equipe Principal");
+  const [addEmpHorario, setAddEmpHorario] = useState("08:00 - 18:00");
+
+  const handleAddEmployeeToOS = () => {
+    if (!selectedOS) return;
+    const emp = allEmployees.find(e => e.id === addEmpId);
+    if (!emp) return;
+    if (selectedOS.assignedEmployees.some(e => e.id === emp.id)) {
+      alert("Este colaborador já está escalado nesta Ordem de Serviço!");
+      return;
+    }
+    const newAssigned: AssignedEmployee = {
+      id: emp.id,
+      name: emp.name,
+      role: addEmpRole || emp.role,
+      documentStatus: emp.documentStatus || "complete",
+      equipe: addEmpEquipe,
+      horario: addEmpHorario,
+      observacoes: ""
+    };
+    onUpdateEvent({
+      ...selectedOS,
+      assignedEmployees: [...selectedOS.assignedEmployees, newAssigned]
+    });
+  };
+
+  const handleRemoveEmployeeFromOS = (empId: string) => {
+    if (!selectedOS) return;
+    onUpdateEvent({
+      ...selectedOS,
+      assignedEmployees: selectedOS.assignedEmployees.filter(e => e.id !== empId)
+    });
+  };
+
+  const handleUpdateOSAssignedEmp = (empId: string, updates: Partial<AssignedEmployee>) => {
+    if (!selectedOS) return;
+    onUpdateEvent({
+      ...selectedOS,
+      assignedEmployees: selectedOS.assignedEmployees.map(e => e.id === empId ? { ...e, ...updates } : e)
+    });
+  };
 
   // Signature canvas refs
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -46,7 +125,7 @@ export default function OrdensServico({
     if (!selectedOS || !commentText.trim()) return;
     const newComment: OSComentario = {
       id: `c-${Date.now()}`,
-      autor: "Adrian (Coordenador)",
+      autor: "JCEventos (Coordenador)",
       texto: commentText,
       date: new Date().toLocaleString("pt-BR")
     };
@@ -56,7 +135,7 @@ export default function OrdensServico({
       antes: "-",
       depois: `Novo comentário: "${commentText.substring(0, 20)}..."`,
       date: new Date().toISOString().split("T")[0],
-      usuario: "Adrian (Coordenador)"
+      usuario: "JCEventos (Coordenador)"
     };
     onUpdateEvent({
       ...selectedOS,
@@ -95,7 +174,7 @@ export default function OrdensServico({
       antes: "-",
       depois: `Alocado ${materialQty}x de "${item.name}"`,
       date: new Date().toISOString().split("T")[0],
-      usuario: "Adrian (Coordenador)"
+      usuario: "JCEventos (Coordenador)"
     };
 
     onUpdateEvent({
@@ -116,7 +195,7 @@ export default function OrdensServico({
       antes: `Alocado: ${item.allocatedQty}x`,
       depois: "Removido da OS",
       date: new Date().toISOString().split("T")[0],
-      usuario: "Adrian (Coordenador)"
+      usuario: "JCEventos (Coordenador)"
     };
 
     onUpdateEvent({
@@ -144,7 +223,7 @@ export default function OrdensServico({
       antes: "-",
       depois: `Anexada foto: "${file.name}"`,
       date: new Date().toISOString().split("T")[0],
-      usuario: "Adrian (Coordenador)"
+      usuario: "JCEventos (Coordenador)"
     };
 
     onUpdateEvent({
@@ -165,7 +244,7 @@ export default function OrdensServico({
       antes: `Foto: ${photo.name}`,
       depois: "Removida",
       date: new Date().toISOString().split("T")[0],
-      usuario: "Adrian (Coordenador)"
+      usuario: "JCEventos (Coordenador)"
     };
 
     onUpdateEvent({
@@ -230,7 +309,7 @@ export default function OrdensServico({
       antes: "-",
       depois: `Assinatura de aceite do ${signatureType} registrada`,
       date: new Date().toISOString().split("T")[0],
-      usuario: "Adrian (Coordenador)"
+      usuario: "JCEventos (Coordenador)"
     };
 
     onUpdateEvent({
@@ -251,7 +330,7 @@ export default function OrdensServico({
       antes: selectedOS[field] || "Não definida",
       depois: val,
       date: new Date().toISOString().split("T")[0],
-      usuario: "Adrian (Coordenador)"
+      usuario: "JCEventos (Coordenador)"
     };
 
     onUpdateEvent({
@@ -278,11 +357,16 @@ export default function OrdensServico({
     });
   };
 
-  const filteredOSs = events.filter(os => {
+  let filteredOSs = events.filter(os => {
     const matchesSearch = os.name.toLowerCase().includes(searchTerm.toLowerCase()) || os.client.toLowerCase().includes(searchTerm.toLowerCase()) || os.codigo.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPriority = priorityFilter === "all" ? true : os.prioridade === priorityFilter;
+    const osPrio = getOSPriority(os);
+    const matchesPriority = priorityFilter === "all" ? true : osPrio === priorityFilter;
     return matchesSearch && matchesPriority;
   });
+
+  if (sortByPriority) {
+    filteredOSs = [...filteredOSs].sort((a, b) => priorityWeight[getOSPriority(b)] - priorityWeight[getOSPriority(a)]);
+  }
 
   return (
     <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: "1.2fr 1.8fr", gap: "24px", padding: "10px" }}>
@@ -296,50 +380,60 @@ export default function OrdensServico({
           <span className="kanban-column-count">{events.length} Ativas</span>
         </div>
 
-        <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+        <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
           <input 
             type="text" 
             placeholder="Buscar por código, evento ou cliente..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ flexGrow: 1, padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }}
+            style={{ flexGrow: 1, minWidth: "140px", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }}
           />
           <select 
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value as any)}
-            style={{ padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", color: "var(--text-primary)" }}
+            style={{ padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", color: "var(--text-primary)", fontSize: "12px" }}
           >
-            <option value="all" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Todas Prioridades</option>
-            <option value="alta" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Alta</option>
-            <option value="media" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Média</option>
-            <option value="baixa" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Baixa</option>
+            <option value="all">Todas Prioridades</option>
+            <option value="muito_alta">🔴 Muito Alta</option>
+            <option value="alta">🟧 Alta</option>
+            <option value="media">🟡 Média</option>
+            <option value="baixa">🔵 Baixa</option>
           </select>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setSortByPriority(!sortByPriority)}
+            style={{ padding: "6px 10px", fontSize: "11px", backgroundColor: sortByPriority ? "var(--accent)" : "transparent", color: sortByPriority ? "#fff" : "var(--text-primary)" }}
+            title="Ordenar a lista pela prioridade das OSs"
+          >
+            {sortByPriority ? "Prioridade ⬆️" : "Ordenar Prio"}
+          </button>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {filteredOSs.map((os) => (
-            <div 
-              key={os.id} 
-              className={`staff-row ${selectedOsId === os.id ? "active-row" : ""}`}
-              onClick={() => setSelectedOsId(os.id)}
-              style={{
-                cursor: "pointer", 
-                padding: "12px", 
-                borderRadius: "8px", 
-                border: selectedOsId === os.id ? "1.5px solid var(--accent)" : "1px solid var(--border)",
-                background: selectedOsId === os.id ? "var(--accent-glow)" : "var(--bg-card)",
-                color: "var(--text-primary)"
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
-                <strong>{os.codigo}</strong>
-                <span className={`badge ${
-                  os.prioridade === "alta" ? "badge-danger" : 
-                  os.prioridade === "media" ? "badge-warning" : "badge-muted"
-                }`} style={{ fontSize: "9px" }}>
-                  {os.prioridade ? os.prioridade.toUpperCase() : "MÉDIA"}
-                </span>
-              </div>
+          {filteredOSs.map((os) => {
+            const prio = getOSPriority(os);
+            const prioBadge = prio === "muito_alta" ? "badge-danger" : prio === "alta" ? "badge-warning" : prio === "media" ? "badge-info" : "badge-muted";
+            return (
+              <div 
+                key={os.id} 
+                className={`staff-row ${selectedOsId === os.id ? "active-row" : ""}`}
+                onClick={() => setSelectedOsId(os.id)}
+                style={{
+                  cursor: "pointer", 
+                  padding: "12px", 
+                  borderRadius: "8px", 
+                  border: selectedOsId === os.id ? "1.5px solid var(--accent)" : "1px solid var(--border)",
+                  background: selectedOsId === os.id ? "var(--accent-glow)" : "var(--bg-card)",
+                  color: "var(--text-primary)"
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
+                  <strong>{os.codigo}</strong>
+                  <span className={`badge ${prioBadge}`} style={{ fontSize: "9px" }}>
+                    {priorityLabel[prio] || prio.toUpperCase()}
+                  </span>
+                </div>
               <h4 className="text-sm font-semibold" style={{ margin: "2px 0" }}>{os.name}</h4>
               <p className="text-xs text-muted">Cliente: {os.client} | Início: {os.startDate}</p>
               
@@ -351,7 +445,8 @@ export default function OrdensServico({
                 <ChevronRight size={14} className="text-muted" style={{ marginLeft: "auto" }} />
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -397,16 +492,25 @@ export default function OrdensServico({
                       <option value="Cancelado" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Cancelado</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="text-xs text-muted" style={{ marginRight: "6px" }}>Prioridade:</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <label className="text-xs text-muted">Prioridade:</label>
                     <select 
-                      value={selectedOS.prioridade || "media"}
-                      onChange={(e) => handleOSFieldUpdate("prioridade", e.target.value)}
-                      style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-primary)" }}
+                      value={selectedOS.prioridadeModo === "manual" ? (selectedOS.prioridade || getOSPriority(selectedOS)) : "auto"}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "auto") {
+                          onUpdateEvent({ ...selectedOS, prioridadeModo: "auto", prioridade: calcAutoPriority(selectedOS.dataMontagem) });
+                        } else {
+                          onUpdateEvent({ ...selectedOS, prioridadeModo: "manual", prioridade: val as any });
+                        }
+                      }}
+                      style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-primary)", fontSize: "11px" }}
                     >
-                      <option value="baixa" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Baixa</option>
-                      <option value="media" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Média</option>
-                      <option value="alta" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Alta</option>
+                      <option value="auto">🤖 Automática ({priorityLabel[getOSPriority(selectedOS)]})</option>
+                      <option value="muito_alta">🔴 Muito Alta</option>
+                      <option value="alta">🟧 Alta</option>
+                      <option value="media">🟡 Média</option>
+                      <option value="baixa">🔵 Baixa</option>
                     </select>
                   </div>
                 </div>
@@ -585,25 +689,138 @@ export default function OrdensServico({
 
             {activeTab === "team" && (
               <div>
-                <h4 className="text-sm font-semibold" style={{ marginBottom: "12px" }}>Membros da Equipe de Campo</h4>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                  <h4 className="text-sm font-semibold" style={{ margin: 0 }}>Membros da Equipe Escalada na OS</h4>
+                  <span className="badge badge-info" style={{ fontSize: "10px" }}>
+                    {selectedOS.assignedEmployees.length} Profissionais Escalados
+                  </span>
+                </div>
+
+                {/* Form para Adicionar Colaborador */}
+                <div style={{ background: "var(--bg-main)", border: "1px solid var(--border)", borderRadius: "10px", padding: "14px", marginBottom: "20px" }}>
+                  <h5 style={{ fontSize: "12px", fontWeight: "700", marginBottom: "10px", color: "var(--accent)" }}>+ Escalar Novo Colaborador nesta OS</h5>
+                  <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr auto", gap: "10px", alignItems: "flex-end" }}>
+                    <div>
+                      <label className="text-xs text-muted" style={{ display: "block", marginBottom: "4px" }}>Colaborador</label>
+                      <select 
+                        value={addEmpId} 
+                        onChange={(e) => setAddEmpId(e.target.value)}
+                        style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }}
+                      >
+                        {allEmployees.map(emp => (
+                          <option key={emp.id} value={emp.id}>{emp.name} ({emp.role})</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-muted" style={{ display: "block", marginBottom: "4px" }}>Função no Evento</label>
+                      <input 
+                        type="text" 
+                        value={addEmpRole} 
+                        onChange={(e) => setAddEmpRole(e.target.value)}
+                        placeholder="Ex: Encarregado Marcenaria"
+                        style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-muted" style={{ display: "block", marginBottom: "4px" }}>Equipe / Setor</label>
+                      <input 
+                        type="text" 
+                        value={addEmpEquipe} 
+                        onChange={(e) => setAddEmpEquipe(e.target.value)}
+                        placeholder="Ex: Turno Diurno"
+                        style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-muted" style={{ display: "block", marginBottom: "4px" }}>Horário</label>
+                      <input 
+                        type="text" 
+                        value={addEmpHorario} 
+                        onChange={(e) => setAddEmpHorario(e.target.value)}
+                        placeholder="Ex: 07:00 às 17:00"
+                        style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }}
+                      />
+                    </div>
+
+                    <button 
+                      type="button" 
+                      className="btn-primary" 
+                      onClick={handleAddEmployeeToOS}
+                      style={{ padding: "7px 14px", fontSize: "12px" }}
+                    >
+                      Adicionar à OS
+                    </button>
+                  </div>
+                </div>
+
+                {/* Lista de Profissionais Escalados */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {selectedOS.assignedEmployees.length === 0 ? (
-                    <p className="text-sm text-muted" style={{ padding: "20px 0", textAlign: "center" }}>Nenhum montador escalado nesta OS. Utilize a escala no Kanban ou o botão de Escala Geral.</p>
+                    <p className="text-sm text-muted" style={{ padding: "20px 0", textAlign: "center" }}>Nenhum montador escalado nesta OS. Utilize o formulário acima para adicionar colaboradores.</p>
                   ) : (
                     selectedOS.assignedEmployees.map((emp) => (
-                      <div key={emp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", color: "var(--text-primary)" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <div style={{ width: "30px", height: "30px", background: "var(--accent)", color: "white", borderRadius: "50%", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", fontWeight: "600", fontSize: "12px" }}>
-                            {emp.name.substring(0, 2).toUpperCase()}
+                      <div key={emp.id} style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "12px", border: "1px solid var(--border)", borderRadius: "10px", background: "var(--bg-card)", color: "var(--text-primary)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <div style={{ width: "32px", height: "32px", background: "var(--accent)", color: "white", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", fontSize: "12px" }}>
+                              {emp.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                              <strong className="text-sm" style={{ display: "block" }}>{emp.name}</strong>
+                              <span className={`badge badge-${emp.documentStatus === "complete" ? "success" : "warning"}`} style={{ fontSize: "9px" }}>
+                                {emp.documentStatus === "complete" ? "Homologado / NR OK" : "Docs Pendentes"}
+                              </span>
+                            </div>
                           </div>
+
+                          <button 
+                            type="button" 
+                            className="btn-secondary btn-xs"
+                            onClick={() => handleRemoveEmployeeFromOS(emp.id)}
+                            style={{ color: "var(--danger)", border: "1px solid var(--danger)" }}
+                            title="Remover da OS"
+                          >
+                            <Trash2 size={12} style={{ marginRight: "4px" }} /> Remover da Equipe
+                          </button>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginTop: "4px", backgroundColor: "var(--bg-main)", padding: "8px", borderRadius: "6px" }}>
                           <div>
-                            <strong className="text-sm" style={{ display: "block" }}>{emp.name}</strong>
-                            <span className="text-xs text-muted">{emp.role}</span>
+                            <label className="text-xs text-muted" style={{ display: "block", fontSize: "10px" }}>Função na OS</label>
+                            <input 
+                              type="text" 
+                              value={emp.role} 
+                              onChange={(e) => handleUpdateOSAssignedEmp(emp.id, { role: e.target.value })}
+                              style={{ width: "100%", padding: "4px 6px", border: "1px solid var(--border)", borderRadius: "4px", fontSize: "11px" }}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-xs text-muted" style={{ display: "block", fontSize: "10px" }}>Equipe / Setor</label>
+                            <input 
+                              type="text" 
+                              value={emp.equipe || ""} 
+                              onChange={(e) => handleUpdateOSAssignedEmp(emp.id, { equipe: e.target.value })}
+                              placeholder="Ex: Turno Noite"
+                              style={{ width: "100%", padding: "4px 6px", border: "1px solid var(--border)", borderRadius: "4px", fontSize: "11px" }}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-xs text-muted" style={{ display: "block", fontSize: "10px" }}>Horário de Trabalho</label>
+                            <input 
+                              type="text" 
+                              value={emp.horario || ""} 
+                              onChange={(e) => handleUpdateOSAssignedEmp(emp.id, { horario: e.target.value })}
+                              placeholder="Ex: 08:00 - 18:00"
+                              style={{ width: "100%", padding: "4px 6px", border: "1px solid var(--border)", borderRadius: "4px", fontSize: "11px" }}
+                            />
                           </div>
                         </div>
-                        <span className={`badge badge-${emp.documentStatus === "complete" ? "success" : "warning"}`} style={{ fontSize: "9px" }}>
-                          {emp.documentStatus === "complete" ? "Homologado" : "Docs Pendentes"}
-                        </span>
                       </div>
                     ))
                   )}

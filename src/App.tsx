@@ -616,6 +616,7 @@ export default function App() {
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [globalSearch, setGlobalSearch] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const toggleTheme = () => {
     const nextTheme = theme === "light" ? "dark" : "light";
@@ -1078,6 +1079,30 @@ export default function App() {
     registerAudit("Atualização WMS", `Item de Almoxarifado "${updatedItem.name}" atualizado`);
   };
 
+  // Add WMS Warehouse Item
+  const addWarehouseItem = (newItem: Omit<WarehouseItem, "id">) => {
+    const item: WarehouseItem = {
+      ...newItem,
+      id: `item-${Date.now()}`
+    };
+    setWarehouseItems((prev) => [...prev, item]);
+    registerAudit("Adição WMS", `Novo material "${item.name}" adicionado ao estoque`);
+  };
+
+  // Delete WMS Warehouse Item
+  const deleteWarehouseItem = (id: string) => {
+    const item = warehouseItems.find(i => i.id === id);
+    setWarehouseItems((prev) => prev.filter(i => i.id !== id));
+    registerAudit("Exclusão WMS", `Material "${item?.name}" excluído do estoque`);
+  };
+
+  // Delete Employee RH
+  const deleteEmployee = (id: string) => {
+    const emp = employees.find(e => e.id === id);
+    setEmployees((prev) => prev.filter(e => e.id !== id));
+    registerAudit("Exclusão RH", `Colaborador "${emp?.name}" excluído do sistema`);
+  };
+
   // Update Vehicle Logística
   const updateVehicle = (updatedVehicle: VeiculoLogistica) => {
     setVehicles((prev) =>
@@ -1108,21 +1133,6 @@ export default function App() {
     const evt = events.find(e => e.id === id);
     setEvents((prev) => prev.filter(e => e.id !== id));
     registerAudit("Exclusão de Evento", `Evento "${evt?.name}" excluído definitivamente.`);
-  };
-
-  const addWarehouseItem = (newItem: Omit<WarehouseItem, "id">) => {
-    const item: WarehouseItem = {
-      ...newItem,
-      id: `item-${Date.now()}`
-    };
-    setWarehouseItems((prev) => [item, ...prev]);
-    registerAudit("Novo Item Estoque", `Item "${newItem.name}" adicionado ao WMS.`);
-  };
-
-  const deleteWarehouseItem = (id: string) => {
-    const item = warehouseItems.find(i => i.id === id);
-    setWarehouseItems((prev) => prev.filter(i => i.id !== id));
-    registerAudit("Exclusão Item Estoque", `Item "${item?.name}" excluído do WMS.`);
   };
 
   // ── Calculations for Overview KPIs ──
@@ -1417,72 +1427,95 @@ export default function App() {
         {/* Right Area */}
         <div className="top-nav-right">
           {/* Global search */}
-          {/* Global search com Autocomplete */}
-          <div className="top-nav-search" style={{ position: "relative" }}>
-            <form onSubmit={handleGlobalSearch}>
-              <Search className="top-nav-search-icon" size={14} />
-              <input 
-                type="text" 
-                placeholder="Pesquisa global autocomplete..." 
-                value={globalSearch} 
-                onChange={(e) => setGlobalSearch(e.target.value)} 
-              />
-            </form>
+          {/* Global search Icon button & Expandable Bar */}
+          <div style={{ position: "relative" }}>
+            <button 
+              className={`top-nav-icon-btn ${isSearchOpen ? "active" : ""}`}
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              title="Pesquisa Global"
+            >
+              <Search size={18} />
+            </button>
 
-            {globalSearch.trim().length > 0 && (
+            {isSearchOpen && (
               <div style={{
-                position: "absolute", top: "100%", right: 0, width: "320px",
+                position: "absolute", top: "100%", right: 0, width: "340px",
                 backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
-                borderRadius: "12px", boxShadow: "var(--shadow-lg)", zIndex: 1100,
-                maxHeight: "320px", overflowY: "auto", marginTop: "6px", padding: "6px"
+                borderRadius: "14px", boxShadow: "var(--shadow-lg)", zIndex: 1100,
+                marginTop: "10px", padding: "12px", display: "flex", flexDirection: "column", gap: "10px"
               }}>
-                {(() => {
-                  const term = globalSearch.trim().toLowerCase();
-                  const matches: { name: string; tab: string; category: string; event?: Project }[] = [
-                    ...[
-                      { name: "Dashboard Executivo", tab: "overview", category: "Módulo" },
-                      { name: "Projetos (Kanban)", tab: "kanban", category: "Módulo" },
-                      { name: "CRM & Oportunidades", tab: "crm", category: "Módulo" },
-                      { name: "Propostas Comerciais", tab: "orcamentos", category: "Módulo" },
-                      { name: "Ordens de Serviço", tab: "os", category: "Módulo" },
-                      { name: "Depósito & WMS", tab: "warehouse", category: "Módulo" },
-                      { name: "Financeiro & DRE", tab: "financial", category: "Módulo" },
-                      { name: "Equipe & RH", tab: "employees", category: "Módulo" },
-                      { name: "Logística & Frota", tab: "logistics", category: "Módulo" },
-                    ].filter(m => m.name.toLowerCase().includes(term)),
-                    ...events.filter(e => e.name.toLowerCase().includes(term) || e.client.toLowerCase().includes(term)).map(e => ({ name: e.name, tab: "kanban", event: e, category: "Projeto" })),
-                    ...leads.filter(l => l.empresa.toLowerCase().includes(term) || l.contato.toLowerCase().includes(term)).map(l => ({ name: `${l.empresa} (${l.contato})`, tab: "crm", category: "Lead CRM" })),
-                    ...warehouseItems.filter(i => i.name.toLowerCase().includes(term) || i.marca?.toLowerCase().includes(term)).map(i => ({ name: i.name, tab: "warehouse", category: "Estoque WMS" })),
-                    ...employees.filter(emp => emp.name.toLowerCase().includes(term)).map(emp => ({ name: emp.name, tab: "employees", category: "Colaborador" }))
-                  ];
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid var(--border)", paddingBottom: "8px" }}>
+                  <Search size={16} style={{ color: "var(--accent)" }} />
+                  <input 
+                    type="text" 
+                    placeholder="Buscar no sistema (Projetos, Leads, WMS, RH)..." 
+                    value={globalSearch} 
+                    onChange={(e) => setGlobalSearch(e.target.value)}
+                    autoFocus
+                    style={{ width: "100%", border: "none", outline: "none", background: "none", fontSize: "13px", color: "var(--text-primary)" }}
+                  />
+                  <button 
+                    onClick={() => { setIsSearchOpen(false); setGlobalSearch(""); }} 
+                    style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "14px", fontWeight: "bold" }}
+                  >
+                    ×
+                  </button>
+                </div>
 
-                  if (matches.length === 0) {
-                    return (
-                      <div style={{ padding: "12px", fontSize: "12px", color: "var(--text-muted)", textAlign: "center" }}>
-                        Nenhum registro correspondente.
-                      </div>
-                    );
-                  }
+                {globalSearch.trim().length > 0 && (
+                  <div style={{ maxHeight: "260px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {(() => {
+                      const term = globalSearch.trim().toLowerCase();
+                      const matches: { name: string; tab: string; category: string; event?: Project }[] = [
+                        ...[
+                          { name: "Dashboard Executivo", tab: "overview", category: "Módulo" },
+                          { name: "Projetos (Kanban)", tab: "kanban", category: "Módulo" },
+                          { name: "CRM & Oportunidades", tab: "crm", category: "Módulo" },
+                          { name: "Propostas Comerciais", tab: "orcamentos", category: "Módulo" },
+                          { name: "Ordens de Serviço", tab: "os", category: "Módulo" },
+                          { name: "Depósito & WMS", tab: "warehouse", category: "Módulo" },
+                          { name: "Financeiro & DRE", tab: "financial", category: "Módulo" },
+                          { name: "Equipe & RH", tab: "employees", category: "Módulo" },
+                          { name: "Logística & Frota", tab: "logistics", category: "Módulo" },
+                        ].filter(m => m.name.toLowerCase().includes(term)),
+                        ...events.filter(e => e.name.toLowerCase().includes(term) || e.client.toLowerCase().includes(term)).map(e => ({ name: e.name, tab: "kanban", event: e, category: "Projeto" })),
+                        ...leads.filter(l => l.empresa.toLowerCase().includes(term) || l.contato.toLowerCase().includes(term)).map(l => ({ name: `${l.empresa} (${l.contato})`, tab: "crm", category: "Lead CRM" })),
+                        ...warehouseItems.filter(i => i.name.toLowerCase().includes(term) || i.marca?.toLowerCase().includes(term)).map(i => ({ name: i.name, tab: "warehouse", category: "Estoque WMS" })),
+                        ...employees.filter(emp => emp.name.toLowerCase().includes(term)).map(emp => ({ name: emp.name, tab: "employees", category: "Colaborador" }))
+                      ];
 
-                  return matches.slice(0, 10).map((match, idx) => (
-                    <div 
-                      key={idx}
-                      onClick={() => {
-                        if (match.event) setSelectedEvent(match.event);
-                        setActiveTab(match.tab as any);
-                        setGlobalSearch("");
-                      }}
-                      style={{
-                        padding: "8px 12px", borderRadius: "8px", cursor: "pointer",
-                        display: "flex", justifyContent: "space-between", alignItems: "center",
-                        fontSize: "12px", borderBottom: "1px solid var(--border)"
-                      }}
-                    >
-                      <span style={{ fontWeight: "600", color: "var(--text-primary)" }}>{match.name}</span>
-                      <span style={{ fontSize: "10px", padding: "2px 6px", borderRadius: "4px", backgroundColor: "var(--accent-glow)", color: "var(--accent)", fontWeight: "600" }}>{match.category}</span>
-                    </div>
-                  ));
-                })()}
+                      if (matches.length === 0) {
+                        return (
+                          <div style={{ padding: "12px", fontSize: "12px", color: "var(--text-muted)", textAlign: "center" }}>
+                            Nenhum registro correspondente.
+                          </div>
+                        );
+                      }
+
+                      return matches.slice(0, 10).map((match, idx) => (
+                        <div 
+                          key={idx}
+                          onClick={() => {
+                            if (match.event) setSelectedEvent(match.event);
+                            setActiveTab(match.tab as any);
+                            setGlobalSearch("");
+                            setIsSearchOpen(false);
+                          }}
+                          style={{
+                            padding: "8px 10px", borderRadius: "6px", cursor: "pointer",
+                            display: "flex", justifyContent: "space-between", alignItems: "center",
+                            fontSize: "12px"
+                          }}
+                          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-main)")}
+                          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                        >
+                          <span style={{ fontWeight: "600", color: "var(--text-primary)" }}>{match.name}</span>
+                          <span style={{ fontSize: "10px", padding: "2px 6px", borderRadius: "4px", backgroundColor: "var(--accent-glow)", color: "var(--accent)", fontWeight: "600" }}>{match.category}</span>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1552,17 +1585,10 @@ export default function App() {
             <Shield size={18} />
           </button>
 
-          {/* Profile Dropdown */}
+          {/* Profile Dropdown: ONLY circular avatar icon */}
           <div className="menu-group">
-            <div className="top-nav-user">
-              <div className="top-nav-avatar">
-                JC
-              </div>
-              <div className="top-nav-user-info">
-                <span className="top-nav-username">JCEventos</span>
-                <span className="top-nav-userrole">{userRole}</span>
-              </div>
-              <ChevronDown size={10} style={{ marginLeft: "4px", color: "var(--text-muted)" }} />
+            <div className="top-nav-avatar" title={`Usuário: JCEventos (${userRole.toUpperCase()}) - Clique para alterar perfil`} style={{ cursor: "pointer", width: "36px", height: "36px", fontSize: "14px", fontWeight: "700" }}>
+              JC
             </div>
             
             <div className="menu-dropdown" style={{ right: 0, left: "auto" }}>
@@ -1689,6 +1715,8 @@ export default function App() {
               items={warehouseItems}
               onUpdateStock={updateStock}
               onUpdateWarehouseItem={updateWarehouseItem}
+              onAddWarehouseItem={addWarehouseItem}
+              onDeleteWarehouseItem={deleteWarehouseItem}
             />
           )}
 
@@ -1699,6 +1727,7 @@ export default function App() {
               onToggleDocStatus={toggleDocStatus}
               onToggleSafetyCert={toggleSafetyCert}
               onUpdateEmployee={updateEmployee}
+              onDeleteEmployee={deleteEmployee}
             />
           )}
 

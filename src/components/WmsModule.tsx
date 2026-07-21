@@ -9,16 +9,123 @@ interface WmsModuleProps {
   items: WarehouseItem[];
   onUpdateStock: (id: string, newStock: number) => void;
   onUpdateWarehouseItem: (updated: WarehouseItem) => void;
+  onAddWarehouseItem?: (newItem: Omit<WarehouseItem, "id">) => void;
+  onDeleteWarehouseItem?: (id: string) => void;
 }
 
 export default function WmsModule({ 
-  items, onUpdateStock, onUpdateWarehouseItem 
+  items, onUpdateStock, onUpdateWarehouseItem, onAddWarehouseItem, onDeleteWarehouseItem 
 }: WmsModuleProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"all" | "locacao" | "ferramenta" | "venda">("all");
   const [selectedItemId, setSelectedItemId] = useState<string>(items[0]?.id || "");
   const [activeSubTab, setActiveSubTab] = useState<"inventario" | "locacoes" | "entradas" | "ajustes">("inventario");
   const [isLocacaoModalOpen, setIsLocacaoModalOpen] = useState(false);
+
+  // Modal States
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<WarehouseItem | null>(null);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+
+  // Material Form States
+  const [formName, setFormName] = useState("");
+  const [formCodigo, setFormCodigo] = useState("");
+  const [formDescricao, setFormDescricao] = useState("");
+  const [formType, setFormType] = useState<"tool" | "furniture">("furniture");
+  const [formUnidade, setFormUnidade] = useState("un");
+  const [formStock, setFormStock] = useState(10);
+  const [formStockMinimo, setFormStockMinimo] = useState(2);
+  const [formMarca, setFormMarca] = useState("JC Eventos");
+  const [formModelo, setFormModelo] = useState("Padrão");
+  const [formValorCompra, setFormValorCompra] = useState(150);
+  const [formValorLocacao, setFormValorLocacao] = useState(45);
+
+  const handleOpenCreateModal = () => {
+    setFormName("");
+    setFormCodigo(`MAT-2026-${Math.floor(100 + Math.random() * 900)}`);
+    setFormDescricao("");
+    setFormType("furniture");
+    setFormUnidade("un");
+    setFormStock(10);
+    setFormStockMinimo(2);
+    setFormMarca("JC Eventos");
+    setFormModelo("Padrão");
+    setFormValorCompra(150);
+    setFormValorLocacao(45);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleOpenEditModal = (item: WarehouseItem) => {
+    setEditingItem(item);
+    setFormName(item.name);
+    setFormCodigo(item.codigo);
+    setFormDescricao(item.descricao || "");
+    setFormType(item.type);
+    setFormUnidade(item.unidade || "un");
+    setFormStock(item.stock);
+    setFormStockMinimo(item.stockMinimo);
+    setFormMarca(item.marca);
+    setFormModelo(item.modelo);
+    setFormValorCompra(item.valorCompra);
+    setFormValorLocacao(item.valorLocacao);
+  };
+
+  const handleSaveMaterialSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formName.trim()) return;
+
+    if (editingItem) {
+      const updated: WarehouseItem = {
+        ...editingItem,
+        name: formName,
+        codigo: formCodigo,
+        descricao: formDescricao,
+        type: formType,
+        unidade: formUnidade,
+        stock: formStock,
+        stockMinimo: formStockMinimo,
+        marca: formMarca,
+        modelo: formModelo,
+        valorCompra: formValorCompra,
+        valorLocacao: formValorLocacao
+      };
+      onUpdateWarehouseItem(updated);
+      setEditingItem(null);
+      alert(`Material "${formName}" atualizado com sucesso!`);
+    } else if (onAddWarehouseItem) {
+      const newItem: Omit<WarehouseItem, "id"> = {
+        codigo: formCodigo || `MAT-${Date.now()}`,
+        qrCode: `QR-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: formName,
+        descricao: formDescricao,
+        type: formType,
+        unidade: formUnidade,
+        stock: formStock,
+        stockMinimo: formStockMinimo,
+        marca: formMarca,
+        modelo: formModelo,
+        patrimonio: `PAT-${Math.floor(100 + Math.random() * 900)}`,
+        estadoConservacao: "excelente",
+        valorCompra: formValorCompra,
+        valorVenda: formValorLocacao * 2,
+        valorLocacao: formValorLocacao,
+        origem: "proprio",
+        localizacaoFisica: { galpao: "Galpão Principal JC", corredor: "A1", rua: "R1", prateleira: "P2", andar: "1", posicao: "10" }
+      };
+      onAddWarehouseItem(newItem);
+      setIsCreateModalOpen(false);
+      alert(`Novo material "${formName}" cadastrado no estoque WMS!`);
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deletingItemId) return;
+    if (onDeleteWarehouseItem) {
+      onDeleteWarehouseItem(deletingItemId);
+      setDeletingItemId(null);
+      alert("Material excluído do estoque com sucesso.");
+    }
+  };
 
   // WMS logs state
   const [entradasLog, setEntradasLog] = useState([
@@ -339,6 +446,15 @@ export default function WmsModule({
                   <option value="ferramenta">Ferramentas &amp; Equipamentos</option>
                   <option value="venda">Produtos para Venda</option>
                 </select>
+
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleOpenCreateModal}
+                  style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 14px", fontSize: "12px", whiteSpace: "nowrap" }}
+                >
+                  <Plus size={14} /> Novo Material
+                </button>
               </div>
 
               {/* List Table */}
@@ -557,6 +673,26 @@ export default function WmsModule({
                       <span style={{ color: "var(--text-muted)", display: "block" }}>Valor Venda:</span>
                       <strong>R$ {selectedItem.valorVenda.toLocaleString("pt-BR")}</strong>
                     </div>
+                  </div>
+
+                  {/* Action buttons: Edit & Delete Material */}
+                  <div style={{ display: "flex", gap: "10px", marginTop: "12px", borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => handleOpenEditModal(selectedItem)}
+                      style={{ flex: 1, padding: "8px", fontSize: "12px" }}
+                    >
+                      ✏️ Editar Material
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => setDeletingItemId(selectedItem.id)}
+                      style={{ flex: 1, padding: "8px", fontSize: "12px", color: "var(--danger)", border: "1px solid var(--danger)" }}
+                    >
+                      <Trash2 size={13} style={{ marginRight: "4px" }} /> Excluir Item
+                    </button>
                   </div>
 
                 </div>
@@ -881,6 +1017,108 @@ export default function WmsModule({
           </div>
         </div>
       )}
+
+      {/* CREATE & EDIT MATERIAL MODAL */}
+      {(isCreateModalOpen || editingItem) && (
+        <div className="modal-overlay" onClick={() => { setIsCreateModalOpen(false); setEditingItem(null); }}>
+          <div className="modal-content" style={{ maxWidth: "600px" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">{editingItem ? `Editar Material: ${editingItem.name}` : "Cadastrar Novo Material no Estoque"}</h3>
+              <button className="modal-close" onClick={() => { setIsCreateModalOpen(false); setEditingItem(null); }}>X</button>
+            </div>
+            <form onSubmit={handleSaveMaterialSubmit} className="modal-body">
+              <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "12px" }}>
+                <div className="field">
+                  <label>Nome do Material / Item</label>
+                  <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="Ex: Cadeira Paris Wood Bordo" />
+                </div>
+                <div className="field">
+                  <label>Código Interno</label>
+                  <input type="text" value={formCodigo} onChange={(e) => setFormCodigo(e.target.value)} required />
+                </div>
+              </div>
+
+              <div className="field">
+                <label>Descrição Detalhada / Especificações</label>
+                <textarea rows={2} value={formDescricao} onChange={(e) => setFormDescricao(e.target.value)} placeholder="Cor, acabamento, dimensões, observações de uso..." />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+                <div className="field">
+                  <label>Categoria</label>
+                  <select value={formType} onChange={(e) => setFormType(e.target.value as any)}>
+                    <option value="furniture">🛋️ Mobiliário / Cenografia</option>
+                    <option value="tool">🛠️ Ferramenta / Equipamento</option>
+                  </select>
+                </div>
+
+                <div className="field">
+                  <label>Unidade de Medida</label>
+                  <select value={formUnidade} onChange={(e) => setFormUnidade(e.target.value)}>
+                    <option value="un">Unidade (un)</option>
+                    <option value="m²">Metro Quadrado (m²)</option>
+                    <option value="m">Metro Linear (m)</option>
+                    <option value="kg">Quilograma (kg)</option>
+                    <option value="jogo">Jogo / Kit</option>
+                    <option value="cx">Caixa (cx)</option>
+                  </select>
+                </div>
+
+                <div className="field">
+                  <label>Marca / Fabricante</label>
+                  <input type="text" value={formMarca} onChange={(e) => setFormMarca(e.target.value)} />
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px" }}>
+                <div className="field">
+                  <label>Qtd em Estoque</label>
+                  <input type="number" min="0" value={formStock} onChange={(e) => setFormStock(parseInt(e.target.value) || 0)} required />
+                </div>
+
+                <div className="field">
+                  <label>Estoque Mínimo</label>
+                  <input type="number" min="0" value={formStockMinimo} onChange={(e) => setFormStockMinimo(parseInt(e.target.value) || 0)} required />
+                </div>
+
+                <div className="field">
+                  <label>Valor Compra (R$)</label>
+                  <input type="number" min="0" step="0.01" value={formValorCompra} onChange={(e) => setFormValorCompra(parseFloat(e.target.value) || 0)} />
+                </div>
+
+                <div className="field">
+                  <label>Locação Diária (R$)</label>
+                  <input type="number" min="0" step="0.01" value={formValorLocacao} onChange={(e) => setFormValorLocacao(parseFloat(e.target.value) || 0)} />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "16px" }}>
+                <button type="button" className="btn-secondary" onClick={() => { setIsCreateModalOpen(false); setEditingItem(null); }}>Cancelar</button>
+                <button type="submit" className="btn-primary">Salvar Material</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deletingItemId && (() => {
+        const itemToDelete = items.find(i => i.id === deletingItemId);
+        return (
+          <div className="modal-overlay" onClick={() => setDeletingItemId(null)}>
+            <div className="modal-content" style={{ maxWidth: "420px", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+              <h3 className="modal-title" style={{ color: "var(--danger)", marginBottom: "10px" }}>Excluir Material do Estoque?</h3>
+              <p className="text-sm text-muted" style={{ marginBottom: "20px" }}>
+                Tem certeza que deseja excluir o item <strong>"{itemToDelete?.name}"</strong> ({itemToDelete?.codigo})? Esta ação não poderá ser desfeita.
+              </p>
+              <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
+                <button className="btn-secondary" onClick={() => setDeletingItemId(null)}>Cancelar</button>
+                <button className="btn-danger" onClick={handleConfirmDelete}>Confirmar Exclusão</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

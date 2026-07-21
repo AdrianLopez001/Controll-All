@@ -95,7 +95,7 @@ export default function Agenda({
       horarioInicio: indHorarioInicio,
       horarioFim: indHorarioFim || indHorarioInicio,
       local: indLocal || "Remoto / Escritório",
-      responsavel: indResponsavel || "Adrian (ADMIN)",
+      responsavel: indResponsavel || "JCEventos",
       participantes: indParticipantes || "Nenhum",
       prioridade: indPrioridade,
       categoria: indCategoria,
@@ -718,7 +718,7 @@ export default function Agenda({
                 </div>
                 <div className="field">
                   <label>Responsável JC</label>
-                  <input type="text" value={indResponsavel} onChange={(e) => setIndResponsavel(e.target.value)} placeholder="Ex: Adrian Lopez" />
+                  <input type="text" value={indResponsavel} onChange={(e) => setIndResponsavel(e.target.value)} placeholder="Ex: JCEventos" />
                 </div>
               </div>
 

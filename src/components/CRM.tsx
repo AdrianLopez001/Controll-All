@@ -96,7 +96,7 @@ export default function CRM({
         categoria: "contrato",
         nome: "Contrato de Prestação de Serviços - Estande Cenográfico Natura",
         versoes: [
-          { versao: 1, dataEnvio: "2026-07-10", responsavelEnvio: "Adrian (ADMIN)", nomeArquivo: "contrato_natura_v1.pdf", observacoes: "Primeira versão para avaliação do cliente.", urlSimulada: "#" }
+          { versao: 1, dataEnvio: "2026-07-10", responsavelEnvio: "JCEventos (ADMIN)", nomeArquivo: "contrato_natura_v1.pdf", observacoes: "Primeira versão para avaliação do cliente.", urlSimulada: "#" }
         ]
       },
       {
@@ -105,7 +105,7 @@ export default function CRM({
         nome: "Planta de Arquitetura 3D - Pavilhão Anhembi Stand Natura 12x10",
         versoes: [
           { versao: 1, dataEnvio: "2026-07-11", responsavelEnvio: "Jéssica Cenografia", nomeArquivo: "planta_natura_v1.dwg", observacoes: "Esboço inicial aprovado.", urlSimulada: "#" },
-          { versao: 2, dataEnvio: "2026-07-12", responsavelEnvio: "Adrian (ADMIN)", nomeArquivo: "planta_natura_final.pdf", observacoes: "Ajuste na parede traseira conforme organizador.", urlSimulada: "#" }
+          { versao: 2, dataEnvio: "2026-07-12", responsavelEnvio: "JCEventos (ADMIN)", nomeArquivo: "planta_natura_final.pdf", observacoes: "Ajuste na parede traseira conforme organizador.", urlSimulada: "#" }
         ]
       }
     ];
@@ -123,7 +123,7 @@ export default function CRM({
         {
           versao: 1,
           dataEnvio: new Date().toISOString().split("T")[0],
-          responsavelEnvio: "Adrian (ADMIN)",
+          responsavelEnvio: "JCEventos (ADMIN)",
           nomeArquivo: docFileSelected || "documento_anexo.pdf",
           observacoes: docNotes || "Carregado via CRM",
           urlSimulada: "#"
@@ -156,7 +156,7 @@ export default function CRM({
     const newVersao: ClienteDocumentoVersao = {
       versao: newVersaoNum,
       dataEnvio: new Date().toISOString().split("T")[0],
-      responsavelEnvio: "Adrian (ADMIN)",
+      responsavelEnvio: "JCEventos (ADMIN)",
       nomeArquivo: docFileSelected || `documento_v${newVersaoNum}.pdf`,
       observacoes: docNotes || `Nova versão/revisão ${newVersaoNum}`,
       urlSimulada: "#"

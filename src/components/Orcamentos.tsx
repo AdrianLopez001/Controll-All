@@ -257,12 +257,47 @@ export default function Orcamentos({
     alert(`E-mail com proposta comercial enviado com sucesso para ${emailTo}!`);
   };
 
-  const statusCfg: Record<Orcamento["status"], { label: string; bg: string; color: string }> = {
-    rascunho:   { label: "Rascunho",    bg: "#f1f5f9", color: "#64748b" },
-    negociacao: { label: "Negociação",  bg: "#fef3c7", color: "#92400e" },
-    aprovado:   { label: "Aprovado",    bg: "#d1fae5", color: "#065f46" },
-    recusado:   { label: "Recusado",    bg: "#fee2e2", color: "#991b1b" },
-    arquivado:  { label: "Arquivado",   bg: "#e2e8f0", color: "#475569" },
+  // Workflow dinâmico e editável de status de propostas
+  const [proposalStatuses, setProposalStatuses] = useState<{ id: string; label: string; bg: string; color: string }[]>([
+    { id: "rascunho", label: "Rascunho", bg: "#f1f5f9", color: "#64748b" },
+    { id: "elaboracao", label: "Em Elaboração", bg: "#e0f2fe", color: "#0369a1" },
+    { id: "enviado", label: "Enviado ao Cliente", bg: "#e0e7ff", color: "#3730a3" },
+    { id: "negociacao", label: "Em Negociação", bg: "#fef3c7", color: "#92400e" },
+    { id: "aguardando_retorno", label: "Aguardando Retorno", bg: "#fef9c3", color: "#854d0e" },
+    { id: "revisao", label: "Em Revisão", bg: "#f3e8ff", color: "#6b21a8" },
+    { id: "aguardando_aprovacao", label: "Aguardando Aprovação", bg: "#fae8ff", color: "#86198f" },
+    { id: "aprovado", label: "Aprovado", bg: "#d1fae5", color: "#065f46" },
+    { id: "recusado", label: "Recusado", bg: "#fee2e2", color: "#991b1b" },
+    { id: "cancelado", label: "Cancelado", bg: "#e2e8f0", color: "#334155" },
+    { id: "perdido", label: "Perdido", bg: "#fecdd3", color: "#9f1239" },
+    { id: "ganho", label: "Ganho", bg: "#bbf7d0", color: "#14532d" },
+    { id: "arquivado", label: "Arquivado", bg: "#e2e8f0", color: "#475569" }
+  ]);
+
+  const [isStatusMgrOpen, setIsStatusMgrOpen] = useState(false);
+  const [newStatusLabel, setNewStatusLabel] = useState("");
+
+  const getStatusCfg = (st: string) => {
+    const found = proposalStatuses.find(s => s.id === st || s.label.toLowerCase() === st.toLowerCase());
+    if (found) return found;
+    return { id: st, label: st.charAt(0).toUpperCase() + st.slice(1), bg: "#e2e8f0", color: "#475569" };
+  };
+
+  const handleAddCustomStatus = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStatusLabel.trim()) return;
+    const id = newStatusLabel.trim().toLowerCase().replace(/\s+/g, "_");
+    if (proposalStatuses.some(s => s.id === id)) {
+      alert("Este status já existe!");
+      return;
+    }
+    setProposalStatuses([...proposalStatuses, { id, label: newStatusLabel.trim(), bg: "#e0f2fe", color: "#0369a1" }]);
+    setNewStatusLabel("");
+  };
+
+  const handleRemoveCustomStatus = (id: string) => {
+    if (proposalStatuses.length <= 1) return;
+    setProposalStatuses(proposalStatuses.filter(s => s.id !== id));
   };
 
   const filteredOrcamentos = orcamentos.filter(orc => {
@@ -283,13 +318,23 @@ export default function Orcamentos({
             <h3 style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>Propostas</h3>
             <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>{filteredOrcamentos.length} proposta(s)</p>
           </div>
-          <button
-            className="btn-primary btn-sm"
-            onClick={() => setIsCreateModalOpen(true)}
-            style={{ display: "flex", alignItems: "center", gap: "6px" }}
-          >
-            <Plus size={13} /> Nova Proposta
-          </button>
+          <div style={{ display: "flex", gap: "6px" }}>
+            <button
+              className="btn-secondary btn-sm"
+              onClick={() => setIsStatusMgrOpen(true)}
+              style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px" }}
+              title="Configurar Workflow de Status das Propostas"
+            >
+              ⚙️ Status
+            </button>
+            <button
+              className="btn-primary btn-sm"
+              onClick={() => setIsCreateModalOpen(true)}
+              style={{ display: "flex", alignItems: "center", gap: "6px" }}
+            >
+              <Plus size={13} /> Nova Proposta
+            </button>
+          </div>
         </div>
 
         {/* Search + Filter */}
@@ -307,11 +352,9 @@ export default function Orcamentos({
             style={{ padding: "7px 10px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "var(--bg-card)", color: "var(--text-primary)", cursor: "pointer" }}
           >
             <option value="all">Ativos (Todos)</option>
-            <option value="rascunho">Rascunho</option>
-            <option value="negociacao">Negociação</option>
-            <option value="aprovado">Aprovado</option>
-            <option value="recusado">Recusado</option>
-            <option value="arquivado">Arquivados</option>
+            {proposalStatuses.map(st => (
+              <option key={st.id} value={st.id}>{st.label}</option>
+            ))}
           </select>
         </div>
 
@@ -324,7 +367,7 @@ export default function Orcamentos({
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             {filteredOrcamentos.map((orc) => {
-              const cfg = statusCfg[orc.status];
+              const cfg = getStatusCfg(orc.status);
               const isSelected = selectedOrc?.id === orc.id;
               return (
                 <button
@@ -360,11 +403,7 @@ export default function Orcamentos({
                     <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--accent-text)" }}>
                       {fmtBrl(orc.total)}
                     </span>
-                    <span className={`badge ${
-                      orc.status === "aprovado" ? "badge-success" :
-                      orc.status === "negociacao" ? "badge-warning" :
-                      orc.status === "recusado" ? "badge-danger" : "badge-muted"
-                    }`} style={{ fontSize: "9px" }}>
+                    <span style={{ fontSize: "9px", fontWeight: "600", padding: "2px 8px", borderRadius: "10px", backgroundColor: cfg.bg, color: cfg.color }}>
                       {cfg.label}
                     </span>
                   </div>
@@ -377,7 +416,7 @@ export default function Orcamentos({
 
       {/* ── Right: Detail Panel (only when selected) ── */}
       {selectedOrc && (() => {
-        const cfg = statusCfg[selectedOrc.status];
+        const cfg = getStatusCfg(selectedOrc.status);
         return (
           <div className="no-print" style={{
             background: "var(--bg-card)", border: "1px solid var(--border)",
@@ -495,29 +534,34 @@ export default function Orcamentos({
               </>
             )}
 
-            {/* Action buttons */}
-            <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
-              {selectedOrc.status !== "aprovado" && selectedOrc.status !== "recusado" && (
-                <button className="btn-success btn-sm" onClick={() => handleStatusChange(selectedOrc, "aprovado")} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                  <Check size={13} /> Aprovar
-                </button>
-              )}
-              {selectedOrc.status !== "recusado" && selectedOrc.status !== "aprovado" && (
-                <button className="btn-danger btn-sm" onClick={() => handleStatusChange(selectedOrc, "recusado")} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                  <X size={13} /> Recusar
-                </button>
-              )}
+            {/* Action buttons com Seletor Flexível de Status */}
+            <div style={{ display: "flex", gap: "10px", marginBottom: "16px", flexWrap: "wrap", alignItems: "center", background: "var(--bg-main)", padding: "10px", borderRadius: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span className="text-xs text-muted" style={{ fontWeight: "600" }}>Alterar Status:</span>
+                <select
+                  value={selectedOrc.status}
+                  onChange={(e) => handleStatusChange(selectedOrc, e.target.value as any)}
+                  style={{ padding: "6px 10px", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-primary)", fontSize: "12px", fontWeight: "600" }}
+                >
+                  {proposalStatuses.map(st => (
+                    <option key={st.id} value={st.id}>{st.label}</option>
+                  ))}
+                </select>
+              </div>
+
               <button
                 className="btn-secondary btn-sm"
                 onClick={() => { setEmailTo(selectedOrc.emailCliente); setEmailSubject(`Proposta JC Eventos — ${selectedOrc.codigo}`); setEmailBody(`Olá,\n\nSegue a proposta comercial ${selectedOrc.codigo}.\n\nValor: ${fmtBrl(selectedOrc.total)}\n\nAtenciosamente,\nJC Eventos`); setIsEmailModalOpen(true); }}
                 style={{ display: "flex", alignItems: "center", gap: "5px" }}
               >
-                <Mail size={13} /> Enviar por E-mail
+                <Mail size={13} /> Enviar E-mail
               </button>
+
               <button className="btn-secondary btn-sm" onClick={() => setIsPdfModalOpen(true)} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                 <Eye size={13} /> Ver PDF
               </button>
-              {selectedOrc.status === "aprovado" && (
+
+              {(selectedOrc.status === "aprovado" || selectedOrc.status === "ganho") && (
                 <button className="btn-primary btn-sm" onClick={() => handleConversion(selectedOrc)} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                   <RefreshCw size={13} /> Converter em OS
                 </button>
@@ -1024,6 +1068,59 @@ export default function Orcamentos({
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
                 <button type="button" className="btn-secondary" onClick={() => setIsEmailModalOpen(false)}>Cancelar</button>
                 <button type="button" className="btn-primary" onClick={triggerSendEmail}>Enviar Proposta</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STATUS MANAGER MODAL */}
+      {isStatusMgrOpen && (
+        <div className="modal-overlay" onClick={() => setIsStatusMgrOpen(false)}>
+          <div className="modal-content" style={{ maxWidth: "500px" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Configurar Workflow de Status</h3>
+              <button className="modal-close" onClick={() => setIsStatusMgrOpen(false)}>X</button>
+            </div>
+            <div className="modal-body">
+              <p className="text-xs text-muted" style={{ marginBottom: "16px" }}>
+                Crie, edite ou renomeie as etapas de negociação comercial de propostas da JC Eventos.
+              </p>
+
+              <form onSubmit={handleAddCustomStatus} style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+                <input 
+                  type="text" 
+                  placeholder="Nome da nova etapa (ex: Aguardando Sinal)..." 
+                  value={newStatusLabel} 
+                  onChange={(e) => setNewStatusLabel(e.target.value)} 
+                  style={{ flexGrow: 1, padding: "8px", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }}
+                  required
+                />
+                <button type="submit" className="btn-primary" style={{ padding: "8px 14px", fontSize: "12px" }}>
+                  + Criar
+                </button>
+              </form>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "250px", overflowY: "auto" }}>
+                {proposalStatuses.map((st) => (
+                  <div key={st.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "6px", background: "var(--bg-card)" }}>
+                    <span style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-primary)" }}>
+                      {st.label}
+                    </span>
+                    <button 
+                      type="button" 
+                      onClick={() => handleRemoveCustomStatus(st.id)}
+                      style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}
+                      title="Excluir status"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px" }}>
+                <button type="button" className="btn-primary" onClick={() => setIsStatusMgrOpen(false)}>Salvar e Fechar</button>
               </div>
             </div>
           </div>

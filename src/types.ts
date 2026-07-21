@@ -138,7 +138,8 @@ export interface Project {
   mapsRoute: EventoMapsRoute;
 
   // OS & Detalhes técnicos
-  prioridade?: "baixa" | "media" | "alta";
+  prioridade?: "muito_alta" | "alta" | "media" | "baixa";
+  prioridadeModo?: "auto" | "manual";
   etiquetas?: string[];
   comentarios?: OSComentario[];
   fotos?: OSFoto[];
@@ -223,6 +224,7 @@ export interface WmsLocacaoItem {
 export interface WarehouseItem {
   id: string;
   name: string;
+  descricao?: string;
   type: "tool" | "furniture";
   stock: number;
   
@@ -389,7 +391,7 @@ export interface Orcamento {
   cnpjCliente: string;
   dataCriacao: string;
   validoAte: string;
-  status: "rascunho" | "negociacao" | "aprovado" | "recusado" | "arquivado";
+  status: "rascunho" | "elaboracao" | "enviado" | "negociacao" | "aguardando_retorno" | "revisao" | "aguardando_aprovacao" | "aprovado" | "recusado" | "cancelado" | "perdido" | "ganho" | "arquivado" | string;
   produtos: { id: string; name: string; qty: number; precoVenda: number }[];
   servicos: { name: string; preco: number }[];
   desconto: number;

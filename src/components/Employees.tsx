@@ -11,6 +11,7 @@ interface EmployeesProps {
   onToggleDocStatus: (id: string) => void;
   onToggleSafetyCert: (id: string) => void;
   onUpdateEmployee: (updated: Employee) => void;
+  onDeleteEmployee?: (id: string) => void;
 }
 
 export default function Employees({
@@ -18,13 +19,15 @@ export default function Employees({
   onAddEmployee,
   onToggleDocStatus,
   onToggleSafetyCert,
-  onUpdateEmployee
+  onUpdateEmployee,
+  onDeleteEmployee
 }: EmployeesProps) {
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
   const [hasSafetyCert, setHasSafetyCert] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [selectedEmp, setSelectedEmp] = useState<Employee | null>(null);
+  const [deletingEmpId, setDeletingEmpId] = useState<string | null>(null);
 
   const [activeSubTab, setActiveSubTab] = useState<"cadastro" | "produtividade">("cadastro");
 
@@ -70,6 +73,8 @@ export default function Employees({
   };
 
   // Edit employee local states
+  const [editName, setEditName] = useState("");
+  const [editRole, setEditRole] = useState("");
   const [editCpf, setEditCpf] = useState("");
   const [editRg, setEditRg] = useState("");
   const [editCnh, setEditCnh] = useState("");
@@ -80,6 +85,8 @@ export default function Employees({
 
   const handleOpenDetails = (emp: Employee) => {
     setSelectedEmp(emp);
+    setEditName(emp.name);
+    setEditRole(emp.role);
     setEditCpf(emp.cpf || "");
     setEditRg(emp.rg || "");
     setEditCnh(emp.cnh || "");
@@ -93,6 +100,8 @@ export default function Employees({
     if (!selectedEmp) return;
     const updated: Employee = {
       ...selectedEmp,
+      name: editName || selectedEmp.name,
+      role: editRole || selectedEmp.role,
       cpf: editCpf,
       rg: editRg,
       cnh: editCnh,
@@ -105,6 +114,16 @@ export default function Employees({
     onUpdateEmployee(updated);
     setSelectedEmp(updated);
     alert("Dados do colaborador atualizados com sucesso!");
+  };
+
+  const handleConfirmDeleteEmp = () => {
+    if (!deletingEmpId) return;
+    if (onDeleteEmployee) {
+      onDeleteEmployee(deletingEmpId);
+      setDeletingEmpId(null);
+      setSelectedEmp(null);
+      alert("Colaborador excluído definitivamente do sistema.");
+    }
   };
 
   const handleSimulateUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -350,13 +369,14 @@ export default function Employees({
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "12px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "10px" }}>
-                  <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--accent)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: "bold" }}>
-                    {selectedEmp.foto || selectedEmp.name.substring(0, 1)}
+                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "10px", marginBottom: "4px" }}>
+                  <div>
+                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Nome Completo</label>
+                    <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px", fontSize: "12px" }} />
                   </div>
                   <div>
-                    <strong style={{ fontSize: "14px", display: "block" }}>{selectedEmp.name}</strong>
-                    <span style={{ color: "var(--text-secondary)" }}>{selectedEmp.role}</span>
+                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Cargo / Função</label>
+                    <input type="text" value={editRole} onChange={(e) => setEditRole(e.target.value)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px", fontSize: "12px" }} />
                   </div>
                 </div>
 
@@ -398,8 +418,16 @@ export default function Employees({
                   <input type="number" value={editSalario} onChange={(e) => setEditSalario(parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
                 </div>
 
-                <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+                <div style={{ display: "flex", gap: "8px", marginTop: "10px", flexWrap: "wrap" }}>
                   <button type="button" className="btn-primary" onClick={handleSaveChanges} style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "6px", flexGrow: 1, justifyContent: "center" }}>Salvar Alterações</button>
+                  <button 
+                    type="button" 
+                    className="btn-secondary" 
+                    onClick={() => setDeletingEmpId(selectedEmp.id)} 
+                    style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "6px", color: "var(--danger)", border: "1px solid var(--danger)" }}
+                  >
+                    <Trash2 size={13} style={{ marginRight: "4px" }} /> Excluir
+                  </button>
                   <button type="button" className="btn-secondary" onClick={() => setSelectedEmp(null)} style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "6px" }}>Fechar</button>
                 </div>
               </div>
@@ -579,7 +607,7 @@ export default function Employees({
                   <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Avaliação (1 a 5 estrelas)</label>
                   <select 
                     value={evalNota} 
-                    onChange={(e) => setOriginalEvalNota(Number(e.target.value))}
+                    onChange={(e) => setEvalNota(Number(e.target.value))}
                     style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }}
                   >
                     <option value="5">★★★★★ Excelente (5)</option>
@@ -598,6 +626,25 @@ export default function Employees({
           </div>
         </div>
       )}
+
+      {/* DELETE EMPLOYEE CONFIRMATION MODAL */}
+      {deletingEmpId && (() => {
+        const empToDelete = employees.find(e => e.id === deletingEmpId);
+        return (
+          <div className="modal-overlay" style={{ zIndex: 200 }} onClick={() => setDeletingEmpId(null)}>
+            <div className="modal-content" style={{ maxWidth: "420px", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+              <h3 className="modal-title" style={{ color: "var(--danger)", marginBottom: "10px" }}>Excluir Colaborador Definitivamente?</h3>
+              <p className="text-sm text-muted" style={{ marginBottom: "20px" }}>
+                Tem certeza que deseja excluir o colaborador <strong>"{empToDelete?.name}"</strong> ({empToDelete?.role})? Esta ação removerá a ficha e o histórico do sistema.
+              </p>
+              <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
+                <button className="btn-secondary" onClick={() => setDeletingEmpId(null)}>Cancelar</button>
+                <button className="btn-danger" onClick={handleConfirmDeleteEmp}>Confirmar Exclusão</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
