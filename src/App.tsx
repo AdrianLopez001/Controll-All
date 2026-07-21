@@ -1194,9 +1194,19 @@ export default function App() {
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "40px", width: "100%", maxWidth: "420px", boxShadow: "var(--shadow-lg)", textAlign: "center", display: "flex", flexDirection: "column", gap: "24px" }}>
           
           {/* Logo Oficial JC Eventos */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
-            <img src={logoImg} alt="JC Eventos" style={{ height: "56px", objectFit: "contain", marginBottom: "4px" }} />
-            <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Portal de Operações ERP</span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+            <div style={{
+              background: "linear-gradient(135deg, #144580 0%, #1a5296 100%)",
+              borderRadius: "16px",
+              padding: "16px 28px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 4px 20px rgba(20, 69, 128, 0.35)"
+            }}>
+              <img src={logoImg} alt="JC Eventos" style={{ height: "52px", objectFit: "contain" }} />
+            </div>
+            <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.8px" }}>Portal de Operações ERP</span>
           </div>
 
           {!showPasswordRecovery ? (
@@ -1318,7 +1328,17 @@ export default function App() {
       <header className="top-nav">
         <div className="top-nav-left">
           <a href="#" className="top-nav-logo" onClick={(e) => { e.preventDefault(); setActiveTab("overview"); }} style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-            <img src={logoImg} alt="JC Eventos" style={{ height: "36px", objectFit: "contain", marginRight: "10px" }} />
+            <div style={{
+              background: "rgba(255,255,255,0.15)",
+              backdropFilter: "blur(4px)",
+              borderRadius: "10px",
+              padding: "5px 14px",
+              display: "flex",
+              alignItems: "center",
+              border: "1px solid rgba(255,255,255,0.2)"
+            }}>
+              <img src={logoImg} alt="JC Eventos" style={{ height: "30px", objectFit: "contain" }} />
+            </div>
           </a>
 
           {/* Flat Direct Navigation — 7 items, no nested dropdowns */}
