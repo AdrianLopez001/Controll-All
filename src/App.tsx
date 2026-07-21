@@ -1143,6 +1143,10 @@ export default function App() {
     .filter(e => e.phase !== "post")
     .reduce((acc, curr) => acc + curr.docs.filter(d => d.status === "pending").length, 0);
 
+  // Panel visibility flags
+  const [showTasksPanel, setShowTasksPanel] = useState(false);
+  const [showNotifPanel, setShowNotifPanel] = useState(false);
+
   // Password recovery states
   const [showPasswordRecovery, setShowPasswordRecovery] = useState(false);
   const [recoveryCpf, setRecoveryCpf] = useState("");
@@ -1548,42 +1552,181 @@ export default function App() {
           </button>
 
           {/* Quick task checklist access */}
-          <button 
-            className="top-nav-icon-btn" 
-            onClick={() => {
-              const pendingChecklist = events.flatMap(evt => evt.checklist.filter(c => !c.done).map(c => `${evt.name}: ${c.text}`));
-              alert(`Tarefas Operacionais Pendentes (${pendingChecklist.length}):\n\n` + 
-                (pendingChecklist.length > 0 ? pendingChecklist.slice(0, 8).map((t, idx) => `${idx + 1}. ${t}`).join("\n") + (pendingChecklist.length > 8 ? "\n...e mais." : "") : "Nenhuma tarefa pendente!"));
-            }}
-            title="Tarefas Pendentes"
-          >
-            <ClipboardCheck size={18} />
-            {events.flatMap(evt => evt.checklist.filter(c => !c.done)).length > 0 && (
-              <span className="icon-badge">
-                {events.flatMap(evt => evt.checklist.filter(c => !c.done)).length}
-              </span>
-            )}
-          </button>
+          <div className="menu-group" style={{ position: "relative" }}>
+            <button
+              className="top-nav-icon-btn"
+              onClick={() => { setShowTasksPanel(p => !p); setShowNotifPanel(false); }}
+              title="Tarefas Operacionais Pendentes"
+            >
+              <ClipboardCheck size={18} />
+              {events.flatMap(evt => evt.checklist.filter(c => !c.done)).length > 0 && (
+                <span className="icon-badge">
+                  {events.flatMap(evt => evt.checklist.filter(c => !c.done)).length}
+                </span>
+              )}
+            </button>
+
+            {showTasksPanel && (() => {
+              const pendingTasks = events.flatMap(evt =>
+                evt.checklist
+                  .filter(c => !c.done)
+                  .map(c => ({ evtName: evt.name, evtCodigo: evt.codigo, text: c.text, id: c.id, evtId: evt.id }))
+              );
+              return (
+                <div style={{
+                  position: "absolute", top: "calc(100% + 10px)", right: 0,
+                  width: "360px", maxHeight: "480px", overflowY: "auto",
+                  background: "var(--bg-card)", border: "1px solid var(--border)",
+                  borderRadius: "14px", boxShadow: "0 12px 40px rgba(0,0,0,0.18)",
+                  zIndex: 9999
+                }}>
+                  <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <span style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)" }}>Tarefas Operacionais Pendentes</span>
+                      <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "2px 0 0" }}>{pendingTasks.length} itens não concluídos</p>
+                    </div>
+                    <button onClick={() => setShowTasksPanel(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "18px", lineHeight: 1 }}>✕</button>
+                  </div>
+                  {pendingTasks.length === 0 ? (
+                    <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: "13px" }}>
+                      ✅ Nenhuma tarefa pendente!
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                      {pendingTasks.map((t) => (
+                        <div key={`${t.evtId}-${t.id}`} style={{
+                          padding: "10px 16px",
+                          borderBottom: "1px solid var(--border)",
+                          display: "flex", alignItems: "flex-start", gap: "10px"
+                        }}>
+                          <div style={{
+                            width: "8px", height: "8px", borderRadius: "50%",
+                            background: "var(--accent)", marginTop: "5px", flexShrink: 0
+                          }} />
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontSize: "12px", color: "var(--text-primary)", margin: 0, lineHeight: 1.4 }}>{t.text}</p>
+                            <span style={{ fontSize: "10px", color: "var(--text-muted)", fontFamily: "monospace" }}>{t.evtCodigo} · {t.evtName}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border)" }}>
+                    <button
+                      onClick={() => { setActiveTab("os"); setShowTasksPanel(false); }}
+                      style={{ width: "100%", padding: "8px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}
+                    >
+                      Ver todas as OSs →
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
 
           {/* Notifications */}
-          <button 
-            className="top-nav-icon-btn" 
-            onClick={() => {
-              const notifications = [];
-              if (lowStockCount > 0) notifications.push(`⚠️ Estoque Crítico: ${lowStockCount} itens abaixo do mínimo.`);
-              if (pendingDocsCount > 0) notifications.push(`📄 Documentação: ${pendingDocsCount} documentos de projetos pendentes.`);
-              notifications.push("📅 Agenda: Estande Feicon 2026 inicia montagem em breve.");
-              alert(`Painel de Notificações:\n\n` + notifications.map((n, idx) => `${idx + 1}. ${n}`).join("\n"));
-            }}
-            title="Notificações"
-          >
-            <Bell size={18} />
-            {(lowStockCount > 0 || pendingDocsCount > 0) && (
-              <span className="icon-badge">
-                {(lowStockCount > 0 ? 1 : 0) + (pendingDocsCount > 0 ? 1 : 0) + 1}
-              </span>
-            )}
-          </button>
+          <div className="menu-group" style={{ position: "relative" }}>
+            <button
+              className="top-nav-icon-btn"
+              onClick={() => { setShowNotifPanel(p => !p); setShowTasksPanel(false); }}
+              title="Notificações"
+            >
+              <Bell size={18} />
+              {(lowStockCount > 0 || pendingDocsCount > 0) && (
+                <span className="icon-badge">
+                  {(lowStockCount > 0 ? 1 : 0) + (pendingDocsCount > 0 ? 1 : 0)}
+                </span>
+              )}
+            </button>
+
+            {showNotifPanel && (() => {
+              const notifs: { icon: string; title: string; desc: string; tab?: string; type: "danger" | "warning" | "info" }[] = [];
+              if (lowStockCount > 0) notifs.push({
+                icon: "⚠️", title: "Estoque Crítico",
+                desc: `${lowStockCount} ${lowStockCount === 1 ? "item abaixo" : "itens abaixo"} do estoque mínimo`,
+                tab: "warehouse", type: "danger"
+              });
+              if (pendingDocsCount > 0) notifs.push({
+                icon: "📄", title: "Documentos Pendentes",
+                desc: `${pendingDocsCount} documento(s) aguardando envio ou aprovação`,
+                tab: "os", type: "warning"
+              });
+              events
+                .filter(e => e.phase !== "Finalizado")
+                .forEach(e => {
+                  const daysUntil = Math.ceil((new Date(e.dataMontagem || e.startDate).getTime() - Date.now()) / 86400000);
+                  if (daysUntil >= 0 && daysUntil <= 7) {
+                    notifs.push({
+                      icon: "📅", title: `Montagem em ${daysUntil === 0 ? "hoje" : daysUntil + (daysUntil === 1 ? " dia" : " dias")}`,
+                      desc: `${e.name} — ${e.cidadeEvento || ""}`,
+                      tab: "os", type: "info"
+                    });
+                  }
+                });
+              const empPending = employees.filter(e => e.documentStatus === "pending");
+              if (empPending.length > 0) notifs.push({
+                icon: "👤", title: "Colaboradores com Doc. Pendente",
+                desc: `${empPending.length} colaborador(es) com documentação incompleta`,
+                tab: "employees", type: "warning"
+              });
+
+              const badgeColor = { danger: "#ef4444", warning: "#f97316", info: "var(--accent)" };
+
+              return (
+                <div style={{
+                  position: "absolute", top: "calc(100% + 10px)", right: 0,
+                  width: "360px", maxHeight: "480px", overflowY: "auto",
+                  background: "var(--bg-card)", border: "1px solid var(--border)",
+                  borderRadius: "14px", boxShadow: "0 12px 40px rgba(0,0,0,0.18)",
+                  zIndex: 9999
+                }}>
+                  <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <span style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)" }}>Notificações do Sistema</span>
+                      <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "2px 0 0" }}>{notifs.length} alerta(s) ativo(s)</p>
+                    </div>
+                    <button onClick={() => setShowNotifPanel(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "18px", lineHeight: 1 }}>✕</button>
+                  </div>
+                  {notifs.length === 0 ? (
+                    <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: "13px" }}>
+                      ✅ Nenhuma notificação pendente!
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                      {notifs.map((n, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => { if (n.tab) { setActiveTab(n.tab as any); setShowNotifPanel(false); } }}
+                          style={{
+                            padding: "12px 16px",
+                            borderBottom: "1px solid var(--border)",
+                            display: "flex", alignItems: "flex-start", gap: "12px",
+                            cursor: n.tab ? "pointer" : "default",
+                            transition: "background 0.15s"
+                          }}
+                          onMouseEnter={e => { if (n.tab) (e.currentTarget as HTMLDivElement).style.background = "var(--bg-main)"; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
+                        >
+                          <div style={{
+                            width: "10px", height: "10px", borderRadius: "50%",
+                            background: badgeColor[n.type], marginTop: "4px", flexShrink: 0
+                          }} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <span style={{ fontSize: "14px" }}>{n.icon}</span>
+                              <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--text-primary)" }}>{n.title}</span>
+                            </div>
+                            <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "2px 0 0" }}>{n.desc}</p>
+                          </div>
+                          {n.tab && <span style={{ fontSize: "11px", color: "var(--accent)", fontWeight: 600, whiteSpace: "nowrap", alignSelf: "center" }}>Ver →</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
 
           {/* Audit log quick access */}
           <button 
