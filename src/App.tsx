@@ -18,6 +18,7 @@ import Logistics from "./components/Logistics";
 import IAAssistant from "./components/IAAssistant"; // kept for reference, not rendered in nav
 import Auditoria from "./components/Auditoria";
 import Orcamentos from "./components/Orcamentos";
+import logoImg from "./assets/logo.png";
 import OrdensServico from "./components/OrdensServico";
 import Agenda from "./components/Agenda";
 
@@ -1192,15 +1193,9 @@ export default function App() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", backgroundColor: "var(--bg-main)", fontFamily: "var(--font)", padding: "20px" }}>
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "40px", width: "100%", maxWidth: "420px", boxShadow: "var(--shadow-lg)", textAlign: "center", display: "flex", flexDirection: "column", gap: "24px" }}>
           
-          {/* Logo JC Eventos */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
-            <svg width="60" height="60" viewBox="0 0 100 100" fill="none">
-              <rect width="100" height="100" rx="22" fill="var(--accent)" />
-              <path d="M35 30H52V60C52 66 47 70 40 70" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M72 35H58C52 35 48 40 48 48C48 56 52 61 58 61H72" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="80" cy="72" r="8" fill="var(--accent-secondary)" />
-            </svg>
-            <h1 style={{ fontSize: "22px", fontWeight: "800", letterSpacing: "1px", color: "var(--accent)", margin: 0 }}>JC EVENTOS</h1>
+          {/* Logo Oficial JC Eventos */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+            <img src={logoImg} alt="JC Eventos" style={{ height: "56px", objectFit: "contain", marginBottom: "4px" }} />
             <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Portal de Operações ERP</span>
           </div>
 
@@ -1323,13 +1318,7 @@ export default function App() {
       <header className="top-nav">
         <div className="top-nav-left">
           <a href="#" className="top-nav-logo" onClick={(e) => { e.preventDefault(); setActiveTab("overview"); }} style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-            <svg width="26" height="26" viewBox="0 0 100 100" fill="none" style={{ marginRight: "8px" }}>
-              <rect width="100" height="100" rx="22" fill="rgba(255,255,255,0.15)" />
-              <path d="M35 30H52V60C52 66 47 70 40 70" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M72 35H58C52 35 48 40 48 48C48 56 52 61 58 61H72" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="80" cy="72" r="8" fill="#C95D46" />
-            </svg>
-            <span style={{ fontWeight: "800", letterSpacing: "0.5px", color: "#ffffff" }}>JC EVENTOS</span>
+            <img src={logoImg} alt="JC Eventos" style={{ height: "36px", objectFit: "contain", marginRight: "10px" }} />
           </a>
 
           {/* Flat Direct Navigation — 7 items, no nested dropdowns */}

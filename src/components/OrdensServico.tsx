@@ -20,7 +20,7 @@ export default function OrdensServico({
   allWarehouseItems,
   onUpdateEvent
 }: OrdensServicoProps) {
-  const [selectedOsId, setSelectedOsId] = useState<string>(events[0]?.id || "");
+  const [selectedOsId, setSelectedOsId] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<"all" | "muito_alta" | "alta" | "media" | "baixa">("all");
   const [sortByPriority, setSortByPriority] = useState(false);
@@ -369,14 +369,17 @@ export default function OrdensServico({
   }
 
   return (
-    <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: "1.2fr 1.8fr", gap: "24px", padding: "10px" }}>
+    <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: selectedOS ? "360px 1fr" : "1fr", gap: "20px", padding: "10px", minHeight: "80vh" }}>
       {/* Left Column: OS List */}
       <div className="section-box no-print" style={{ height: "auto" }}>
-        <div className="section-box-header">
-          <h3 className="section-box-title">
-            <FileText size={16} style={{ color: "var(--accent)" }} />
-            Ordens de Serviço (OS) Operacionais
-          </h3>
+        <div className="section-box-header" style={{ marginBottom: "14px" }}>
+          <div>
+            <h3 className="section-box-title" style={{ fontSize: "15px", fontWeight: "700" }}>
+              <FileText size={16} style={{ color: "var(--accent)", marginRight: "6px" }} />
+              Ordens de Serviço (OS) Operacionais
+            </h3>
+            <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>{filteredOSs.length} OS encontrada(s)</p>
+          </div>
           <span className="kanban-column-count">{events.length} Ativas</span>
         </div>
 
@@ -386,12 +389,12 @@ export default function OrdensServico({
             placeholder="Buscar por código, evento ou cliente..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ flexGrow: 1, minWidth: "140px", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }}
+            style={{ flexGrow: 1, minWidth: "140px", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "var(--bg-card)", color: "var(--text-primary)" }}
           />
           <select 
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value as any)}
-            style={{ padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", color: "var(--text-primary)", fontSize: "12px" }}
+            style={{ padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", color: "var(--text-primary)", fontSize: "12px" }}
           >
             <option value="all">Todas Prioridades</option>
             <option value="muito_alta">🔴 Muito Alta</option>
@@ -403,56 +406,79 @@ export default function OrdensServico({
             type="button"
             className="btn-secondary"
             onClick={() => setSortByPriority(!sortByPriority)}
-            style={{ padding: "6px 10px", fontSize: "11px", backgroundColor: sortByPriority ? "var(--accent)" : "transparent", color: sortByPriority ? "#fff" : "var(--text-primary)" }}
+            style={{ padding: "6px 12px", fontSize: "11px", backgroundColor: sortByPriority ? "var(--accent)" : "transparent", color: sortByPriority ? "#fff" : "var(--text-primary)" }}
             title="Ordenar a lista pela prioridade das OSs"
           >
             {sortByPriority ? "Prioridade ⬆️" : "Ordenar Prio"}
           </button>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {filteredOSs.map((os) => {
             const prio = getOSPriority(os);
             const prioBadge = prio === "muito_alta" ? "badge-danger" : prio === "alta" ? "badge-warning" : prio === "media" ? "badge-info" : "badge-muted";
+            const isSelected = selectedOsId === os.id;
             return (
               <div 
                 key={os.id} 
-                className={`staff-row ${selectedOsId === os.id ? "active-row" : ""}`}
-                onClick={() => setSelectedOsId(os.id)}
+                className={`staff-row ${isSelected ? "active-row" : ""}`}
+                onClick={() => setSelectedOsId(isSelected ? "" : os.id)}
                 style={{
                   cursor: "pointer", 
-                  padding: "12px", 
-                  borderRadius: "8px", 
-                  border: selectedOsId === os.id ? "1.5px solid var(--accent)" : "1px solid var(--border)",
-                  background: selectedOsId === os.id ? "var(--accent-glow)" : "var(--bg-card)",
-                  color: "var(--text-primary)"
+                  padding: "14px 16px", 
+                  borderRadius: "10px", 
+                  border: `1px solid ${isSelected ? "var(--accent)" : "var(--border)"}`,
+                  borderLeft: `4px solid ${isSelected ? "var(--accent)" : "transparent"}`,
+                  background: isSelected ? "var(--accent-glow)" : "var(--bg-card)",
+                  color: "var(--text-primary)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                  transition: "all 0.15s ease"
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
-                  <strong>{os.codigo}</strong>
-                  <span className={`badge ${prioBadge}`} style={{ fontSize: "9px" }}>
+                {/* Header line of card */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <strong style={{ fontSize: "13px", fontFamily: "monospace", letterSpacing: "0.5px" }}>{os.codigo}</strong>
+                    <span className="badge badge-secondary" style={{ fontSize: "9px" }}>
+                      {os.phase}
+                    </span>
+                  </div>
+                  <span className={`badge ${prioBadge}`} style={{ fontSize: "9px", padding: "2px 8px" }}>
                     {priorityLabel[prio] || prio.toUpperCase()}
                   </span>
                 </div>
-              <h4 className="text-sm font-semibold" style={{ margin: "2px 0" }}>{os.name}</h4>
-              <p className="text-xs text-muted">Cliente: {os.client} | Início: {os.startDate}</p>
-              
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
-                <div style={{ flexGrow: 1, height: "4px", background: "var(--border)", borderRadius: "2px", overflow: "hidden" }}>
-                  <div style={{ width: `${os.completionRate}%`, height: "100%", background: "var(--accent)" }}></div>
+
+                {/* Event Name */}
+                <h4 style={{ fontSize: "14px", fontWeight: "700", margin: 0, color: "var(--text-primary)", lineHeight: "1.3" }}>
+                  {os.name}
+                </h4>
+
+                {/* Details subtitle */}
+                <div style={{ fontSize: "11px", color: "var(--text-muted)", display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                  <span>Cliente: <strong style={{ color: "var(--text-secondary)" }}>{os.client}</strong></span>
+                  <span>Início: <strong>{os.startDate}</strong></span>
+                  {os.dataMontagem && <span>Montagem: <strong>{os.dataMontagem}</strong></span>}
                 </div>
-                <span className="text-xs text-muted">{os.completionRate}% checklist</span>
-                <ChevronRight size={14} className="text-muted" style={{ marginLeft: "auto" }} />
+
+                {/* Progress bar line */}
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px" }}>
+                  <div style={{ flexGrow: 1, height: "5px", background: "var(--border)", borderRadius: "3px", overflow: "hidden" }}>
+                    <div style={{ width: `${os.completionRate}%`, height: "100%", background: "var(--accent)", transition: "width 0.3s" }}></div>
+                  </div>
+                  <span className="text-xs text-muted" style={{ fontSize: "10px", fontWeight: "600" }}>{os.completionRate}% checklist</span>
+                  <ChevronRight size={14} className="text-muted" style={{ transform: isSelected ? "rotate(90deg)" : "none", transition: "transform 0.2s" }} />
+                </div>
               </div>
-            </div>
             );
           })}
         </div>
       </div>
 
-      {/* Right Column: OS detailed View & Edit form */}
-      <div className="section-box no-print" style={{ height: "auto" }}>
-        {selectedOS ? (
+      {/* Right Column: OS detailed View & Edit form (rendered only when OS is selected) */}
+      {selectedOS && (
+        <div className="section-box no-print" style={{ height: "auto" }}>
           <div>
             {/* Header section of selected OS */}
             <div style={{ borderBottom: "1px solid var(--border)", paddingBottom: "12px", marginBottom: "16px" }}>
@@ -471,26 +497,37 @@ export default function OrdensServico({
                   </div>
                   <h4 style={{ fontSize: "14px", fontWeight: "600", marginTop: "6px" }}>{selectedOS.name}</h4>
                 </div>
+
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-end" }}>
-                  <div>
-                    <label className="text-xs text-muted" style={{ marginRight: "6px" }}>Status/Etapa:</label>
-                    <select 
-                      value={selectedOS.phase}
-                      onChange={(e) => handleOSFieldUpdate("phase", e.target.value)}
-                      style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-primary)" }}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div>
+                      <label className="text-xs text-muted" style={{ marginRight: "6px" }}>Status/Etapa:</label>
+                      <select 
+                        value={selectedOS.phase}
+                        onChange={(e) => handleOSFieldUpdate("phase", e.target.value)}
+                        style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-primary)", fontSize: "11px" }}
+                      >
+                        <option value="Novo orçamento">Novo orçamento</option>
+                        <option value="Em negociação">Em negociação</option>
+                        <option value="Aprovado">Aprovado</option>
+                        <option value="Projeto">Projeto</option>
+                        <option value="Produção">Produção</option>
+                        <option value="Compras">Compras</option>
+                        <option value="Logística">Logística</option>
+                        <option value="Evento acontecendo">Evento acontecendo</option>
+                        <option value="Desmontagem">Desmontagem</option>
+                        <option value="Finalizado">Finalizado</option>
+                        <option value="Cancelado">Cancelado</option>
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedOsId("")}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: "4px", borderRadius: "6px", display: "flex", alignItems: "center" }}
+                      title="Fechar Detalhes da OS"
                     >
-                      <option value="Novo orçamento" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Novo orçamento</option>
-                      <option value="Em negociação" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Em negociação</option>
-                      <option value="Aprovado" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Aprovado</option>
-                      <option value="Projeto" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Projeto</option>
-                      <option value="Produção" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Produção</option>
-                      <option value="Compras" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Compras</option>
-                      <option value="Logística" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Logística</option>
-                      <option value="Evento acontecendo" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Evento acontecendo</option>
-                      <option value="Desmontagem" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Desmontagem</option>
-                      <option value="Finalizado" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Finalizado</option>
-                      <option value="Cancelado" style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>Cancelado</option>
-                    </select>
+                      <X size={18} />
+                    </button>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                     <label className="text-xs text-muted">Prioridade:</label>
@@ -994,13 +1031,8 @@ export default function OrdensServico({
               </div>
             </div>
           </div>
-        ) : (
-          <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", color: "var(--text-muted)", minHeight: "350px" }}>
-            <FileText size={48} style={{ opacity: 0.3, marginBottom: "12px" }} />
-            <p>Selecione uma Ordem de Serviço na barra lateral para ver o dossiê técnico de montagem.</p>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* DIGITAL SIGNATURE CANVAS MODAL */}
       {isSignatureModalOpen && (
