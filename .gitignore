@@ -22,7 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Local Portable Node & Scripts
-.node/
-start-server.ps1
+.vercel
+.env*

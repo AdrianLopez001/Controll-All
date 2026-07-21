@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { 
-  X, FileText, Shield, AlertCircle, DollarSign, MapPin, Navigation, Tag, Calendar, Truck
+  X, FileText, Shield, AlertCircle, DollarSign, MapPin, Navigation, Tag, Calendar, Truck,
+  Plus, Trash2, Edit2, Save, UserPlus, CheckCircle2
 } from "lucide-react";
-import type { Project, Employee, WarehouseItem, ProductionSectors, ConventionCenterRules } from "../types";
+import type { Project, Employee, WarehouseItem, ProductionSectors, ConventionCenterRules, ChecklistItem, AssignedEmployee } from "../types";
 
 export const CONVENTION_CENTERS: ConventionCenterRules[] = [
   {
@@ -58,6 +59,7 @@ interface EventDetailsModalProps {
   allEvents: Project[];
   onClose: () => void;
   onUpdateEvent: (updatedEvent: Project) => void;
+  onDeleteEvent?: (id: string) => void;
 }
 
 export default function EventDetailsModal({
@@ -66,7 +68,8 @@ export default function EventDetailsModal({
   allWarehouseItems,
   allEvents,
   onClose,
-  onUpdateEvent
+  onUpdateEvent,
+  onDeleteEvent
 }: EventDetailsModalProps) {
   const [activeTab, setActiveTab] = useState<
     "checklist" | "tools" | "staff" | "travel" | "docs" | "costs" | "route" | "producao" | "regras"
@@ -74,10 +77,68 @@ export default function EventDetailsModal({
   
   // Local modifications state
   const [localEvent, setLocalEvent] = useState<Project>({ ...event });
+  const [isEditingBasic, setIsEditingBasic] = useState(false);
+  const [editName, setEditName] = useState(localEvent.name);
+  const [editClient, setEditClient] = useState(localEvent.client);
+  const [editPhase, setEditPhase] = useState(localEvent.phase);
+
+  // New Checklist Item State
+  const [newChecklistText, setNewChecklistText] = useState("");
+  const [editingChecklistId, setEditingChecklistId] = useState<string | null>(null);
+  const [editingChecklistText, setEditingChecklistText] = useState("");
+
+  // Production Sector custom categories state
+  const [customProdCategories, setCustomProdCategories] = useState<{ id: string; name: string; status: "pendente" | "em_andamento" | "concluido" }[]>([
+    { id: "marcenaria", name: "🪚 Marcenaria", status: localEvent.producao?.marcenaria || "pendente" },
+    { id: "pintura", name: "🎨 Pintura & Acabamento", status: localEvent.producao?.pintura || "pendente" },
+    { id: "eletrica", name: "⚡ Elétrica & Iluminação", status: localEvent.producao?.eletrica || "pendente" },
+    { id: "comunicacaoVisual", name: "🖼️ Comunicação Visual", status: localEvent.producao?.comunicacaoVisual || "pendente" },
+    { id: "vidros", name: "🪟 Vidraçaria & Vidros", status: localEvent.producao?.vidros || "pendente" },
+    { id: "limpeza", name: "🧹 Limpeza Técnica", status: localEvent.producao?.limpeza || "pendente" }
+  ]);
+  const [newCatName, setNewCatName] = useState("");
+
+  // Convention center search & custom registration state
+  const [searchVenue, setSearchVenue] = useState("");
+  const [showAddVenue, setShowAddVenue] = useState(false);
+  const [customVenueName, setCustomVenueName] = useState("");
+  const [customVenueCidade, setCustomVenueCidade] = useState("");
+  const [customVenueTaxaEnergia, setCustomVenueTaxaEnergia] = useState(1000);
+  const [customVenueTaxaLimpeza, setCustomVenueTaxaLimpeza] = useState(500);
+  const [customVenueAltura, setCustomVenueAltura] = useState("5.0m");
+
+  // Contractor addition state
+  const [showAddTerceirizado, setShowAddTerceirizado] = useState(false);
+  const [terceirizadoName, setTerceirizadoName] = useState("");
+  const [terceirizadoRole, setTerceirizadoRole] = useState("Montador Terceirizado");
+  const [terceirizadoEquipe, setTerceirizadoEquipe] = useState("Equipe Externa");
+  const [terceirizadoHorario, setTerceirizadoHorario] = useState("08:00 - 18:00");
+  const [terceirizadoObs, setTerceirizadoObs] = useState("");
+
+  // Custom document addition state
+  const [newDocName, setNewDocName] = useState("");
 
   const handleUpdate = (updated: Project) => {
     setLocalEvent(updated);
     onUpdateEvent(updated);
+  };
+
+  const handleSaveBasicEdit = () => {
+    const updated = {
+      ...localEvent,
+      name: editName,
+      client: editClient,
+      phase: editPhase
+    };
+    handleUpdate(updated);
+    setIsEditingBasic(false);
+  };
+
+  const handleDeleteThisEvent = () => {
+    if (confirm(`Tem certeza que deseja excluir definitivamente o evento "${localEvent.name}"? Esta ação não pode ser desfeita.`)) {
+      if (onDeleteEvent) onDeleteEvent(localEvent.id);
+      onClose();
+    }
   };
 
   // Date overlap check: (startA <= endB) && (endA >= startB)
@@ -103,7 +164,6 @@ export default function EventDetailsModal({
   const getArtDeadlineInfo = () => {
     if (!localEvent.dataMontagem) return null;
     const montagemDate = new Date(localEvent.dataMontagem);
-    // Limit is 5 days before montagem
     const deadlineDate = new Date(montagemDate.getTime() - 5 * 24 * 60 * 60 * 1000);
     const currentDate = new Date();
     
@@ -119,13 +179,58 @@ export default function EventDetailsModal({
     };
   };
 
-  // 1. Checklist Handlers
+  // 1. Checklist Handlers (Full CRUD)
   const toggleChecklistItem = (itemId: string) => {
     const updatedChecklist = localEvent.checklist.map((item) =>
       item.id === itemId ? { ...item, done: !item.done } : item
     );
     
-    // Recalculate completion rate
+    const total = updatedChecklist.length;
+    const completed = updatedChecklist.filter(t => t.done).length;
+    const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    handleUpdate({
+      ...localEvent,
+      checklist: updatedChecklist,
+      completionRate: rate
+    });
+  };
+
+  const handleAddChecklistItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newChecklistText.trim()) return;
+    const newItem: ChecklistItem = {
+      id: `c-${Date.now()}`,
+      text: newChecklistText.trim(),
+      done: false
+    };
+    const updatedChecklist = [...localEvent.checklist, newItem];
+    const total = updatedChecklist.length;
+    const completed = updatedChecklist.filter(t => t.done).length;
+    const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    handleUpdate({
+      ...localEvent,
+      checklist: updatedChecklist,
+      completionRate: rate
+    });
+    setNewChecklistText("");
+  };
+
+  const handleSaveChecklistEdit = (itemId: string) => {
+    if (!editingChecklistText.trim()) return;
+    const updatedChecklist = localEvent.checklist.map(item => 
+      item.id === itemId ? { ...item, text: editingChecklistText.trim() } : item
+    );
+    handleUpdate({
+      ...localEvent,
+      checklist: updatedChecklist
+    });
+    setEditingChecklistId(null);
+  };
+
+  const handleDeleteChecklistItem = (itemId: string) => {
+    const updatedChecklist = localEvent.checklist.filter(item => item.id !== itemId);
     const total = updatedChecklist.length;
     const completed = updatedChecklist.filter(t => t.done).length;
     const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -174,7 +279,7 @@ export default function EventDetailsModal({
     });
   };
 
-  // 3. Staff Handlers
+  // 3. Staff Handlers & Terceirizados
   const toggleEmployee = (empId: string) => {
     const isAssigned = localEvent.assignedEmployees.some(e => e.id === empId);
     let updatedStaff = [...localEvent.assignedEmployees];
@@ -184,7 +289,6 @@ export default function EventDetailsModal({
     } else {
       const emp = allEmployees.find(e => e.id === empId);
       if (emp) {
-        // Validation check: Check if worker has doc pending or lacks cert
         if (emp.documentStatus === "pending") {
           alert(`Atenção: Os documentos gerais de ${emp.name} estão pendentes no RH. Homologue o profissional antes.`);
         }
@@ -192,7 +296,9 @@ export default function EventDetailsModal({
           id: emp.id,
           name: emp.name,
           role: emp.role,
-          documentStatus: emp.documentStatus
+          documentStatus: emp.documentStatus,
+          equipe: "Equipe Interna",
+          horario: "08:00 - 18:00"
         });
       }
     }
@@ -201,6 +307,29 @@ export default function EventDetailsModal({
       ...localEvent,
       assignedEmployees: updatedStaff
     });
+  };
+
+  const handleAddTerceirizadoSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!terceirizadoName.trim()) return;
+    const newTerceirizado: AssignedEmployee = {
+      id: `terc-${Date.now()}`,
+      name: terceirizadoName.trim(),
+      role: terceirizadoRole,
+      documentStatus: "complete",
+      equipe: terceirizadoEquipe,
+      horario: terceirizadoHorario,
+      observacoes: terceirizadoObs,
+      terceirizado: true
+    };
+    const updatedStaff = [...localEvent.assignedEmployees, newTerceirizado];
+    handleUpdate({
+      ...localEvent,
+      assignedEmployees: updatedStaff
+    });
+    setTerceirizadoName("");
+    setTerceirizadoObs("");
+    setShowAddTerceirizado(false);
   };
 
   // 4. Travel Handlers
@@ -222,6 +351,28 @@ export default function EventDetailsModal({
     });
   };
 
+  const handleAddCustomDoc = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDocName.trim()) return;
+    const newDoc = {
+      id: `doc-${Date.now()}`,
+      name: newDocName.trim(),
+      status: "uploaded" as const
+    };
+    handleUpdate({
+      ...localEvent,
+      docs: [...localEvent.docs, newDoc]
+    });
+    setNewDocName("");
+  };
+
+  const handleDeleteDoc = (docId: string) => {
+    handleUpdate({
+      ...localEvent,
+      docs: localEvent.docs.filter(d => d.id !== docId)
+    });
+  };
+
   // 6. Costs Edit Handlers
   const handleCostChange = (category: keyof typeof localEvent.centroCusto, val: number) => {
     const newCC = {
@@ -239,40 +390,29 @@ export default function EventDetailsModal({
     });
   };
 
-  // 7. Production Sectors handler (Módulo 8)
-  const handleProductionChange = (sector: keyof ProductionSectors, status: "pendente" | "em_andamento" | "concluido") => {
-    const defaultProducao = localEvent.producao || {
-      marcenaria: "pendente",
-      pintura: "pendente",
-      eletrica: "pendente",
-      comunicacaoVisual: "pendente",
-      vidros: "pendente",
-      limpeza: "pendente"
+  // 7. Configurable Production Sectors
+  const handleAddProductionCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    const newCat = {
+      id: `cat-${Date.now()}`,
+      name: newCatName.trim(),
+      status: "pendente" as const
     };
-    const updatedProducao = {
-      ...defaultProducao,
-      [sector]: status
-    };
-    handleUpdate({
-      ...localEvent,
-      producao: updatedProducao
-    });
+    setCustomProdCategories([...customProdCategories, newCat]);
+    setNewCatName("");
   };
 
-  // 8. Convention center template rules auto-fill handler (Módulo 4)
-  const handleCenterChange = (centerName: string) => {
-    const rules = CONVENTION_CENTERS.find(c => c.nome === centerName) || {
-      nome: centerName,
-      taxaEnergia: 0,
-      taxaLimpeza: 0,
-      limiteAltura: "N/A",
-      artObrigatoria: false,
-      brigadistaObrigatorio: false,
-      seguroObrigatorio: false,
-      estacionamento: 0,
-      contatoGestor: ""
-    };
-    
+  const handleProductionCategoryStatusChange = (catId: string, newStatus: "pendente" | "em_andamento" | "concluido") => {
+    setCustomProdCategories(prev => prev.map(c => c.id === catId ? { ...c, status: newStatus } : c));
+  };
+
+  const handleDeleteProductionCategory = (catId: string) => {
+    setCustomProdCategories(prev => prev.filter(c => c.id !== catId));
+  };
+
+  // 8. Convention Center National Search & Registration
+  const handleSelectVenue = (rules: ConventionCenterRules) => {
     const newCC = {
       ...localEvent.centroCusto,
       taxasOrganizador: rules.taxaEnergia + rules.taxaLimpeza
@@ -284,11 +424,32 @@ export default function EventDetailsModal({
 
     handleUpdate({
       ...localEvent,
-      centroConvencoes: centerName,
+      centroConvencoes: rules.nome,
       regrasCentro: rules,
       centroCusto: newCC,
       custoRealizado: totalCost
     });
+  };
+
+  const handleAddCustomVenue = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customVenueName.trim() || !customVenueCidade.trim()) return;
+    const newRules: ConventionCenterRules = {
+      nome: `${customVenueName.trim()} (${customVenueCidade.trim()})`,
+      taxaEnergia: customVenueTaxaEnergia,
+      taxaLimpeza: customVenueTaxaLimpeza,
+      limiteAltura: customVenueAltura,
+      artObrigatoria: true,
+      brigadistaObrigatorio: false,
+      seguroObrigatorio: true,
+      estacionamento: 50,
+      contatoGestor: "Gestão Local do Evento"
+    };
+    CONVENTION_CENTERS.push(newRules);
+    handleSelectVenue(newRules);
+    setShowAddVenue(false);
+    setCustomVenueName("");
+    setCustomVenueCidade("");
   };
 
   // Calculations for costs tab
@@ -301,24 +462,76 @@ export default function EventDetailsModal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "800px" }}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "850px" }}>
         
         {/* Modal Header */}
-        <div className="modal-header">
-          <div className="modal-title-box">
-            <span style={{ fontSize: "10px", fontWeight: "700", color: "var(--accent-secondary)", fontFamily: "monospace" }}>CÓDIGO: {localEvent.codigo}</span>
-            <h3 className="modal-title">{localEvent.name}</h3>
-            <span className="modal-subtitle">Cliente: {localEvent.client} | Responsável: {localEvent.responsavel}</span>
+        <div className="modal-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div className="modal-title-box" style={{ flexGrow: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+              <span style={{ fontSize: "10px", fontWeight: "700", color: "var(--accent-secondary)", fontFamily: "monospace" }}>CÓDIGO: {localEvent.codigo}</span>
+              <span style={{ fontSize: "10px", padding: "2px 8px", borderRadius: "10px", backgroundColor: "var(--accent-glow)", color: "var(--accent)", fontWeight: "600" }}>{localEvent.phase}</span>
+            </div>
+            
+            {isEditingBasic ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px", maxWidth: "450px" }}>
+                <input 
+                  type="text" 
+                  value={editName} 
+                  onChange={(e) => setEditName(e.target.value)} 
+                  style={{ padding: "6px 10px", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "14px", fontWeight: "700" }} 
+                />
+                <input 
+                  type="text" 
+                  value={editClient} 
+                  onChange={(e) => setEditClient(e.target.value)} 
+                  placeholder="Cliente" 
+                  style={{ padding: "6px 10px", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} 
+                />
+                <select 
+                  value={editPhase} 
+                  onChange={(e) => setEditPhase(e.target.value)} 
+                  style={{ padding: "6px 10px", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }}
+                >
+                  <option value="Briefing">Briefing</option>
+                  <option value="Orçamento">Orçamento</option>
+                  <option value="Aprovado">Aprovado</option>
+                  <option value="Produção">Produção</option>
+                  <option value="Montagem">Montagem</option>
+                  <option value="Evento">Evento</option>
+                  <option value="Desmontagem">Desmontagem</option>
+                  <option value="Finalizado">Finalizado</option>
+                </select>
+                <button className="btn-primary" style={{ padding: "6px 12px", fontSize: "12px" }} onClick={handleSaveBasicEdit}>
+                  <Save size={12} /> Salvar Dados Básicos
+                </button>
+              </div>
+            ) : (
+              <div>
+                <h3 className="modal-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  {localEvent.name}
+                  <button style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }} onClick={() => setIsEditingBasic(true)} title="Editar dados do evento">
+                    <Edit2 size={14} />
+                  </button>
+                </h3>
+                <span className="modal-subtitle">Cliente: {localEvent.client} | Responsável: JCEventos</span>
+              </div>
+            )}
           </div>
-          <button className="modal-close" onClick={onClose}>
-            <X size={20} />
-          </button>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button className="btn-danger" style={{ padding: "6px 10px", fontSize: "11px", display: "flex", alignItems: "center", gap: "4px" }} onClick={handleDeleteThisEvent}>
+              <Trash2 size={12} /> Excluir Evento
+            </button>
+            <button className="modal-close" onClick={onClose}>
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Modal Navigation Tabs */}
         <div className="modal-tabs" style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "4px" }}>
           <button className={`modal-tab ${activeTab === "checklist" ? "active" : ""}`} onClick={() => setActiveTab("checklist")}>Checklist</button>
-          <button className={`modal-tab ${activeTab === "producao" ? "active" : ""}`} onClick={() => setActiveTab("producao")}>Produção</button>
+          <button className={`modal-tab ${activeTab === "producao" ? "active" : ""}`} onClick={() => setActiveTab("producao")}>Grupos Produção</button>
           <button className={`modal-tab ${activeTab === "regras" ? "active" : ""}`} onClick={() => setActiveTab("regras")}>Centro Convenções</button>
           <button className={`modal-tab ${activeTab === "tools" ? "active" : ""}`} onClick={() => setActiveTab("tools")}>Ferramentas &amp; WMS</button>
           <button className={`modal-tab ${activeTab === "staff" ? "active" : ""}`} onClick={() => setActiveTab("staff")}>Escala de Equipe</button>
@@ -331,269 +544,187 @@ export default function EventDetailsModal({
         {/* Modal Body */}
         <div className="modal-body" style={{ minHeight: "400px" }}>
           
-          {/* TAB 1: CHECKLIST */}
+          {/* TAB 1: CHECKLIST (Full CRUD) */}
           {activeTab === "checklist" && (
             <div className="checklist-container">
-              <span className="text-xs text-muted semibold uppercase mb-20" style={{ display: "block" }}>
-                Tarefas para Montagem do Stand ({localEvent.completionRate}% Concluído)
-              </span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                <span className="text-xs text-muted semibold uppercase" style={{ margin: 0 }}>
+                  Tarefas do Stand ({localEvent.completionRate}% Concluído)
+                </span>
+              </div>
+
+              {/* Form de adicionar item no checklist */}
+              <form onSubmit={handleAddChecklistItem} style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+                <input 
+                  type="text" 
+                  placeholder="Nova tarefa ou item de checklist..." 
+                  value={newChecklistText} 
+                  onChange={(e) => setNewChecklistText(e.target.value)} 
+                  style={{ flex: 1, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} 
+                />
+                <button type="submit" className="btn-primary" style={{ padding: "8px 14px", fontSize: "12px" }}>
+                  <Plus size={14} /> Adicionar
+                </button>
+              </form>
+
+              {/* Lista com Edição e Exclusão */}
               {localEvent.checklist.map((item) => (
-                <div key={item.id} className="checklist-item">
-                  <div className="checklist-item-left" onClick={() => toggleChecklistItem(item.id)}>
-                    <div className={`checkbox ${item.done ? "checked" : ""}`}>
-                      {item.done && "✓"}
+                <div key={item.id} className="checklist-item" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  {editingChecklistId === item.id ? (
+                    <div style={{ display: "flex", gap: "8px", flex: 1 }}>
+                      <input 
+                        type="text" 
+                        value={editingChecklistText} 
+                        onChange={(e) => setEditingChecklistText(e.target.value)} 
+                        style={{ flex: 1, padding: "4px 8px", border: "1px solid var(--border)", borderRadius: "4px", fontSize: "13px" }}
+                      />
+                      <button className="btn-primary" style={{ padding: "4px 8px", fontSize: "11px" }} onClick={() => handleSaveChecklistEdit(item.id)}>Salvar</button>
                     </div>
-                    <span className={`checklist-text ${item.done ? "checked" : ""}`}>
-                      {item.text}
-                    </span>
+                  ) : (
+                    <div className="checklist-item-left" onClick={() => toggleChecklistItem(item.id)} style={{ cursor: "pointer", flex: 1 }}>
+                      <div className={`checkbox ${item.done ? "checked" : ""}`}>
+                        {item.done && "✓"}
+                      </div>
+                      <span className={`checklist-text ${item.done ? "checked" : ""}`}>
+                        {item.text}
+                      </span>
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", gap: "6px", marginLeft: "12px" }}>
+                    {editingChecklistId !== item.id && (
+                      <button 
+                        style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
+                        onClick={() => { setEditingChecklistId(item.id); setEditingChecklistText(item.text); }}
+                      >
+                        <Edit2 size={13} />
+                      </button>
+                    )}
+                    <button 
+                      style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer" }}
+                      onClick={() => handleDeleteChecklistItem(item.id)}
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* TAB: PRODUÇÃO */}
+          {/* TAB 2: GRUPOS DE PRODUÇÃO (Totalmente Configurável) */}
           {activeTab === "producao" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <span className="text-xs text-muted semibold uppercase mb-20" style={{ display: "block" }}>
-                Gestão e Acompanhamento da Produção por Setor
-              </span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span className="text-xs text-muted semibold uppercase">
+                  Gestão Total de Grupos e Etapas de Produção
+                </span>
+              </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                {(["marcenaria", "pintura", "eletrica", "comunicacaoVisual", "vidros", "limpeza"] as const).map((sector) => {
-                  const defaultProducao = localEvent.producao || {
-                    marcenaria: "pendente",
-                    pintura: "pendente",
-                    eletrica: "pendente",
-                    comunicacaoVisual: "pendente",
-                    vidros: "pendente",
-                    limpeza: "pendente"
-                  };
-                  const currentStatus = defaultProducao[sector] || "pendente";
-                  const label = 
-                    sector === "marcenaria" ? "🪚 Marcenaria" :
-                    sector === "pintura" ? "🎨 Pintura & Acabamento" :
-                    sector === "eletrica" ? "⚡ Elétrica & Iluminação" :
-                    sector === "comunicacaoVisual" ? "🖼️ Comunicação Visual" :
-                    sector === "vidros" ? "🪟 Vidraçaria & Vidros" : "🧹 Limpeza Técnica";
+              {/* Form adicionar novo grupo de produção */}
+              <form onSubmit={handleAddProductionCategory} style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+                <input 
+                  type="text" 
+                  placeholder="Novo grupo de produção (ex: 🔩 Serralheria, 🪵 Marcenaria Fina)..." 
+                  value={newCatName} 
+                  onChange={(e) => setNewCatName(e.target.value)} 
+                  style={{ flex: 1, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }}
+                />
+                <button type="submit" className="btn-primary" style={{ padding: "8px 14px", fontSize: "12px" }}>
+                  <Plus size={14} /> Adicionar Categoria
+                </button>
+              </form>
 
-                  return (
-                    <div key={sector} style={{ border: "1px solid var(--border)", padding: "12px 16px", borderRadius: "12px", backgroundColor: "var(--bg-card)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>{label}</span>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                {customProdCategories.map((cat) => (
+                  <div key={cat.id} style={{ border: "1px solid var(--border)", padding: "12px 14px", borderRadius: "12px", backgroundColor: "var(--bg-card)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>{cat.name}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <select 
-                        value={currentStatus} 
-                        onChange={(e) => handleProductionChange(sector, e.target.value as any)}
-                        style={{ padding: "6px 10px", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px", background: "var(--bg-card)", color: "var(--text-primary)", outline: "none" }}
+                        value={cat.status} 
+                        onChange={(e) => handleProductionCategoryStatusChange(cat.id, e.target.value as any)}
+                        style={{ padding: "4px 8px", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "11px", background: "var(--bg-card)", color: "var(--text-primary)", outline: "none" }}
                       >
                         <option value="pendente">🔴 Pendente</option>
                         <option value="em_andamento">🟡 Em Produção</option>
                         <option value="concluido">🟢 Concluído</option>
                       </select>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Cronograma Físico da Feira (Turnos de Montagem) */}
-              <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "2px dashed var(--border)" }}>
-                <h4 style={{ fontSize: "14px", fontWeight: "600", color: "var(--accent)", marginBottom: "8px" }}>
-                  ⏳ Cronograma Físico da Feira (Turnos de Montagem)
-                </h4>
-                <p className="text-xs text-muted" style={{ marginBottom: "12px" }}>
-                  Monitore a evolução das etapas críticas da montagem durante os dias oficiais de acesso.
-                </p>
-                
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  {[
-                    { key: "dia1Manha", label: "Dia 1 - Manhã", desc: "Estruturas & Paredes de MDF" },
-                    { key: "dia1Tarde", label: "Dia 1 - Tarde", desc: "Nivelamento, Massa & Pintura" },
-                    { key: "dia2Manha", label: "Dia 2 - Manhã", desc: "Elétrica, Iluminação & Comunicação Visual" },
-                    { key: "dia2Tarde", label: "Dia 2 - Tarde", desc: "Montagem de Mobiliário & Limpeza Fina" }
-                  ].map((turno) => {
-                    const defaultTurnos = localEvent.cronogramaTurnos || {
-                      dia1Manha: false,
-                      dia1Tarde: false,
-                      dia2Manha: false,
-                      dia2Tarde: false
-                    };
-                    const isChecked = !!defaultTurnos[turno.key as keyof typeof defaultTurnos];
-                    
-                    return (
-                      <div 
-                        key={turno.key}
-                        onClick={() => {
-                          const updatedTurnos = {
-                            ...defaultTurnos,
-                            [turno.key]: !isChecked
-                          };
-                          handleUpdate({
-                            ...localEvent,
-                            cronogramaTurnos: updatedTurnos
-                          });
-                        }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px",
-                          padding: "12px",
-                          border: "1px solid var(--border)",
-                          borderRadius: "10px",
-                          backgroundColor: isChecked ? "var(--success-glow)" : "var(--bg-card)",
-                          cursor: "pointer",
-                          transition: "var(--transition)"
-                        }}
+                      <button 
+                        style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer" }}
+                        onClick={() => handleDeleteProductionCategory(cat.id)}
                       >
-                        <div style={{
-                          width: "18px",
-                          height: "18px",
-                          border: "2px solid var(--border)",
-                          borderRadius: "4px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "11px",
-                          fontWeight: "bold",
-                          color: "var(--success-text)",
-                          backgroundColor: isChecked ? "var(--success-glow)" : "transparent"
-                        }}>
-                          {isChecked && "✓"}
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                          <span style={{ fontSize: "12px", fontWeight: "600", color: isChecked ? "var(--success-text)" : "var(--text-primary)" }}>{turno.label}</span>
-                          <span style={{ fontSize: "10.5px", color: "var(--text-secondary)" }}>{turno.desc}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* TAB: REGRAS DO PAVILHÃO */}
+          {/* TAB 3: CENTRO DE CONVENÇÕES & PESQUISA NACIONAL */}
           {activeTab === "regras" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <span className="text-xs text-muted semibold uppercase mb-20" style={{ display: "block" }}>
-                Cadastro e Regras Específicas do Pavilhão / Centro de Convenções
-              </span>
-
-              <div className="field">
-                <label>Centro de Convenções</label>
-                <select 
-                  value={localEvent.centroConvencoes || ""} 
-                  onChange={(e) => handleCenterChange(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", color: "var(--text-primary)" }}
-                >
-                  <option value="">-- Selecione o Pavilhão --</option>
-                  {CONVENTION_CENTERS.map((c) => (
-                    <option key={c.nome} value={c.nome}>{c.nome}</option>
-                  ))}
-                </select>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span className="text-xs text-muted semibold uppercase">
+                  Pesquisa Nacional e Cadastro de Centros de Convenções do Brasil
+                </span>
+                <button className="btn-secondary" style={{ padding: "6px 12px", fontSize: "11px" }} onClick={() => setShowAddVenue(!showAddVenue)}>
+                  + Cadastrar Novo Pavilhão
+                </button>
               </div>
 
-              {localEvent.centroConvencoes ? (
-                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px", marginTop: "10px" }}>
-                  {/* Regras detalhadas */}
-                  <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px", backgroundColor: "var(--bg-card)", display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <h5 style={{ fontSize: "14px", fontWeight: "600", color: "var(--accent-secondary)", borderBottom: "1px solid var(--border)", paddingBottom: "6px" }}>Regras e Exigências Técnicas</h5>
-                    
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "12.5px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>Taxa de Energia Organizador:</span>
-                        <strong>R$ {localEvent.regrasCentro?.taxaEnergia.toLocaleString("pt-BR")}</strong>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>Taxa de Limpeza Pavilhão:</span>
-                        <strong>R$ {localEvent.regrasCentro?.taxaLimpeza.toLocaleString("pt-BR")}</strong>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>Limite de Altura Máxima:</span>
-                        <strong>{localEvent.regrasCentro?.limiteAltura}</strong>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>Estacionamento (Diária Caminhão):</span>
-                        <strong>R$ {localEvent.regrasCentro?.estacionamento.toLocaleString("pt-BR")}</strong>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>ART de Montagem Obrigatória:</span>
-                        <strong style={{ color: localEvent.regrasCentro?.artObrigatoria ? "var(--warning)" : "var(--text-secondary)" }}>
-                          {localEvent.regrasCentro?.artObrigatoria ? "Sim (Exigido)" : "Não"}
-                        </strong>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>Seguro Obra Obrigatório:</span>
-                        <strong style={{ color: localEvent.regrasCentro?.seguroObrigatorio ? "var(--warning)" : "var(--text-secondary)" }}>
-                          {localEvent.regrasCentro?.seguroObrigatorio ? "Sim (Exigido)" : "Não"}
-                        </strong>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>Brigadista de Stand Exigido:</span>
-                        <strong style={{ color: localEvent.regrasCentro?.brigadistaObrigatorio ? "var(--warning)" : "var(--text-secondary)" }}>
-                          {localEvent.regrasCentro?.brigadistaObrigatorio ? "Sim (Exigido)" : "Não"}
-                        </strong>
-                      </div>
-                    </div>
+              {/* Form de cadastrar pavilhão customizado */}
+              {showAddVenue && (
+                <form onSubmit={handleAddCustomVenue} style={{ padding: "14px", border: "1px solid var(--accent)", borderRadius: "12px", backgroundColor: "var(--accent-glow)", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <h5 style={{ fontSize: "13px", fontWeight: "700", color: "var(--accent)", margin: 0 }}>Cadastrar Novo Local / Pavilhão no Brasil</h5>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <input type="text" placeholder="Nome do Pavilhão (Ex: Expominas)" value={customVenueName} onChange={(e) => setCustomVenueName(e.target.value)} required style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--border)" }} />
+                    <input type="text" placeholder="Cidade / UF (Ex: Belo Horizonte/MG)" value={customVenueCidade} onChange={(e) => setCustomVenueCidade(e.target.value)} required style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--border)" }} />
+                    <input type="number" placeholder="Taxa de Energia R$" value={customVenueTaxaEnergia} onChange={(e) => setCustomVenueTaxaEnergia(Number(e.target.value))} style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--border)" }} />
+                    <input type="number" placeholder="Taxa de Limpeza R$" value={customVenueTaxaLimpeza} onChange={(e) => setCustomVenueTaxaLimpeza(Number(e.target.value))} style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--border)" }} />
                   </div>
-
-                  {/* Gestor e Contato */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px", backgroundColor: "var(--bg-card)" }}>
-                      <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Gestão do Pavilhão</span>
-                      <strong style={{ display: "block", fontSize: "14px", marginTop: "4px", color: "var(--text-primary)" }}>{localEvent.regrasCentro?.contatoGestor || "Não informado"}</strong>
-                    </div>
-
-                    <div style={{ padding: "14px", borderRadius: "12px", backgroundColor: "var(--accent-glow)", border: "1px solid rgba(41, 59, 143, 0.15)", fontSize: "11px", color: "var(--text-secondary)" }}>
-                      💡 <strong>Impacto Financeiro Automatizado:</strong> Ao selecionar este Centro de Convenções, as taxas de energia e limpeza (<strong>R$ {(localEvent.regrasCentro?.taxaEnergia || 0) + (localEvent.regrasCentro?.taxaLimpeza || 0)}</strong>) foram incluídas automaticamente na linha de "Taxas do Organizador" do seu Centro de Custos.
-                    </div>
-
-                    {(() => {
-                      const deadline = getArtDeadlineInfo();
-                      if (!deadline || !localEvent.regrasCentro?.artObrigatoria) return null;
-                      const artDoc = localEvent.docs.find(d => d.id === "d2");
-                      const isArtApproved = artDoc?.status === "approved";
-                      if (isArtApproved) {
-                        return (
-                          <div style={{ padding: "14px", borderRadius: "12px", backgroundColor: "var(--success-glow)", border: "1px solid var(--success-text)", fontSize: "11.5px", color: "var(--success-text)", marginTop: "10px" }}>
-                            🟢 <strong>ART Homologada:</strong> O documento técnico foi aprovado pelo pavilhão!
-                          </div>
-                        );
-                      }
-                      
-                      const isOverdue = deadline.diffDays < 0;
-                      const alertColor = isOverdue ? "var(--danger)" : deadline.diffDays <= 3 ? "var(--warning)" : "var(--text-primary)";
-                      const alertBg = isOverdue ? "rgba(220, 53, 69, 0.1)" : deadline.diffDays <= 3 ? "rgba(255, 193, 7, 0.1)" : "var(--bg-card)";
-                      const borderCol = isOverdue ? "var(--danger)" : deadline.diffDays <= 3 ? "var(--warning)" : "var(--border)";
-                      
-                      return (
-                        <div style={{ padding: "14px", borderRadius: "12px", backgroundColor: alertBg, border: `1px solid ${borderCol}`, fontSize: "11.5px", color: alertColor, marginTop: "10px", display: "flex", flexDirection: "column", gap: "4px" }}>
-                          <div>
-                            ⏰ <strong>Controle de Prazo de ART:</strong>
-                          </div>
-                          <div style={{ fontSize: "11px" }}>
-                            {isOverdue ? (
-                              <span>A data limite para envio da ART expirou em <strong>{deadline.formattedDeadline}</strong>! Envie urgente.</span>
-                            ) : (
-                              <span>O prazo limite de envio da ART para a feira é <strong>{deadline.formattedDeadline}</strong> ({deadline.diffDays === 0 ? "hoje!" : `faltam ${deadline.diffDays} dia(s)`}).</span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })()}
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "4px" }}>
+                    <button type="button" className="btn-secondary" onClick={() => setShowAddVenue(false)} style={{ padding: "6px 10px", fontSize: "11px" }}>Cancelar</button>
+                    <button type="submit" className="btn-primary" style={{ padding: "6px 12px", fontSize: "11px" }}>Salvar Pavilhão</button>
                   </div>
-                </div>
-              ) : (
-                <div style={{ padding: "40px", border: "1px dashed var(--border)", borderRadius: "12px", textAlign: "center", color: "var(--text-muted)", fontSize: "12px" }}>
-                  Por favor, selecione um pavilhão no menu acima para carregar as regras automáticas da feira.
-                </div>
+                </form>
               )}
+
+              {/* Busca por cidade/nome */}
+              <input 
+                type="text" 
+                placeholder="Pesquisar por nome ou cidade do Brasil..." 
+                value={searchVenue} 
+                onChange={(e) => setSearchVenue(e.target.value)} 
+                style={{ padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }}
+              />
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                {CONVENTION_CENTERS
+                  .filter(c => c.nome.toLowerCase().includes(searchVenue.toLowerCase()))
+                  .map((c) => (
+                    <div 
+                      key={c.nome} 
+                      onClick={() => handleSelectVenue(c)}
+                      style={{ 
+                        border: localEvent.centroConvencoes === c.nome ? "2px solid var(--accent)" : "1px solid var(--border)", 
+                        padding: "12px", borderRadius: "10px", backgroundColor: "var(--bg-card)", cursor: "pointer" 
+                      }}
+                    >
+                      <strong style={{ fontSize: "13px", color: "var(--text-primary)", display: "block" }}>{c.nome}</strong>
+                      <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Energia: R$ {c.taxaEnergia} | Limpeza: R$ {c.taxaLimpeza} | Altura: {c.limiteAltura}</span>
+                    </div>
+                  ))}
+              </div>
             </div>
           )}
 
-          {/* TAB 2: TOOLS & FURNITURE */}
+          {/* TAB 4: TOOLS & WMS ALLOCATION */}
           {activeTab === "tools" && (
             <div>
               <span className="text-xs text-muted semibold uppercase mb-20" style={{ display: "block" }}>
-                Alocação de Materiais e Mobiliário do Depósito (Disponibilidade WMS)
+                Alocação e Manutenção de Ferramentas / Equipamentos
               </span>
               <table className="sheet-table" style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
@@ -602,8 +733,7 @@ export default function EventDetailsModal({
                     <th style={{ padding: "8px" }}>Tipo</th>
                     <th style={{ padding: "8px" }}>Posição Física</th>
                     <th style={{ padding: "8px", textAlign: "center" }}>Estoque Total</th>
-                    <th style={{ padding: "8px", textAlign: "center" }}>Reservado Outros</th>
-                    <th style={{ padding: "8px", textAlign: "center", width: "120px" }}>Alocado</th>
+                    <th style={{ padding: "8px", textAlign: "center" }}>Alocado no Stand</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -622,183 +752,56 @@ export default function EventDetailsModal({
                           </span>
                         </td>
                         <td style={{ padding: "8px", fontSize: "11px", color: "var(--text-muted)", fontFamily: "monospace" }}>
-                          Galpão {item.localizacaoFisica.galpao} • Corredor {item.localizacaoFisica.corredor} • Prat. {item.localizacaoFisica.prateleira}
+                          Galpão {item.localizacaoFisica?.galpao || "A"} • Prat. {item.localizacaoFisica?.prateleira || "01"}
                         </td>
                         <td style={{ padding: "8px", textAlign: "center", color: "var(--text-secondary)" }}>{item.stock} un</td>
                         <td style={{ padding: "8px", textAlign: "center" }}>
-                          {otherReserved > 0 ? (
-                            <span style={{ fontSize: "11px", color: "var(--warning)", fontWeight: "600" }}>{otherReserved} un</span>
-                          ) : (
-                            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>0</span>
-                          )}
-                        </td>
-                        <td style={{ padding: "8px", textAlign: "center" }}>
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
-                            <input 
-                              type="number" 
-                              min="0" 
-                              max={maxAvailable} // Limit to date-based available stock
-                              value={currentQty} 
-                              onChange={(e) => handleToolQtyChange(item.id, parseInt(e.target.value) || 0)}
-                              className="input-qty"
-                              style={{
-                                width: "60px",
-                                padding: "4px 8px",
-                                border: "1px solid var(--border)",
-                                borderRadius: "4px",
-                                textAlign: "center"
-                              }}
-                            />
-                            <span style={{ fontSize: "9px", color: "var(--text-muted)" }}>Máx disp: {maxAvailable}</span>
-                          </div>
+                          <input 
+                            type="number" 
+                            min="0" 
+                            max={maxAvailable} 
+                            value={currentQty} 
+                            onChange={(e) => handleToolQtyChange(item.id, parseInt(e.target.value) || 0)}
+                            style={{ width: "60px", padding: "4px 8px", border: "1px solid var(--border)", borderRadius: "4px", textAlign: "center" }}
+                          />
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
-
-              {/* Romaneio de Carga (Checklist do Caminhão) */}
-              {localEvent.assignedTools.length > 0 && (
-                <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "2px dashed var(--border)" }}>
-                  <h4 style={{ fontSize: "14px", fontWeight: "600", color: "var(--accent)", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <Truck size={16} /> Romaneio de Carregamento (Conferência de Carga)
-                  </h4>
-                  <p className="text-xs text-muted" style={{ marginBottom: "12px" }}>
-                    Marque os itens conforme eles forem colocados fisicamente no caminhão para transporte até o pavilhão.
-                  </p>
-                  
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "10px" }}>
-                    {localEvent.assignedTools.map((t) => {
-                      const isChecked = !!(localEvent.romaneioChecked && localEvent.romaneioChecked[t.id]);
-                      return (
-                        <div 
-                          key={t.id} 
-                          onClick={() => {
-                            const currentChecked = localEvent.romaneioChecked || {};
-                            const updatedChecked = {
-                              ...currentChecked,
-                              [t.id]: !isChecked
-                            };
-                            handleUpdate({
-                              ...localEvent,
-                              romaneioChecked: updatedChecked
-                            });
-                          }}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "10px",
-                            padding: "10px 12px",
-                            border: "1px solid var(--border)",
-                            borderRadius: "8px",
-                            backgroundColor: isChecked ? "var(--success-glow)" : "var(--bg-card)",
-                            cursor: "pointer",
-                            transition: "var(--transition)"
-                          }}
-                        >
-                          <div style={{
-                            width: "18px",
-                            height: "18px",
-                            border: "2px solid var(--border)",
-                            borderRadius: "4px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "11px",
-                            fontWeight: "bold",
-                            color: "var(--success-text)",
-                            backgroundColor: isChecked ? "var(--success-glow)" : "transparent"
-                          }}>
-                            {isChecked && "✓"}
-                          </div>
-                          <span style={{ fontSize: "12.5px", textDecoration: isChecked ? "line-through" : "none", color: isChecked ? "var(--success-text)" : "var(--text-primary)" }}>
-                            <strong>{t.allocatedQty} un</strong> - {t.name}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Devolução de Mobiliário Alugado (Pós-Feira / Desmontagem) */}
-              {localEvent.phase === "post" && localEvent.assignedTools.filter(t => t.type === "furniture").length > 0 && (
-                <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "2px dashed var(--border)" }}>
-                  <h4 style={{ fontSize: "14px", fontWeight: "600", color: "var(--warning)", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
-                    🔄 Controle de Devolução de Itens Alugados
-                  </h4>
-                  <p className="text-xs text-muted" style={{ marginBottom: "12px" }}>
-                    Gerencie o retorno do mobiliário alugado de terceiros ao término da desmontagem.
-                  </p>
-                  
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "10px" }}>
-                    {localEvent.assignedTools
-                      .filter(t => t.type === "furniture")
-                      .map((t) => {
-                        const currentStatus = (localEvent.devolucoesAlugados && localEvent.devolucoesAlugados[t.id]) || "pendente";
-                        
-                        return (
-                          <div 
-                            key={`return-${t.id}`}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              padding: "10px 12px",
-                              border: "1px solid var(--border)",
-                              borderRadius: "8px",
-                              backgroundColor: "var(--bg-card)"
-                            }}
-                          >
-                            <span style={{ fontSize: "12px", color: "var(--text-primary)" }}>
-                              <strong>{t.allocatedQty}x</strong> {t.name}
-                            </span>
-                            <select
-                              value={currentStatus}
-                              onChange={(e) => {
-                                const currentDevolucoes = localEvent.devolucoesAlugados || {};
-                                const updatedDevolucoes = {
-                                  ...currentDevolucoes,
-                                  [t.id]: e.target.value as any
-                                };
-                                handleUpdate({
-                                  ...localEvent,
-                                  devolucoesAlugados: updatedDevolucoes
-                                });
-                              }}
-                              style={{
-                                padding: "4px 8px",
-                                border: "1px solid var(--border)",
-                                borderRadius: "6px",
-                                fontSize: "11px",
-                                background: "var(--bg-card)",
-                                color: 
-                                  currentStatus === "devolvido" ? "var(--success-text)" :
-                                  currentStatus === "avariado" ? "var(--danger)" : "var(--text-secondary)",
-                                fontWeight: "600",
-                                outline: "none"
-                              }}
-                            >
-                              <option value="pendente">🔴 Pendente</option>
-                              <option value="devolvido">🟢 Devolvido</option>
-                              <option value="avariado">⚠️ Avariado</option>
-                            </select>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
-          {/* TAB 3: STAFF */}
+          {/* TAB 5: STAFF & TERCEIRIZADOS DE ÚLTIMA HORA */}
           {activeTab === "staff" && (
             <div>
-              <span className="text-xs text-muted semibold uppercase mb-20" style={{ display: "block" }}>
-                Escalar Profissionais (Sinalização de NRs e Pendências)
-              </span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                <span className="text-xs text-muted semibold uppercase">
+                  Escala da Equipe e Inclusão de Terceirizados
+                </span>
+                <button className="btn-secondary" style={{ padding: "6px 12px", fontSize: "11px" }} onClick={() => setShowAddTerceirizado(!showAddTerceirizado)}>
+                  <UserPlus size={13} /> Terceirizado Última Hora
+                </button>
+              </div>
+
+              {/* Form Terceirizado de Última Hora */}
+              {showAddTerceirizado && (
+                <form onSubmit={handleAddTerceirizadoSubmit} style={{ padding: "14px", border: "1px solid var(--accent)", borderRadius: "12px", backgroundColor: "var(--accent-glow)", display: "flex", flexDirection: "column", gap: "10px", marginBottom: "16px" }}>
+                  <h5 style={{ fontSize: "13px", fontWeight: "700", color: "var(--accent)", margin: 0 }}>Escalar Terceirizado / Freelancer de Última Hora</h5>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <input type="text" placeholder="Nome Completo do Colaborador" value={terceirizadoName} onChange={(e) => setTerceirizadoName(e.target.value)} required style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--border)" }} />
+                    <input type="text" placeholder="Função no Evento (ex: Pintor Espetáculo)" value={terceirizadoRole} onChange={(e) => setTerceirizadoRole(e.target.value)} style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--border)" }} />
+                    <input type="text" placeholder="Horário (ex: 08:00 às 20:00)" value={terceirizadoHorario} onChange={(e) => setTerceirizadoHorario(e.target.value)} style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--border)" }} />
+                    <input type="text" placeholder="Observações / Diária" value={terceirizadoObs} onChange={(e) => setTerceirizadoObs(e.target.value)} style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--border)" }} />
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                    <button type="button" className="btn-secondary" onClick={() => setShowAddTerceirizado(false)} style={{ padding: "6px 10px", fontSize: "11px" }}>Cancelar</button>
+                    <button type="submit" className="btn-primary" style={{ padding: "6px 12px", fontSize: "11px" }}>Adicionar Terceirizado</button>
+                  </div>
+                </form>
+              )}
+
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {allEmployees.map((emp) => {
                   const isChecked = localEvent.assignedEmployees.some(e => e.id === emp.id);
@@ -806,7 +809,7 @@ export default function EventDetailsModal({
                     <div key={emp.id} className="staff-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "1px solid var(--border)", borderRadius: "12px", background: "var(--bg-card)" }}>
                       <div className="staff-row-info" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                         <div className="staff-row-avatar" style={{ width: "36px", height: "36px", borderRadius: "50%", background: "var(--accent-glow)", color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700" }}>
-                          {emp.foto || emp.name.substring(0, 1)}
+                          {emp.name.substring(0, 1)}
                         </div>
                         <div>
                           <strong className="text-sm" style={{ display: "block" }}>{emp.name}</strong>
@@ -814,36 +817,13 @@ export default function EventDetailsModal({
                         </div>
                       </div>
                       
-                      <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-                        {/* NRs certifications status */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: "2px", fontSize: "11px" }}>
-                          {emp.nr35Vencimento ? (
-                            <span style={{ color: "var(--success-text)", fontWeight: "600" }}>✓ NR-35 OK ({emp.nr35Vencimento.substring(0,4)})</span>
-                          ) : (
-                            <span style={{ color: "var(--text-muted)" }}>NR-35 N/A</span>
-                          )}
-                          {emp.nr10Vencimento ? (
-                            <span style={{ color: "var(--success-text)", fontWeight: "600" }}>✓ NR-10 OK ({emp.nr10Vencimento.substring(0,4)})</span>
-                          ) : (
-                            <span style={{ color: "var(--text-muted)" }}>NR-10 N/A</span>
-                          )}
-                        </div>
-
-                        {/* Document completion status */}
-                        <div style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}>
-                          <span className="status-dot" style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: emp.documentStatus === "complete" ? "var(--success-text)" : "var(--warning-text)" }}></span>
-                          <span className="text-muted">Docs {emp.documentStatus === "complete" ? "OK" : "Pendente"}</span>
-                        </div>
-
-                        {/* Assign switch button */}
-                        <button 
-                          className={isChecked ? "btn-danger text-xs" : "btn-primary text-xs"}
-                          onClick={() => toggleEmployee(emp.id)}
-                          style={{ padding: "4px 10px", borderRadius: "8px" }}
-                        >
-                          {isChecked ? "Remover" : "Escalar"}
-                        </button>
-                      </div>
+                      <button 
+                        className={isChecked ? "btn-danger text-xs" : "btn-primary text-xs"}
+                        onClick={() => toggleEmployee(emp.id)}
+                        style={{ padding: "4px 10px", borderRadius: "8px" }}
+                      >
+                        {isChecked ? "Remover" : "Escalar"}
+                      </button>
                     </div>
                   );
                 })}
@@ -851,21 +831,21 @@ export default function EventDetailsModal({
             </div>
           )}
 
-          {/* TAB 4: TRAVEL */}
+          {/* TAB 6: LOGÍSTICA E VIAGEM */}
           {activeTab === "travel" && (
             <div className="form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
               <div style={{ gridColumn: "span 2" }}>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Nome do Hotel / Acomodação da Equipe</label>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Hotel / Acomodação</label>
                 <input 
                   type="text" 
                   value={localEvent.hotelName || ""} 
                   onChange={(e) => handleTravelChange("hotelName", e.target.value)}
-                  placeholder="Ex: Ibis Budget Center Paulista" 
+                  placeholder="Nome do Hotel" 
                   style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }}
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Data de Check-In</label>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Data Check-In</label>
                 <input 
                   type="date" 
                   value={localEvent.hotelCheckin || ""} 
@@ -874,201 +854,105 @@ export default function EventDetailsModal({
                 />
               </div>
               <div style={{ gridColumn: "span 2" }}>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Detalhes das Passagens Aéreas (Localizadores, Voos, Horários)</label>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Detalhes de Voos / Logística Fretes</label>
                 <textarea 
                   rows={4}
                   value={localEvent.flightDetails || ""} 
                   onChange={(e) => handleTravelChange("flightDetails", e.target.value)}
-                  placeholder="Ex: Latam LA3341 (NAT -> GRU) - 22/08 às 14:00 - Localizadores: ADFLK, GDLJK..."
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)" }}
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }}
                 />
               </div>
             </div>
           )}
 
-          {/* TAB 5: DOCUMENTATION */}
+          {/* TAB 7: DOCUMENTOS DO PAVILHÃO (Sem limitação de tipos) */}
           {activeTab === "docs" && (
             <div>
               <span className="text-xs text-muted semibold uppercase mb-20" style={{ display: "block" }}>
-                Documentos Obrigatórios exigidos para Credenciamento e Montagem
+                Documentos Anexados do Pavilhão (Sem Limite de Categoria)
               </span>
+
+              <form onSubmit={handleAddCustomDoc} style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+                <input 
+                  type="text" 
+                  placeholder="Nome do Novo Documento (Ex: Licença Sanitária, Laudo de Retardante de Chama)..." 
+                  value={newDocName} 
+                  onChange={(e) => setNewDocName(e.target.value)} 
+                  style={{ flex: 1, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }}
+                />
+                <button type="submit" className="btn-primary" style={{ padding: "8px 14px", fontSize: "12px" }}>
+                  <Plus size={14} /> Anexar Documento
+                </button>
+              </form>
               
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {localEvent.docs.map((doc) => (
-                   <div key={doc.id} className="checklist-item" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "1px solid var(--border)", borderRadius: "12px", background: "var(--bg-card)" }}>
+                  <div key={doc.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "1px solid var(--border)", borderRadius: "12px", background: "var(--bg-card)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <FileText size={16} className="text-muted" />
                       <strong className="text-sm" style={{ color: "var(--text-primary)" }}>{doc.name}</strong>
                     </div>
                     
-                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                      <span className="text-xs text-muted">
-                        Status:{" "}
-                        {doc.status === "pending" && <span style={{ color: "var(--warning)", fontWeight: 600 }}>Pendente</span>}
-                        {doc.status === "uploaded" && <span style={{ color: "var(--accent)", fontWeight: 600 }}>Aguardando Avaliação</span>}
-                        {doc.status === "approved" && <span style={{ color: "var(--success-text)", fontWeight: 600 }}>✓ Aprovado e Liberado</span>}
-                      </span>
-                      
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                       <button 
                         className="btn-secondary text-xs"
-                        style={{ padding: "4px 8px", borderRadius: "6px" }}
+                        style={{ padding: "4px 8px" }}
                         onClick={() => simulateDocUpload(doc.id)}
                       >
-                        {doc.status === "pending" && "Subir Arquivo"}
-                        {doc.status === "uploaded" && "Aprovar Doc"}
-                        {doc.status === "approved" && "Reiniciar"}
+                        {doc.status === "pending" ? "Subir Arquivo" : doc.status === "uploaded" ? "Aprovar" : "Liberado"}
+                      </button>
+                      <button 
+                        style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer" }}
+                        onClick={() => handleDeleteDoc(doc.id)}
+                      >
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
-              
-              <div className="dropzone" style={{ border: "2px dashed var(--border)", padding: "20px", borderRadius: "12px", textAlign: "center", marginTop: "20px", cursor: "pointer" }}>
-                <span className="text-xs" style={{ display: "block", marginBottom: "4px", fontWeight: "600" }}>
-                  Arraste arquivos complementares adicionais aqui (Termos, ARTs, RRTs)
-                </span>
-                <span className="text-xs text-muted">Limite de 10MB por arquivo • Apenas formato PDF</span>
-              </div>
             </div>
           )}
 
-          {/* TAB 6: COSTS CENTER */}
+          {/* TAB 8: CENTRO DE CUSTOS */}
           {activeTab === "costs" && (
             <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px" }}>
-              {/* Manual/Previsto entry values */}
               <div style={{ backgroundColor: "var(--bg-main)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-secondary)", display: "block", marginBottom: "8px" }}>ESTIMAR ORÇAMENTO (CATEGORIAS)</span>
-                
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto", paddingRight: "4px" }}>
-                  {Object.keys(localEvent.centroCusto || {})
-                    .filter(k => k !== "fornecedoresDespesas")
-                    .map((catKey) => {
-                      const typedKey = catKey as keyof typeof localEvent.centroCusto;
-                    const label = 
-                      typedKey === "madeiraMdf" ? "Madeira e MDF" :
-                      typedKey === "vidrosVidraçaria" ? "Vidros / Vidraçaria" :
-                      typedKey === "iluminacaoEletrica" ? "Iluminação / Elétrica" :
-                      typedKey === "mobiliarioAlugado" ? "Mobiliário Alugado" :
-                      typedKey === "fretes" ? "Fretes e Carga" :
-                      typedKey === "combustivelPedagios" ? "Combustível / Pedágio" :
-                      typedKey === "hospedagemPassagens" ? "Hospedagem / Voos" :
-                      typedKey === "equipePropria" ? "Equipe Própria" :
-                      typedKey === "terceirizados" ? "Terceirizados (Diária)" : "Taxas do Organizador";
-                    
+                <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-secondary)", display: "block", marginBottom: "8px" }}>ESTIMAR ORÇAMENTO</span>
+                {Object.keys(localEvent.centroCusto || {})
+                  .filter(k => k !== "fornecedoresDespesas")
+                  .map((catKey) => {
+                    const typedKey = catKey as keyof typeof localEvent.centroCusto;
                     return (
                       <div key={catKey} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px" }}>
-                        <span style={{ color: "var(--text-primary)", fontWeight: "500" }}>{label}</span>
-                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          <span style={{ color: "var(--text-muted)" }}>R$</span>
-                          <input 
-                            type="number" 
-                            value={(localEvent.centroCusto[typedKey] as number) || 0}
-                            onChange={(e) => handleCostChange(typedKey, parseFloat(e.target.value) || 0)}
-                            style={{ width: "80px", padding: "4px 6px", border: "1px solid var(--border)", borderRadius: "4px", textAlign: "right" }}
-                          />
-                        </div>
+                        <span style={{ color: "var(--text-primary)", fontWeight: "500" }}>{catKey}</span>
+                        <input 
+                          type="number" 
+                          value={(localEvent.centroCusto[typedKey] as number) || 0}
+                          onChange={(e) => handleCostChange(typedKey, parseFloat(e.target.value) || 0)}
+                          style={{ width: "80px", padding: "4px 6px", border: "1px solid var(--border)", borderRadius: "4px", textAlign: "right" }}
+                        />
                       </div>
                     );
                   })}
-                </div>
               </div>
 
-              {/* Consolidation values metrics */}
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase" }}>CONTRATO DO ESTANDE</span>
-                  <strong style={{ fontSize: "20px", color: "var(--accent)" }}>R$ {localEvent.valorContratado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                </div>
-
-                <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase" }}>CUSTOS TOTAIS ESTIMADOS</span>
-                  <strong style={{ fontSize: "18px", color: "var(--accent-secondary)" }}>R$ {totalCost.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                </div>
-
-                <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase" }}>LUCRO LÍQUIDO PREVISTO</span>
-                  <strong style={{ fontSize: "18px", color: netProfit >= 0 ? "var(--success-text)" : "var(--danger)" }}>
+                <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px" }}>
+                  <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>LUCRO LÍQUIDO PREVISTO</span>
+                  <strong style={{ fontSize: "18px", color: netProfit >= 0 ? "var(--success-text)" : "var(--danger)", display: "block" }}>
                     R$ {netProfit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </strong>
-                  <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Margem: {marginPercent.toFixed(1)}%</span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 7: MAP & ROUTE */}
+          {/* TAB 9: MAPA E ROTA */}
           {activeTab === "route" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", backgroundColor: "var(--bg-card)", display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                <MapPin size={24} style={{ color: "var(--accent-secondary)", flexShrink: 0, marginTop: "4px" }} />
-                <div style={{ flexGrow: 1 }}>
-                  <strong style={{ display: "block", fontSize: "14px", color: "var(--text-primary)" }}>Endereço de Entrega Técnica:</strong>
-                  <span style={{ fontSize: "13px", color: "var(--text-secondary)", display: "block", marginTop: "2px" }}>{localEvent.mapsRoute.endereco}</span>
-                  <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)", fontFamily: "monospace", marginTop: "4px" }}>
-                    Coordenadas: Lat {localEvent.mapsRoute.latitude} • Long {localEvent.mapsRoute.longitude}
-                  </span>
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "12px", backgroundColor: "var(--bg-card)" }}>
-                  <Navigation size={22} style={{ color: "var(--accent)" }} />
-                  <div>
-                    <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)" }}>Distância do Depósito JC:</span>
-                    <strong style={{ fontSize: "15px", color: "var(--text-primary)" }}>{localEvent.mapsRoute.distanciaKm} km</strong>
-                  </div>
-                </div>
-
-                <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "12px", backgroundColor: "var(--bg-card)" }}>
-                  <Calendar size={22} style={{ color: "var(--success-text)" }} />
-                  <div>
-                    <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)" }}>Tempo de Rota Estimado:</span>
-                    <strong style={{ fontSize: "15px", color: "var(--text-primary)" }}>{localEvent.mapsRoute.tempoEstimado}</strong>
-                  </div>
-                </div>
-              </div>
-
-              {/* Mock maps visualization */}
-              <div 
-                style={{ 
-                  height: "220px", 
-                  borderRadius: "16px", 
-                  border: "1px solid var(--border)", 
-                  backgroundColor: "#e3f2fd", 
-                  display: "flex", 
-                  flexDirection: "column", 
-                  alignItems: "center", 
-                  justifyContent: "center", 
-                  backgroundImage: "radial-gradient(circle, #b3e5fc 10%, transparent 10.5%), radial-gradient(circle, #b3e5fc 10%, transparent 10.5%)",
-                  backgroundSize: "20px 20px",
-                  backgroundPosition: "0 0, 10px 10px",
-                  position: "relative"
-                }}
-              >
-                <div style={{ backgroundColor: "rgba(255, 255, 255, 0.9)", border: "1px solid var(--accent)", padding: "12px 18px", borderRadius: "100px", display: "flex", alignItems: "center", gap: "8px", boxShadow: "var(--shadow-md)" }}>
-                  <Navigation size={16} style={{ color: "var(--accent)" }} />
-                  <span style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-primary)" }}>Rota de Pavilhão Ativa</span>
-                </div>
-                
-                <a 
-                  href={localEvent.mapsRoute.linkMaps} 
-                  target="_blank" 
-                  rel="noreferrer"
-                  style={{
-                    position: "absolute",
-                    bottom: "12px",
-                    right: "12px",
-                    backgroundColor: "var(--bg-sidebar)",
-                    color: "#fff",
-                    textDecoration: "none",
-                    padding: "6px 12px",
-                    borderRadius: "6px",
-                    fontSize: "11px",
-                    fontWeight: "600"
-                  }}
-                >
-                  Abrir no Google Maps ↗
-                </a>
+              <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", backgroundColor: "var(--bg-card)" }}>
+                <strong>Endereço de Entrega:</strong> {localEvent.mapsRoute.endereco}
               </div>
             </div>
           )}

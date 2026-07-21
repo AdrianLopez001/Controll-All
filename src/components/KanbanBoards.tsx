@@ -6,14 +6,16 @@ interface KanbanBoardsProps {
   events: Project[];
   onSelectEvent: (event: Project) => void;
   onAddEvent: (name: string, client: string, startDate: string) => void;
-  onUpdateEventPhase: (id: string, phase: "no_event" | "during" | "post") => void;
+  onUpdateEventPhase: (id: string, phase: any) => void;
+  onDeleteEvent?: (id: string) => void;
 }
 
 export default function KanbanBoards({ 
   events, 
   onSelectEvent, 
   onAddEvent,
-  onUpdateEventPhase
+  onUpdateEventPhase,
+  onDeleteEvent
 }: KanbanBoardsProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [name, setName] = useState("");
@@ -31,10 +33,14 @@ export default function KanbanBoards({
     setShowAddForm(false);
   };
 
-  // Filter events by phase
-  const noEventList = events.filter((e) => e.phase === "no_event");
-  const duringList = events.filter((e) => e.phase === "during");
-  const postList = events.filter((e) => e.phase === "post");
+  // Filter events by phase accurately
+  const noEventPhases = ["no_event", "Briefing", "Orçamento", "Pré-Evento"];
+  const duringPhases = ["during", "Produção", "Montagem", "Evento", "Aprovado"];
+  const postPhases = ["post", "Desmontagem", "Finalizado"];
+
+  const noEventList = events.filter((e) => noEventPhases.includes(e.phase));
+  const duringList = events.filter((e) => duringPhases.includes(e.phase));
+  const postList = events.filter((e) => postPhases.includes(e.phase) || (!noEventPhases.includes(e.phase) && !duringPhases.includes(e.phase)));
 
   const renderCard = (event: Project) => {
     const totalTasks = event.checklist.length;

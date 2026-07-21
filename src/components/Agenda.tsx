@@ -11,6 +11,7 @@ interface AgendaProps {
   employees: Employee[];
   invoices: InvoiceLog[];
   leads: LeadCRM[];
+  onSelectEvent?: (event: Project) => void;
 }
 
 interface AgendaItem {
@@ -21,13 +22,15 @@ interface AgendaItem {
   horario?: string;
   cor: string;
   detalhe: string;
+  project?: Project;
 }
 
 export default function Agenda({
   events,
   employees,
   invoices,
-  leads
+  leads,
+  onSelectEvent
 }: AgendaProps) {
   const [currentDate, setCurrentDate] = useState<Date>(new Date(2026, 6, 18)); // July 18, 2026 (matching system seed dates)
   const [viewMode, setViewMode] = useState<"mes" | "semana" | "dia">("mes");
@@ -42,7 +45,7 @@ export default function Agenda({
       horarioInicio: "14:00",
       horarioFim: "15:30",
       local: "Sala Reuniões Principal JC",
-      responsavel: "Adrian (ADMIN)",
+      responsavel: "JCEventos",
       participantes: "Mariana Souza, Jéssica Cenógrafa",
       prioridade: "alta",
       categoria: "reuniao",
@@ -143,7 +146,8 @@ export default function Agenda({
       data: evt.startDate,
       horario: "08:00",
       cor: "var(--accent)",
-      detalhe: `Evento: ${evt.name} | Cliente: ${evt.client} | Local: ${evt.mapsRoute.endereco}`
+      detalhe: `Evento: ${evt.name} | Cliente: ${evt.client} | Local: ${evt.mapsRoute.endereco}`,
+      project: evt
     });
     calendarItems.push({
       id: `evt-montagem-${evt.id}`,
@@ -152,7 +156,8 @@ export default function Agenda({
       data: evt.dataMontagem,
       horario: "07:00",
       cor: "var(--accent-secondary)",
-      detalhe: `Período operacional de montagem estrutural cenográfica.`
+      detalhe: `Período operacional de montagem estrutural cenográfica.`,
+      project: evt
     });
     calendarItems.push({
       id: `evt-desmont-${evt.id}`,
@@ -161,7 +166,8 @@ export default function Agenda({
       data: evt.dataDesmontagem,
       horario: "19:00",
       cor: "#6e6e6e",
-      detalhe: `Retirada de cenografia e transporte de retorno ao depósito.`
+      detalhe: `Retirada de cenografia e transporte de retorno ao depósito.`,
+      project: evt
     });
   });
 
@@ -635,8 +641,21 @@ export default function Agenda({
                 <p style={{ marginTop: "4px" }}>{selectedItem.detalhe}</p>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button type="button" className="btn-primary" onClick={() => setSelectedItem(null)}>Ok, Fechar</button>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                {selectedItem.project && onSelectEvent && (
+                  <button 
+                    type="button" 
+                    className="btn-primary" 
+                    onClick={() => {
+                      const proj = selectedItem.project!;
+                      setSelectedItem(null);
+                      onSelectEvent(proj);
+                    }}
+                  >
+                    Editar / Ver Projeto no ERP
+                  </button>
+                )}
+                <button type="button" className="btn-secondary" onClick={() => setSelectedItem(null)}>Fechar</button>
               </div>
             </div>
           </div>

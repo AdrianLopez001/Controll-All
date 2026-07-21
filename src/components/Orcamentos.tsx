@@ -24,6 +24,8 @@ export default function Orcamentos({
   onUpdateOrcamento,
   onConvertToOS
 }: OrcamentosProps) {
+  const fmtBrl = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Orcamento["status"]>("all");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -269,21 +271,19 @@ export default function Orcamentos({
     alert(`E-mail com proposta comercial enviado com sucesso para ${emailTo}!`);
   };
 
-  const filteredOrcamentos = orcamentos.filter(orc => {
-    const matchesSearch = orc.cliente.toLowerCase().includes(searchTerm.toLowerCase()) || orc.codigo.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" ? true : orc.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const fmtBrl = (v: number) =>
-    v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-
   const statusCfg: Record<Orcamento["status"], { label: string; bg: string; color: string }> = {
     rascunho:   { label: "Rascunho",    bg: "#f1f5f9", color: "#64748b" },
     negociacao: { label: "Negociação",  bg: "#fef3c7", color: "#92400e" },
     aprovado:   { label: "Aprovado",    bg: "#d1fae5", color: "#065f46" },
     recusado:   { label: "Recusado",    bg: "#fee2e2", color: "#991b1b" },
+    arquivado:  { label: "Arquivado",   bg: "#e2e8f0", color: "#475569" },
   };
+
+  const filteredOrcamentos = orcamentos.filter(orc => {
+    const matchesSearch = orc.cliente.toLowerCase().includes(searchTerm.toLowerCase()) || orc.codigo.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" ? orc.status !== "arquivado" : orc.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: selectedOrc ? "340px 1fr" : "1fr", gap: "20px", padding: "10px", minHeight: "80vh" }}>
@@ -320,11 +320,12 @@ export default function Orcamentos({
             onChange={(e) => setStatusFilter(e.target.value as any)}
             style={{ padding: "7px 10px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "var(--bg-card)", color: "var(--text-primary)", cursor: "pointer" }}
           >
-            <option value="all">Todos</option>
+            <option value="all">Ativos (Todos)</option>
             <option value="rascunho">Rascunho</option>
             <option value="negociacao">Negociação</option>
             <option value="aprovado">Aprovado</option>
             <option value="recusado">Recusado</option>
+            <option value="arquivado">Arquivados</option>
           </select>
         </div>
 

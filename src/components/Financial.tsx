@@ -12,12 +12,15 @@ interface FinancialProps {
   onAddInvoice: (invoice: Omit<InvoiceLog, "id" | "date">) => void;
   onUpdateInvoice: (updated: InvoiceLog) => void;
   onUpdateEvent: (updated: Project) => void;
+  initialSubTab?: string;
 }
 
 export default function Financial({ 
-  invoices, events, fornecedores, onAddInvoice, onUpdateInvoice, onUpdateEvent 
+  invoices, events, fornecedores, onAddInvoice, onUpdateInvoice, onUpdateEvent, initialSubTab 
 }: FinancialProps) {
-  const [activeSubTab, setActiveSubTab] = useState<"fluxo" | "pagar" | "receber" | "boletos" | "nfe" | "centro_custo" | "caixinha">("fluxo");
+  const [activeSubTab, setActiveSubTab] = useState<"fluxo" | "pagar" | "receber" | "boletos" | "nfe" | "centro_custo" | "caixinha">(
+    (initialSubTab as any) || "fluxo"
+  );
   const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.id || "");
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceLog | null>(null);

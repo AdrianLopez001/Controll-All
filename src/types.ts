@@ -9,6 +9,10 @@ export interface AssignedEmployee {
   name: string;
   role: string;
   documentStatus: "complete" | "pending";
+  equipe?: string;
+  horario?: string;
+  observacoes?: string;
+  terceirizado?: boolean;
 }
 
 export interface AssignedTool {
@@ -385,7 +389,7 @@ export interface Orcamento {
   cnpjCliente: string;
   dataCriacao: string;
   validoAte: string;
-  status: "rascunho" | "negociacao" | "aprovado" | "recusado";
+  status: "rascunho" | "negociacao" | "aprovado" | "recusado" | "arquivado";
   produtos: { id: string; name: string; qty: number; precoVenda: number }[];
   servicos: { name: string; preco: number }[];
   desconto: number;
@@ -473,3 +477,22 @@ export interface BoletoAdministrativo {
   comprovanteAnexoNome?: string;
   historicoLogs: string[];
 }
+
+export interface MasterCatalogItem {
+  id: string;
+  name: string;
+  categoria: string;
+  tipo: "material" | "servico";
+  precoPadrao: number;
+  unidade: string;
+}
+
+export interface UserAccount {
+  id: string;
+  email: string;
+  name: string;
+  cpf: string;
+  dataNascimento: string;
+  role: "admin" | "comercial" | "estoque" | "operador";
+}
+

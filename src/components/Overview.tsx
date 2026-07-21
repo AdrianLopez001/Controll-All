@@ -1,19 +1,24 @@
+import { useState } from "react";
 import { 
   Briefcase, Users, Archive,
   AlertTriangle, TrendingUp,
-  DollarSign, ArrowDown, CheckSquare, MapPin,
-  Clock, Building2, ChevronRight, Calendar
+  DollarSign, CheckSquare, MapPin,
+  Clock, Building2, ChevronRight, Calendar, X, Edit3, CheckCircle2, ArrowRight
 } from "lucide-react";
-import type { Project, InvoiceLog } from "../types";
+import type { Project, InvoiceLog, Employee, WarehouseItem } from "../types";
 
 interface OverviewProps {
   events: Project[];
+  employees?: Employee[];
+  warehouseItems?: WarehouseItem[];
   employeesCount: number;
   lowStockItemsCount: number;
   pendingDocsCount: number;
   invoices: InvoiceLog[];
-  onNavigateToTab: (tab: string) => void;
+  onNavigateToTab: (tab: string, subTab?: string) => void;
   onSelectEvent: (event: Project) => void;
+  onUpdateStock?: (id: string, newStock: number) => void;
+  onUpdateEvent?: (updated: Project) => void;
 }
 
 const fmt = (v: number) =>
@@ -60,13 +65,21 @@ const phaseColor: Record<string, string> = {
 
 export default function Overview({ 
   events, 
+  employees = [],
+  warehouseItems = [],
   employeesCount, 
   lowStockItemsCount, 
   pendingDocsCount,
   invoices,
   onNavigateToTab,
-  onSelectEvent
+  onSelectEvent,
+  onUpdateStock,
+  onUpdateEvent
 }: OverviewProps) {
+  // Modal states for Dashboard indicators
+  const [activeModal, setActiveModal] = useState<"montadores" | "tarefas" | "estoque" | null>(null);
+  const [editingStockId, setEditingStockId] = useState<string | null>(null);
+  const [editingStockValue, setEditingStockValue] = useState<number>(0);
 
   const isActive = (e: Project) => !["Finalizado", "post"].includes(e.phase);
 
@@ -84,15 +97,15 @@ export default function Overview({
     .sort((a, b) => new Date(a.dataMontagem).getTime() - new Date(b.dataMontagem).getTime())
     .slice(0, 5);
 
-  const alerts: { type: "warn" | "info" | "danger"; msg: string }[] = [];
+  const alerts: { type: "warn" | "info" | "danger"; msg: string; targetTab?: string; targetSubTab?: string; targetEvent?: Project }[] = [];
   if (lowStockItemsCount > 0)
-    alerts.push({ type: "warn", msg: `${lowStockItemsCount} item(ns) no depósito abaixo do estoque mínimo.` });
+    alerts.push({ type: "warn", msg: `${lowStockItemsCount} item(ns) no depósito abaixo do estoque mínimo. Clique para ver.`, targetTab: "warehouse" });
   if (pendingDocsCount > 0)
-    alerts.push({ type: "warn", msg: `${pendingDocsCount} documento(s) pendente(s) em projetos ativos.` });
+    alerts.push({ type: "warn", msg: `${pendingDocsCount} documento(s) pendente(s) em projetos ativos.`, targetTab: "os" });
   events.filter(isActive).forEach(e => {
     const docs = e.docs?.filter(d => d.status === "pending") || [];
     if (docs.length > 0)
-      alerts.push({ type: "danger", msg: `"${e.name}": ${docs.map(d => d.name).join(", ")}.` });
+      alerts.push({ type: "danger", msg: `"${e.name}": ${docs.map(d => d.name).join(", ")}.`, targetEvent: e });
   });
   if (alerts.length === 0)
     alerts.push({ type: "info", msg: "Nenhum alerta crítico. Operação tranquila!" });
@@ -108,11 +121,11 @@ export default function Overview({
     },
     {
       icon: <DollarSign size={20} />,
-      label: "Receita a Receber",
+      label: "Contas a Receber",
       value: fmt(totalReceber),
       unit: "aguardando pagamento",
       color: "#059669",
-      action: () => onNavigateToTab("financial"),
+      action: () => onNavigateToTab("financial", "receber"),
     },
     {
       icon: <TrendingUp size={20} />,
@@ -120,7 +133,7 @@ export default function Overview({
       value: fmt(totalCustoPrevisto),
       unit: "projetos ativos",
       color: "#d97706",
-      action: () => onNavigateToTab("financial"),
+      action: () => onNavigateToTab("financial", "centro_custo"),
     },
     {
       icon: <Users size={20} />,
@@ -128,7 +141,7 @@ export default function Overview({
       value: String(employeesCount),
       unit: "em campo",
       color: "#0891b2",
-      action: () => onNavigateToTab("employees"),
+      action: () => setActiveModal("montadores"),
     },
     {
       icon: <CheckSquare size={20} />,
@@ -136,7 +149,7 @@ export default function Overview({
       value: String(pendingChecklistItems),
       unit: "nos checklists",
       color: pendingChecklistItems > 0 ? "#dc2626" : "#64748b",
-      action: () => onNavigateToTab("os"),
+      action: () => setActiveModal("tarefas"),
     },
     {
       icon: <Archive size={20} />,
@@ -144,7 +157,7 @@ export default function Overview({
       value: String(lowStockItemsCount),
       unit: "abaixo do mínimo",
       color: lowStockItemsCount > 0 ? "#dc2626" : "#64748b",
-      action: () => onNavigateToTab("warehouse"),
+      action: () => setActiveModal("estoque"),
     },
   ];
 
@@ -218,7 +231,7 @@ export default function Overview({
       </div>
 
       {/* Two-column layout */}
-      <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "20px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "20px" }}>
 
         {/* Projects Timeline */}
         <div style={{
@@ -330,16 +343,24 @@ export default function Overview({
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {alerts.slice(0, 5).map((a, i) => (
-                <div key={i} style={{
-                  display: "flex", gap: "8px", alignItems: "flex-start",
-                  padding: "9px 11px", borderRadius: "8px",
-                  backgroundColor: a.type === "danger" ? "var(--danger-glow)" : a.type === "warn" ? "var(--warning-glow)" : "var(--success-glow)",
-                  border: `1px solid ${a.type === "danger" ? "var(--danger)" : a.type === "warn" ? "var(--warning)" : "var(--success)"}`
-                }}>
+                <div 
+                  key={i} 
+                  onClick={() => {
+                    if (a.targetEvent) onSelectEvent(a.targetEvent);
+                    else if (a.targetTab) onNavigateToTab(a.targetTab, a.targetSubTab);
+                  }}
+                  style={{
+                    display: "flex", gap: "8px", alignItems: "flex-start",
+                    padding: "9px 11px", borderRadius: "8px",
+                    backgroundColor: a.type === "danger" ? "#fef2f2" : a.type === "warn" ? "#fffbeb" : "#f0fdf4",
+                    border: `1px solid ${a.type === "danger" ? "#fecaca" : a.type === "warn" ? "#fde68a" : "#bbf7d0"}`,
+                    cursor: (a.targetEvent || a.targetTab) ? "pointer" : "default"
+                  }}
+                >
                   <span style={{ fontSize: "13px", flexShrink: 0 }}>
                     {a.type === "danger" ? "🔴" : a.type === "warn" ? "⚠️" : "✅"}
                   </span>
-                  <span style={{ fontSize: "11px", color: "var(--text-primary)", lineHeight: "1.5" }}>{a.msg}</span>
+                  <span style={{ fontSize: "11px", color: "#374151", lineHeight: "1.5" }}>{a.msg}</span>
                 </div>
               ))}
             </div>
@@ -382,6 +403,212 @@ export default function Overview({
           </div>
         </div>
       </div>
+
+      {/* Modal: Montadores Escalados */}
+      {activeModal === "montadores" && (
+        <div className="modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="modal-content" style={{ maxWidth: "750px" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Users size={18} color="var(--accent)" /> Montadores Escalados em Eventos
+              </h3>
+              <button className="modal-close" onClick={() => setActiveModal(null)}>X</button>
+            </div>
+            <div className="modal-body" style={{ padding: "16px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-main)", borderBottom: "2px solid var(--border)", textAlign: "left" }}>
+                    <th style={{ padding: "10px" }}>Colaborador</th>
+                    <th style={{ padding: "10px" }}>Função</th>
+                    <th style={{ padding: "10px" }}>Projeto / Evento</th>
+                    <th style={{ padding: "10px" }}>Data Montagem</th>
+                    <th style={{ padding: "10px" }}>Horário</th>
+                    <th style={{ padding: "10px" }}>Situação Doc</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.filter(isActive).flatMap(evt => 
+                    evt.assignedEmployees.map(emp => ({ ...emp, evt }))
+                  ).length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: "center", padding: "20px", color: "var(--text-muted)" }}>
+                        Nenhum colaborador escalado nos projetos ativos no momento.
+                      </td>
+                    </tr>
+                  ) : (
+                    events.filter(isActive).flatMap(evt => 
+                      evt.assignedEmployees.map(emp => ({ ...emp, evt }))
+                    ).map((item, idx) => (
+                      <tr key={idx} style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td style={{ padding: "10px", fontWeight: "600" }}>{item.name}</td>
+                        <td style={{ padding: "10px" }}>{item.role || "Montador"}</td>
+                        <td style={{ padding: "10px", color: "var(--accent)", cursor: "pointer" }} onClick={() => { setActiveModal(null); onSelectEvent(item.evt); }}>
+                          {item.evt.name}
+                        </td>
+                        <td style={{ padding: "10px" }}>{item.evt.dataMontagem || item.evt.startDate}</td>
+                        <td style={{ padding: "10px" }}>{item.horario || "08:00 - 18:00"}</td>
+                        <td style={{ padding: "10px" }}>
+                          <span style={{ 
+                            padding: "3px 8px", borderRadius: "12px", fontSize: "10px", fontWeight: "600",
+                            backgroundColor: item.documentStatus === "complete" ? "#d1fae5" : "#fef3c7",
+                            color: item.documentStatus === "complete" ? "#065f46" : "#92400e"
+                          }}>
+                            {item.documentStatus === "complete" ? "Homologado" : "Pendente Doc"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px" }}>
+                <button className="btn-primary" onClick={() => { setActiveModal(null); onNavigateToTab("employees"); }}>
+                  Gerenciar Equipe Completa
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Tarefas Pendentes */}
+      {activeModal === "tarefas" && (
+        <div className="modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="modal-content" style={{ maxWidth: "700px" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <CheckSquare size={18} color="var(--danger)" /> Checklists e Tarefas Pendentes
+              </h3>
+              <button className="modal-close" onClick={() => setActiveModal(null)}>X</button>
+            </div>
+            <div className="modal-body" style={{ padding: "16px", maxHeight: "60vh", overflowY: "auto" }}>
+              {events.filter(isActive).map(evt => {
+                const pendingTasks = evt.checklist.filter(c => !c.done);
+                if (pendingTasks.length === 0) return null;
+                return (
+                  <div key={evt.id} style={{ marginBottom: "16px", padding: "12px", border: "1px solid var(--border)", borderRadius: "10px", backgroundColor: "var(--bg-main)" }}>
+                    <div style={{ fontWeight: "700", fontSize: "13px", color: "var(--accent)", marginBottom: "8px", display: "flex", justifyContent: "space-between" }}>
+                      <span>{evt.name}</span>
+                      <button 
+                        style={{ background: "none", border: "none", color: "var(--accent)", cursor: "pointer", fontSize: "11px", display: "flex", alignItems: "center", gap: "4px" }}
+                        onClick={() => { setActiveModal(null); onSelectEvent(evt); }}
+                      >
+                        Abrir Evento <ArrowRight size={12} />
+                      </button>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      {pendingTasks.map(task => (
+                        <label key={task.id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", cursor: "pointer" }}>
+                          <input 
+                            type="checkbox" 
+                            checked={task.done} 
+                            onChange={() => {
+                              if (!onUpdateEvent) return;
+                              const updatedChecklist = evt.checklist.map(c => c.id === task.id ? { ...c, done: !c.done } : c);
+                              onUpdateEvent({ ...evt, checklist: updatedChecklist });
+                            }} 
+                          />
+                          <span>{task.text}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
+                <button className="btn-primary" onClick={() => { setActiveModal(null); onNavigateToTab("os"); }}>
+                  Ir para Ordens de Serviço
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Estoque Crítico */}
+      {activeModal === "estoque" && (
+        <div className="modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="modal-content" style={{ maxWidth: "750px" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Archive size={18} color="var(--danger)" /> Itens do Estoque Crítico
+              </h3>
+              <button className="modal-close" onClick={() => setActiveModal(null)}>X</button>
+            </div>
+            <div className="modal-body" style={{ padding: "16px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-main)", borderBottom: "2px solid var(--border)", textAlign: "left" }}>
+                    <th style={{ padding: "10px" }}>Item Crítico</th>
+                    <th style={{ padding: "10px" }}>Qtd Atual</th>
+                    <th style={{ padding: "10px" }}>Qtd Mínima</th>
+                    <th style={{ padding: "10px" }}>Localização</th>
+                    <th style={{ padding: "10px", textAlign: "right" }}>Ação de Correção</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {warehouseItems.filter(i => i.stock <= i.stockMinimo).length === 0 ? (
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: "center", padding: "20px", color: "var(--text-muted)" }}>
+                        Nenhum item em nível crítico no estoque.
+                      </td>
+                    </tr>
+                  ) : (
+                    warehouseItems.filter(i => i.stock <= i.stockMinimo).map((item) => (
+                      <tr key={item.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td style={{ padding: "10px", fontWeight: "600" }}>{item.name}</td>
+                        <td style={{ padding: "10px", color: "#dc2626", fontWeight: "700" }}>{item.stock}</td>
+                        <td style={{ padding: "10px" }}>{item.stockMinimo}</td>
+                        <td style={{ padding: "10px", color: "var(--text-muted)" }}>
+                          Galpão {item.localizacaoFisica?.galpao || "A"} - Corredor {item.localizacaoFisica?.corredor || "01"}
+                        </td>
+                        <td style={{ padding: "10px", textAlign: "right" }}>
+                          {editingStockId === item.id ? (
+                            <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                              <input 
+                                type="number" 
+                                value={editingStockValue} 
+                                onChange={(e) => setEditingStockValue(Number(e.target.value))} 
+                                style={{ width: "60px", padding: "4px", borderRadius: "4px", border: "1px solid var(--border)" }}
+                              />
+                              <button 
+                                className="btn-primary" 
+                                style={{ padding: "4px 8px", fontSize: "11px" }}
+                                onClick={() => {
+                                  if (onUpdateStock) onUpdateStock(item.id, editingStockValue);
+                                  setEditingStockId(null);
+                                }}
+                              >
+                                Salvar
+                              </button>
+                            </div>
+                          ) : (
+                            <button 
+                              className="btn-secondary" 
+                              style={{ padding: "4px 10px", fontSize: "11px", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                              onClick={() => {
+                                setEditingStockId(item.id);
+                                setEditingStockValue(item.stockMinimo + 5);
+                              }}
+                            >
+                              <Edit3 size={12} /> Corrigir Estoque
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px" }}>
+                <button className="btn-primary" onClick={() => { setActiveModal(null); onNavigateToTab("warehouse"); }}>
+                  Ir para Almoxarifado WMS
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

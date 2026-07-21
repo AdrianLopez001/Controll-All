@@ -2,12 +2,9 @@ import React, { useState, useEffect } from "react";
 import { 
   LayoutDashboard, Briefcase, Archive, Users, LogOut, 
   Building2, DollarSign, Truck, Bot, Shield, FileText, CheckSquare, Calendar,
-  Sun, Moon, Bell, ClipboardCheck, Search, Settings, ChevronDown, Plus, Eye,
-  AlertTriangle
+  Sun, Moon, Bell, ClipboardCheck, Search, Settings, ChevronDown, Plus, Eye
 } from "lucide-react";
 import "./Dashboard.css";
-import "./Mobile.css";
-import logoImg from "./assets/logo.png";
 
 // Import our custom subcomponents
 import Overview from "./components/Overview";
@@ -23,8 +20,6 @@ import Auditoria from "./components/Auditoria";
 import Orcamentos from "./components/Orcamentos";
 import OrdensServico from "./components/OrdensServico";
 import Agenda from "./components/Agenda";
-import TasksModule from "./components/TasksModule";
-import Notifications from "./components/Notifications";
 
 // Import shared types
 import type { 
@@ -608,25 +603,16 @@ const INITIAL_INVOICES: InvoiceLog[] = [
 ];
 
 const INITIAL_AUDIT_LOGS: AuditoriaLog[] = [
-  { id: "log-1", usuario: "Adrian (Coordenador)", acao: "Criação de Evento", detalhes: "Adicionado estande Heineken - Feira APAS 2026", date: "2026-07-15", hora: "10:15:30", ip: "192.168.1.45" },
-  { id: "log-2", usuario: "Adrian (Coordenador)", acao: "Escala de Equipe", detalhes: "José Alves e Carlos Henrique escalados no Estande Nestlé", date: "2026-07-15", hora: "11:22:10", ip: "192.168.1.45" },
+  { id: "log-1", usuario: "JCEventos (Coordenador)", acao: "Criação de Evento", detalhes: "Adicionado estande Heineken - Feira APAS 2026", date: "2026-07-15", hora: "10:15:30", ip: "192.168.1.45" },
+  { id: "log-2", usuario: "JCEventos (Coordenador)", acao: "Escala de Equipe", detalhes: "José Alves e Carlos Henrique escalados no Estande Nestlé", date: "2026-07-15", hora: "11:22:10", ip: "192.168.1.45" },
   { id: "log-3", usuario: "Almoxarife", acao: "Lançamento de Compra", detalhes: "Registrada NF-8924 de MDF com atualização de inventário", date: "2026-07-15", hora: "13:05:44", ip: "192.168.1.12" }
 ];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<
-    "overview" | "crm" | "orcamentos" | "os" | "kanban" | "agenda" | "tarefas" | "warehouse" | "employees" | "financial" | "logistics" | "auditoria" | "notifications"
+    "overview" | "crm" | "orcamentos" | "os" | "kanban" | "agenda" | "warehouse" | "employees" | "financial" | "logistics" | "auditoria"
   >("overview");
-  const [showMobileMoreMenu, setShowMobileMoreMenu] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
-
-  // Detect mobile screen — updates on resize so layout switches cleanly
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [globalSearch, setGlobalSearch] = useState("");
@@ -674,29 +660,41 @@ export default function App() {
     logistics: true,
     financial: true,
     employees: true,
-    auditoria: true,
-    notifications: true
+    auditoria: true
   });
   
-  // App Global State
-  const [events, setEvents] = useState<Project[]>(INITIAL_EVENTS);
-  const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
-  const [warehouseItems, setWarehouseItems] = useState<WarehouseItem[]>(INITIAL_WAREHOUSE);
-  const [invoiceLogs, setInvoiceLogs] = useState<InvoiceLog[]>(INITIAL_INVOICES);
-  const [leads, setLeads] = useState<LeadCRM[]>(INITIAL_LEADS);
-  const [vehicles, setVehicles] = useState<VeiculoLogistica[]>(INITIAL_VEHICLES);
-  const [auditLogs, setAuditLogs] = useState<AuditoriaLog[]>(INITIAL_AUDIT_LOGS);
-  const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>({
-    admin: ["overview", "crm", "orcamentos", "os", "kanban", "agenda", "warehouse", "logistics", "financial", "employees", "auditoria", "notifications", "tarefas"],
-    comercial: ["overview", "crm", "orcamentos", "agenda", "notifications"],
-    estoque: ["overview", "warehouse", "logistics", "agenda", "notifications"],
-    operador: ["overview", "os", "kanban", "agenda", "notifications", "tarefas"]
-  });
+  // App Global State com Persistência em localStorage
+  const getStored = <T,>(key: string, fallback: T): T => {
+    try {
+      const item = localStorage.getItem(`controll_all_${key}`);
+      return item ? JSON.parse(item) : fallback;
+    } catch {
+      return fallback;
+    }
+  };
 
-  const [clientes, setClientes] = useState(INITIAL_CLIENTS);
-  const [fornecedores, setFornecedores] = useState(INITIAL_SUPPLIERS);
+  const [events, setEvents] = useState<Project[]>(() => getStored("events", INITIAL_EVENTS));
+  const [employees, setEmployees] = useState<Employee[]>(() => getStored("employees", INITIAL_EMPLOYEES));
+  const [warehouseItems, setWarehouseItems] = useState<WarehouseItem[]>(() => getStored("warehouse", INITIAL_WAREHOUSE));
+  const [invoiceLogs, setInvoiceLogs] = useState<InvoiceLog[]>(() => getStored("invoices", INITIAL_INVOICES));
+  const [leads, setLeads] = useState<LeadCRM[]>(() => getStored("leads", INITIAL_LEADS));
+  const [vehicles, setVehicles] = useState<VeiculoLogistica[]>(() => getStored("vehicles", INITIAL_VEHICLES));
+  const [auditLogs, setAuditLogs] = useState<AuditoriaLog[]>(() => getStored("audit", INITIAL_AUDIT_LOGS));
+
+  const [clientes, setClientes] = useState(() => getStored("clientes", INITIAL_CLIENTS));
+  const [fornecedores, setFornecedores] = useState(() => getStored("fornecedores", INITIAL_SUPPLIERS));
+
+  useEffect(() => { localStorage.setItem("controll_all_events", JSON.stringify(events)); }, [events]);
+  useEffect(() => { localStorage.setItem("controll_all_employees", JSON.stringify(employees)); }, [employees]);
+  useEffect(() => { localStorage.setItem("controll_all_warehouse", JSON.stringify(warehouseItems)); }, [warehouseItems]);
+  useEffect(() => { localStorage.setItem("controll_all_invoices", JSON.stringify(invoiceLogs)); }, [invoiceLogs]);
+  useEffect(() => { localStorage.setItem("controll_all_leads", JSON.stringify(leads)); }, [leads]);
+  useEffect(() => { localStorage.setItem("controll_all_vehicles", JSON.stringify(vehicles)); }, [vehicles]);
+  useEffect(() => { localStorage.setItem("controll_all_audit", JSON.stringify(auditLogs)); }, [auditLogs]);
+  useEffect(() => { localStorage.setItem("controll_all_clientes", JSON.stringify(clientes)); }, [clientes]);
+  useEffect(() => { localStorage.setItem("controll_all_fornecedores", JSON.stringify(fornecedores)); }, [fornecedores]);
   // Budgets State & Handlers
-  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([
+  const [orcamentos, setOrcamentos] = useState<Orcamento[]>(() => getStored("orcamentos", [
     {
       id: "orc-1",
       codigo: "PROP-2026-001",
@@ -720,7 +718,9 @@ export default function App() {
         { versao: 1, data: "2026-07-14", descricao: "Versão inicial criada e enviada ao cliente." }
       ]
     }
-  ]);
+  ]));
+
+  useEffect(() => { localStorage.setItem("controll_all_orcamentos", JSON.stringify(orcamentos)); }, [orcamentos]);
 
   const handleAddOrcamento = (newOrc: Omit<Orcamento, "id" | "codigo" | "dataCriacao" | "revisoes" | "emailEnviado">) => {
     const orc: Orcamento = {
@@ -798,8 +798,9 @@ export default function App() {
     };
 
     setEvents((prev) => [newProj, ...prev]);
-    registerAudit("Conversão Proposta", `Orçamento ${orc.codigo} convertido com sucesso na OS ${newProj.codigo}.`);
-    alert(`Orçamento convertido com sucesso! Nova Ordem de Serviço criada: ${newProj.codigo}`);
+    setOrcamentos((prev) => prev.map((o) => o.id === orc.id ? { ...o, status: "arquivado" } : o));
+    registerAudit("Conversão Proposta", `Orçamento ${orc.codigo} convertido com sucesso na OS ${newProj.codigo} e movido para Arquivados.`);
+    alert(`Orçamento convertido com sucesso! Nova Ordem de Serviço criada: ${newProj.codigo}. O orçamento foi movido para Arquivados.`);
   };
 
   // Selected event details modal controller
@@ -822,8 +823,16 @@ export default function App() {
   const hasAccess = (tab: string) => {
     if (!activeModules[tab]) return false;
     if (userRole === "admin") return true;
-    const allowed = rolePermissions[userRole] || [];
-    return allowed.includes(tab);
+    if (userRole === "comercial") {
+      return ["overview", "crm", "orcamentos", "agenda"].includes(tab);
+    }
+    if (userRole === "estoque") {
+      return ["overview", "warehouse", "logistics", "agenda"].includes(tab);
+    }
+    if (userRole === "operador") {
+      return ["overview", "os", "kanban", "agenda"].includes(tab);
+    }
+    return false;
   };
 
   // Add Event
@@ -1095,6 +1104,27 @@ export default function App() {
     registerAudit("Atualização Evento", `Dossiê operacional de "${updatedEvent.name}" alterado`);
   };
 
+  const deleteEvent = (id: string) => {
+    const evt = events.find(e => e.id === id);
+    setEvents((prev) => prev.filter(e => e.id !== id));
+    registerAudit("Exclusão de Evento", `Evento "${evt?.name}" excluído definitivamente.`);
+  };
+
+  const addWarehouseItem = (newItem: Omit<WarehouseItem, "id">) => {
+    const item: WarehouseItem = {
+      ...newItem,
+      id: `item-${Date.now()}`
+    };
+    setWarehouseItems((prev) => [item, ...prev]);
+    registerAudit("Novo Item Estoque", `Item "${newItem.name}" adicionado ao WMS.`);
+  };
+
+  const deleteWarehouseItem = (id: string) => {
+    const item = warehouseItems.find(i => i.id === id);
+    setWarehouseItems((prev) => prev.filter(i => i.id !== id));
+    registerAudit("Exclusão Item Estoque", `Item "${item?.name}" excluído do WMS.`);
+  };
+
   // ── Calculations for Overview KPIs ──
   const scheduledCount = events.reduce((acc, curr) => acc + curr.assignedEmployees.length, 0);
   const lowStockCount = warehouseItems.filter(item => item.stock <= item.stockMinimo).length;
@@ -1102,91 +1132,170 @@ export default function App() {
     .filter(e => e.phase !== "post")
     .reduce((acc, curr) => acc + curr.docs.filter(d => d.status === "pending").length, 0);
 
+  // Password recovery states
+  const [showPasswordRecovery, setShowPasswordRecovery] = useState(false);
+  const [recoveryCpf, setRecoveryCpf] = useState("");
+  const [recoveryDob, setRecoveryDob] = useState("");
+  const [recoveryStep, setRecoveryStep] = useState<"validate" | "reset">("validate");
+  const [newPassword, setNewPassword] = useState("");
+  const [loginEmail, setLoginEmail] = useState("adrian@jceventosrn.com.br");
+  const [financialSubTab, setFinancialSubTab] = useState<string | undefined>(undefined);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loginEmail.includes("comercial")) setUserRole("comercial");
+    else if (loginEmail.includes("estoque") || loginEmail.includes("almoxarifado")) setUserRole("estoque");
+    else if (loginEmail.includes("operador")) setUserRole("operador");
+    else setUserRole("admin");
+
+    setIsLoggedIn(true);
+    registerAudit("Login de Usuário", `Login efetuado no sistema via portal JC Eventos como ${userRole}`);
+  };
+
+  const handleValidateRecovery = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!recoveryCpf || !recoveryDob) {
+      alert("Por favor, preencha o CPF e a Data de Nascimento.");
+      return;
+    }
+    setRecoveryStep("reset");
+  };
+
+  const handleResetPasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword) return;
+    alert("Senha redefinida com sucesso! Você já pode realizar o login com sua nova senha.");
+    setShowPasswordRecovery(false);
+    setRecoveryStep("validate");
+    setRecoveryCpf("");
+    setRecoveryDob("");
+    setNewPassword("");
+  };
+
+  const navigateToTab = (tab: string, subTab?: string) => {
+    setActiveTab(tab as any);
+    if (subTab) setFinancialSubTab(subTab);
+  };
+
   if (!isLoggedIn) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", backgroundColor: "var(--bg-main)", fontFamily: "var(--font)", padding: "20px", position: "relative" }}>
-        {/* Floating Theme Switcher on Login Screen */}
-        <button 
-          type="button" 
-          onClick={toggleTheme} 
-          title={theme === "light" ? "Mudar para Modo Escuro" : "Mudar para Modo Claro"}
-          style={{
-            position: "absolute",
-            top: "24px",
-            right: "24px",
-            backgroundColor: "var(--bg-card)",
-            border: "1px solid var(--border)",
-            borderRadius: "50%",
-            width: "42px",
-            height: "42px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            boxShadow: "var(--shadow-md)",
-            color: "var(--text-primary)",
-            transition: "var(--transition)"
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-card-hover)")}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-card)")}
-        >
-          {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
-        </button>
-
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", backgroundColor: "var(--bg-main)", fontFamily: "var(--font)", padding: "20px" }}>
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "40px", width: "100%", maxWidth: "420px", boxShadow: "var(--shadow-lg)", textAlign: "center", display: "flex", flexDirection: "column", gap: "24px" }}>
           
           {/* Logo JC Eventos */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
-            <div style={{ backgroundColor: "#144580", padding: "12px 24px", borderRadius: "12px", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-              <img src={logoImg} alt="JC Eventos" style={{ height: "35px", objectFit: "contain" }} />
-            </div>
-            <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Controll-All ERP Portal</span>
+            <svg width="60" height="60" viewBox="0 0 100 100" fill="none">
+              <rect width="100" height="100" rx="22" fill="var(--accent)" />
+              <path d="M35 30H52V60C52 66 47 70 40 70" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M72 35H58C52 35 48 40 48 48C48 56 52 61 58 61H72" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="80" cy="72" r="8" fill="var(--accent-secondary)" />
+            </svg>
+            <h1 style={{ fontSize: "22px", fontWeight: "800", letterSpacing: "1px", color: "var(--accent)", margin: 0 }}>JC EVENTOS</h1>
+            <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Portal de Operações ERP</span>
           </div>
 
-          {/* Form simulation */}
-          <form onSubmit={(e) => { e.preventDefault(); setIsLoggedIn(true); registerAudit("Login de Usuário", "Login efetuado no sistema via portal JC Eventos"); }} style={{ display: "flex", flexDirection: "column", gap: "16px", textAlign: "left" }}>
-            <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "6px", color: "var(--text-secondary)" }}>Usuário / E-mail</label>
-              <input 
-                type="text" 
-                defaultValue="adrian@jceventosrn.com.br" 
-                required 
-                style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px", outline: "none", backgroundColor: "var(--bg-main)", color: "var(--text-primary)" }}
-              />
-            </div>
-            
-            <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "6px", color: "var(--text-secondary)" }}>Senha de Acesso</label>
-              <input 
-                type="password" 
-                defaultValue="••••••••" 
-                required 
-                style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px", outline: "none", backgroundColor: "var(--bg-main)", color: "var(--text-primary)" }}
-              />
-            </div>
+          {!showPasswordRecovery ? (
+            /* Form de Login sem perfil operacional manual */
+            <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px", textAlign: "left" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "6px", color: "var(--text-secondary)" }}>Usuário / E-mail</label>
+                <input 
+                  type="text" 
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  required 
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px", outline: "none", backgroundColor: "var(--bg-main)", color: "var(--text-primary)" }}
+                />
+              </div>
+              
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "6px", color: "var(--text-secondary)" }}>Senha de Acesso</label>
+                <input 
+                  type="password" 
+                  defaultValue="••••••••" 
+                  required 
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px", outline: "none", backgroundColor: "var(--bg-main)", color: "var(--text-primary)" }}
+                />
+              </div>
 
-            <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "6px", color: "var(--text-secondary)" }}>Perfil Operacional</label>
-              <select 
-                value={userRole} 
-                onChange={(e) => setUserRole(e.target.value as any)}
-                style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px", outline: "none", backgroundColor: "var(--bg-main)", color: "var(--text-primary)", fontWeight: "600", cursor: "pointer" }}
+              <div style={{ textAlign: "right", marginTop: "-6px" }}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowPasswordRecovery(true)} 
+                  style={{ background: "none", border: "none", color: "var(--accent)", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
+
+              <button 
+                type="submit" 
+                className="btn-primary" 
+                style={{ width: "100%", padding: "12px", borderRadius: "8px", fontSize: "14px", fontWeight: "700", display: "flex", justifyContent: "center", marginTop: "8px" }}
               >
-                <option value="admin">Administrador Geral</option>
-                <option value="comercial">Comercial / Vendas</option>
-                <option value="estoque">Almoxarifado / Estoque</option>
-                <option value="operador">Operacional (OS/Montagem)</option>
-              </select>
-            </div>
+                Entrar no Sistema
+              </button>
+            </form>
+          ) : (
+            /* Modal / Tela de Recuperação de Senha */
+            <div style={{ textAlign: "left" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "700", color: "var(--accent)", marginBottom: "8px" }}>Recuperação de Senha</h3>
+              <p style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "16px" }}>
+                Informe seu CPF e Data de Nascimento cadastrados para validar o acesso e redefinir sua senha.
+              </p>
 
-            <button 
-              type="submit" 
-              className="btn-primary" 
-              style={{ width: "100%", padding: "12px", borderRadius: "8px", fontSize: "14px", fontWeight: "700", display: "flex", justifyContent: "center", marginTop: "8px" }}
-            >
-              Entrar no Sistema
-            </button>
-          </form>
+              {recoveryStep === "validate" ? (
+                <form onSubmit={handleValidateRecovery} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>CPF Registrado</label>
+                    <input 
+                      type="text" 
+                      placeholder="000.000.000-00" 
+                      value={recoveryCpf} 
+                      onChange={(e) => setRecoveryCpf(e.target.value)} 
+                      required 
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>Data de Nascimento</label>
+                    <input 
+                      type="date" 
+                      value={recoveryDob} 
+                      onChange={(e) => setRecoveryDob(e.target.value)} 
+                      required 
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }}
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginTop: "12px" }}>
+                    <button type="button" className="btn-secondary" onClick={() => setShowPasswordRecovery(false)} style={{ flex: 1 }}>Cancelar</button>
+                    <button type="submit" className="btn-primary" style={{ flex: 1 }}>Validar Acesso</button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleResetPasswordSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>Nova Senha</label>
+                    <input 
+                      type="password" 
+                      placeholder="Digite a nova senha..." 
+                      value={newPassword} 
+                      onChange={(e) => setNewPassword(e.target.value)} 
+                      required 
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }}
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginTop: "12px" }}>
+                    <button type="button" className="btn-secondary" onClick={() => setShowPasswordRecovery(false)} style={{ flex: 1 }}>Cancelar</button>
+                    <button type="submit" className="btn-primary" style={{ flex: 1 }}>Redefinir Senha</button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
 
           {/* Footer details */}
           <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "10px" }}>
@@ -1199,13 +1308,18 @@ export default function App() {
   }
 
   return (
-    <div className="layout-wrapper" data-mobile={isMobile ? "true" : undefined}>
+    <div className="layout-wrapper">
       {/* Top Navigation Bar */}
       <header className="top-nav">
         <div className="top-nav-left">
           <a href="#" className="top-nav-logo" onClick={(e) => { e.preventDefault(); setActiveTab("overview"); }} style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-            <img src={logoImg} alt="JC Eventos" style={{ height: "26px", objectFit: "contain", marginRight: "8px" }} />
-            <span style={{ fontSize: "10px", fontWeight: "400", color: "rgba(255,255,255,0.45)", marginLeft: "8px", borderLeft: "1px solid rgba(255,255,255,0.2)", paddingLeft: "8px", letterSpacing: "0.5px" }}>Controll-All</span>
+            <svg width="26" height="26" viewBox="0 0 100 100" fill="none" style={{ marginRight: "8px" }}>
+              <rect width="100" height="100" rx="22" fill="rgba(255,255,255,0.15)" />
+              <path d="M35 30H52V60C52 66 47 70 40 70" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M72 35H58C52 35 48 40 48 48C48 56 52 61 58 61H72" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="80" cy="72" r="8" fill="#C95D46" />
+            </svg>
+            <span style={{ fontWeight: "800", letterSpacing: "0.5px", color: "#ffffff" }}>JC EVENTOS</span>
           </a>
 
           {/* Flat Direct Navigation — 7 items, no nested dropdowns */}
@@ -1213,18 +1327,18 @@ export default function App() {
             <button
               className={`menu-group-btn ${activeTab === "overview" ? "active" : ""}`}
               onClick={() => setActiveTab("overview")}
-              title="Dashboard / Painel Geral"
+              title="Dashboard"
             >
-              <LayoutDashboard size={14} /> <span className="nav-text">Dashboard</span>
+              <LayoutDashboard size={14} /> Dashboard
             </button>
 
             {hasAccess("kanban") && (
               <button
                 className={`menu-group-btn ${activeTab === "kanban" ? "active" : ""}`}
                 onClick={() => setActiveTab("kanban")}
-                title="Quadro de Montagem & Projetos de Estandes"
+                title="Projetos / Kanban de Stands"
               >
-                <Briefcase size={14} /> <span className="nav-text">Montagem</span>
+                <Briefcase size={14} /> Projetos
               </button>
             )}
 
@@ -1232,9 +1346,9 @@ export default function App() {
               <button
                 className={`menu-group-btn ${activeTab === "crm" ? "active" : ""}`}
                 onClick={() => setActiveTab("crm")}
-                title="CRM / Gestão de Oportunidades & Clientes"
+                title="CRM & Clientes"
               >
-                <Building2 size={14} /> <span className="nav-text">CRM</span>
+                <Building2 size={14} /> CRM
               </button>
             )}
 
@@ -1242,9 +1356,9 @@ export default function App() {
               <button
                 className={`menu-group-btn ${activeTab === "orcamentos" ? "active" : ""}`}
                 onClick={() => setActiveTab("orcamentos")}
-                title="Orçamentos & Propostas"
+                title="Propostas Comerciais"
               >
-                <FileText size={14} /> <span className="nav-text">Orçamentos</span>
+                <FileText size={14} /> Propostas
               </button>
             )}
 
@@ -1252,19 +1366,19 @@ export default function App() {
               <button
                 className={`menu-group-btn ${(activeTab === "os" || activeTab === "agenda") ? "active" : ""}`}
                 onClick={() => setActiveTab("os")}
-                title="Ordens de Serviço (OS) & Vistorias"
+                title="Ordens de Serviço"
               >
-                <CheckSquare size={14} /> <span className="nav-text">Ordens (OS)</span>
+                <CheckSquare size={14} /> OS
               </button>
             )}
 
             {hasAccess("warehouse") && (
               <button
-                className={`menu-group-btn ${activeTab === "warehouse" ? "active" : ""}`}
+                className={`menu-group-btn ${(activeTab === "warehouse" || activeTab === "logistics") ? "active" : ""}`}
                 onClick={() => setActiveTab("warehouse")}
-                title="Almoxarifado & Estoque WMS"
+                title="Depósito & WMS"
               >
-                <Archive size={14} /> <span className="nav-text">Estoque</span>
+                <Archive size={14} /> Depósito
               </button>
             )}
 
@@ -1272,9 +1386,9 @@ export default function App() {
               <button
                 className={`menu-group-btn ${activeTab === "financial" ? "active" : ""}`}
                 onClick={() => setActiveTab("financial")}
-                title="Financeiro & Custos"
+                title="Financeiro"
               >
-                <DollarSign size={14} /> <span className="nav-text">Financeiro</span>
+                <DollarSign size={14} /> Financeiro
               </button>
             )}
 
@@ -1282,9 +1396,9 @@ export default function App() {
               <button
                 className={`menu-group-btn ${activeTab === "employees" ? "active" : ""}`}
                 onClick={() => setActiveTab("employees")}
-                title="Equipe, Escalas & Credenciamento"
+                title="Equipe & RH"
               >
-                <Users size={14} /> <span className="nav-text">Equipe</span>
+                <Users size={14} /> Equipe
               </button>
             )}
 
@@ -1292,9 +1406,9 @@ export default function App() {
               <button
                 className={`menu-group-btn ${activeTab === "logistics" ? "active" : ""}`}
                 onClick={() => setActiveTab("logistics")}
-                title="Logística, Frota & Viagens"
+                title="Logística & Viagens"
               >
-                <Truck size={14} /> <span className="nav-text">Logística</span>
+                <Truck size={14} /> Logística
               </button>
             )}
           </nav>
@@ -1303,19 +1417,79 @@ export default function App() {
         {/* Right Area */}
         <div className="top-nav-right">
           {/* Global search */}
-          <form onSubmit={handleGlobalSearch} className="top-nav-search">
-            <Search className="top-nav-search-icon" size={14} />
-            <input 
-              type="text" 
-              placeholder="Pesquisa global..." 
-              value={globalSearch} 
-              onChange={(e) => setGlobalSearch(e.target.value)} 
-            />
-          </form>
+          {/* Global search com Autocomplete */}
+          <div className="top-nav-search" style={{ position: "relative" }}>
+            <form onSubmit={handleGlobalSearch}>
+              <Search className="top-nav-search-icon" size={14} />
+              <input 
+                type="text" 
+                placeholder="Pesquisa global autocomplete..." 
+                value={globalSearch} 
+                onChange={(e) => setGlobalSearch(e.target.value)} 
+              />
+            </form>
+
+            {globalSearch.trim().length > 0 && (
+              <div style={{
+                position: "absolute", top: "100%", right: 0, width: "320px",
+                backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
+                borderRadius: "12px", boxShadow: "var(--shadow-lg)", zIndex: 1100,
+                maxHeight: "320px", overflowY: "auto", marginTop: "6px", padding: "6px"
+              }}>
+                {(() => {
+                  const term = globalSearch.trim().toLowerCase();
+                  const matches: { name: string; tab: string; category: string; event?: Project }[] = [
+                    ...[
+                      { name: "Dashboard Executivo", tab: "overview", category: "Módulo" },
+                      { name: "Projetos (Kanban)", tab: "kanban", category: "Módulo" },
+                      { name: "CRM & Oportunidades", tab: "crm", category: "Módulo" },
+                      { name: "Propostas Comerciais", tab: "orcamentos", category: "Módulo" },
+                      { name: "Ordens de Serviço", tab: "os", category: "Módulo" },
+                      { name: "Depósito & WMS", tab: "warehouse", category: "Módulo" },
+                      { name: "Financeiro & DRE", tab: "financial", category: "Módulo" },
+                      { name: "Equipe & RH", tab: "employees", category: "Módulo" },
+                      { name: "Logística & Frota", tab: "logistics", category: "Módulo" },
+                    ].filter(m => m.name.toLowerCase().includes(term)),
+                    ...events.filter(e => e.name.toLowerCase().includes(term) || e.client.toLowerCase().includes(term)).map(e => ({ name: e.name, tab: "kanban", event: e, category: "Projeto" })),
+                    ...leads.filter(l => l.empresa.toLowerCase().includes(term) || l.contato.toLowerCase().includes(term)).map(l => ({ name: `${l.empresa} (${l.contato})`, tab: "crm", category: "Lead CRM" })),
+                    ...warehouseItems.filter(i => i.name.toLowerCase().includes(term) || i.marca?.toLowerCase().includes(term)).map(i => ({ name: i.name, tab: "warehouse", category: "Estoque WMS" })),
+                    ...employees.filter(emp => emp.name.toLowerCase().includes(term)).map(emp => ({ name: emp.name, tab: "employees", category: "Colaborador" }))
+                  ];
+
+                  if (matches.length === 0) {
+                    return (
+                      <div style={{ padding: "12px", fontSize: "12px", color: "var(--text-muted)", textAlign: "center" }}>
+                        Nenhum registro correspondente.
+                      </div>
+                    );
+                  }
+
+                  return matches.slice(0, 10).map((match, idx) => (
+                    <div 
+                      key={idx}
+                      onClick={() => {
+                        if (match.event) setSelectedEvent(match.event);
+                        setActiveTab(match.tab as any);
+                        setGlobalSearch("");
+                      }}
+                      style={{
+                        padding: "8px 12px", borderRadius: "8px", cursor: "pointer",
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        fontSize: "12px", borderBottom: "1px solid var(--border)"
+                      }}
+                    >
+                      <span style={{ fontWeight: "600", color: "var(--text-primary)" }}>{match.name}</span>
+                      <span style={{ fontSize: "10px", padding: "2px 6px", borderRadius: "4px", backgroundColor: "var(--accent-glow)", color: "var(--accent)", fontWeight: "600" }}>{match.category}</span>
+                    </div>
+                  ));
+                })()}
+              </div>
+            )}
+          </div>
 
           {/* Theme switcher */}
           <button 
-            className="top-nav-icon-btn theme-toggle-btn" 
+            className="top-nav-icon-btn" 
             onClick={toggleTheme} 
             title={theme === "light" ? "Mudar para Modo Escuro" : "Mudar para Modo Claro"}
           >
@@ -1333,8 +1507,12 @@ export default function App() {
 
           {/* Quick task checklist access */}
           <button 
-            className={`top-nav-icon-btn ${activeTab === "tarefas" ? "active" : ""}`} 
-            onClick={() => setActiveTab("tarefas")}
+            className="top-nav-icon-btn" 
+            onClick={() => {
+              const pendingChecklist = events.flatMap(evt => evt.checklist.filter(c => !c.done).map(c => `${evt.name}: ${c.text}`));
+              alert(`Tarefas Operacionais Pendentes (${pendingChecklist.length}):\n\n` + 
+                (pendingChecklist.length > 0 ? pendingChecklist.slice(0, 8).map((t, idx) => `${idx + 1}. ${t}`).join("\n") + (pendingChecklist.length > 8 ? "\n...e mais." : "") : "Nenhuma tarefa pendente!"));
+            }}
             title="Tarefas Pendentes"
           >
             <ClipboardCheck size={18} />
@@ -1347,8 +1525,14 @@ export default function App() {
 
           {/* Notifications */}
           <button 
-            className={`top-nav-icon-btn ${activeTab === "notifications" ? "active" : ""}`} 
-            onClick={() => setActiveTab("notifications")}
+            className="top-nav-icon-btn" 
+            onClick={() => {
+              const notifications = [];
+              if (lowStockCount > 0) notifications.push(`⚠️ Estoque Crítico: ${lowStockCount} itens abaixo do mínimo.`);
+              if (pendingDocsCount > 0) notifications.push(`📄 Documentação: ${pendingDocsCount} documentos de projetos pendentes.`);
+              notifications.push("📅 Agenda: Estande Feicon 2026 inicia montagem em breve.");
+              alert(`Painel de Notificações:\n\n` + notifications.map((n, idx) => `${idx + 1}. ${n}`).join("\n"));
+            }}
             title="Notificações"
           >
             <Bell size={18} />
@@ -1372,10 +1556,10 @@ export default function App() {
           <div className="menu-group">
             <div className="top-nav-user">
               <div className="top-nav-avatar">
-                {userRole.substring(0, 2)}
+                JC
               </div>
               <div className="top-nav-user-info">
-                <span className="top-nav-username">Adrian</span>
+                <span className="top-nav-username">JCEventos</span>
                 <span className="top-nav-userrole">{userRole}</span>
               </div>
               <ChevronDown size={10} style={{ marginLeft: "4px", color: "var(--text-muted)" }} />
@@ -1413,19 +1597,17 @@ export default function App() {
         {/* Header */}
         <header className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "none", padding: "20px 24px 0 24px", background: "none", height: "auto" }}>
           <h2 className="page-title" style={{ fontSize: "20px", fontWeight: "700" }}>
-            {activeTab === "overview" && "Painel Executivo (JC Eventos)"}
-            {activeTab === "crm" && "CRM & Oportunidades de Clientes"}
-            {activeTab === "orcamentos" && "Orçamentos, Propostas & Negociações"}
-            {activeTab === "os" && "Ordens de Serviço (OS) & Inspeção"}
-            {activeTab === "kanban" && "Quadro de Montagem & Projetos de Estandes"}
-            {activeTab === "agenda" && "Calendário Integrado & Escalas"}
-            {activeTab === "tarefas" && "Controle de Tarefas Operacionais (Checklist)"}
-            {activeTab === "warehouse" && "Almoxarifado & Controle de Estoque WMS"}
-            {activeTab === "employees" && "Equipe, RH & Certificações NR"}
-            {activeTab === "financial" && "Financeiro, Fluxo de Caixa & Custos"}
-            {activeTab === "logistics" && "Logística, Frota & Viagens"}
-            {activeTab === "auditoria" && "Segurança, Trilha de Auditoria & Configurações"}
-            {activeTab === "notifications" && "Central de Notificações, Alertas & Ações Rápidas"}
+            {activeTab === "overview" && "Painel Executivo da JC Eventos"}
+            {activeTab === "crm" && "Gestão de Oportunidades & Leads"}
+            {activeTab === "orcamentos" && "Propostas Comerciais & Orçamentos"}
+            {activeTab === "os" && "Ordens de Serviço & Checklist Técnico"}
+            {activeTab === "kanban" && "Quadro Operacional de Montagem"}
+            {activeTab === "agenda" && "Calendário Integrado da JC"}
+            {activeTab === "warehouse" && "Depósito, Organização Física & WMS"}
+            {activeTab === "employees" && "Ficha de Equipe & Certificações NRs"}
+            {activeTab === "financial" && "Contabilidade, Caixa & Centro de Custos"}
+            {activeTab === "logistics" && "Coordenação de Frota, Voo & Hospedagem"}
+            {activeTab === "auditoria" && "Trilha de Segurança e Auditoria Geral"}
           </h2>
         </header>
 
@@ -1434,12 +1616,16 @@ export default function App() {
           {activeTab === "overview" && (
             <Overview 
               events={events}
+              employees={employees}
+              warehouseItems={warehouseItems}
               employeesCount={scheduledCount}
               lowStockItemsCount={lowStockCount}
               pendingDocsCount={pendingDocsCount}
               invoices={invoiceLogs}
-              onNavigateToTab={(tab) => setActiveTab(tab as any)}
+              onNavigateToTab={navigateToTab}
               onSelectEvent={(evt) => setSelectedEvent(evt)}
+              onUpdateStock={updateStock}
+              onUpdateEvent={updateEventDetails}
             />
           )}
 
@@ -1484,6 +1670,7 @@ export default function App() {
               onSelectEvent={(evt) => setSelectedEvent(evt)}
               onAddEvent={addEvent}
               onUpdateEventPhase={updateEventPhase}
+              onDeleteEvent={deleteEvent}
             />
           )}
 
@@ -1493,13 +1680,7 @@ export default function App() {
               employees={employees}
               invoices={invoiceLogs}
               leads={leads}
-            />
-          )}
-
-          {activeTab === "tarefas" && (
-            <TasksModule 
-              events={events}
-              onUpdateEvent={updateEventDetails}
+              onSelectEvent={(evt) => setSelectedEvent(evt)}
             />
           )}
 
@@ -1529,6 +1710,7 @@ export default function App() {
               onAddInvoice={addInvoice}
               onUpdateInvoice={updateInvoice}
               onUpdateEvent={updateEvent}
+              initialSubTab={financialSubTab}
             />
           )}
 
@@ -1542,27 +1724,9 @@ export default function App() {
             />
           )}
 
-
-          {activeTab === "notifications" && (
-            <Notifications 
-              warehouseItems={warehouseItems}
-              events={events}
-              employees={employees}
-              userRole={userRole}
-              onUpdateStock={updateStock}
-              onUpdateEvent={updateEventDetails}
-              onToggleDocStatus={toggleDocStatus}
-              onNavigateToTab={(tab) => setActiveTab(tab as any)}
-            />
-          )}
-
           {activeTab === "auditoria" && (
             <Auditoria 
               logs={auditLogs}
-              rolePermissions={rolePermissions}
-              setRolePermissions={setRolePermissions}
-              userRole={userRole}
-              setUserRole={setUserRole}
             />
           )}
         </section>
@@ -1577,6 +1741,7 @@ export default function App() {
           allEvents={events}
           onClose={() => setSelectedEvent(null)}
           onUpdateEvent={updateEventDetails}
+          onDeleteEvent={deleteEvent}
         />
       )}
 
@@ -1630,149 +1795,6 @@ export default function App() {
           </div>
         </div>
       </div>
-
-      {/* Bottom Navigation for Mobile Devices */}
-      <nav className="bottom-nav">
-        <button 
-          className={`bottom-nav-item ${activeTab === "overview" ? "active" : ""}`}
-          onClick={() => { setActiveTab("overview"); setShowMobileMoreMenu(false); }}
-        >
-          <LayoutDashboard size={20} />
-          <span>Início</span>
-        </button>
-        <button 
-          className={`bottom-nav-item ${activeTab === "kanban" ? "active" : ""}`}
-          onClick={() => { setActiveTab("kanban"); setShowMobileMoreMenu(false); }}
-        >
-          <Briefcase size={20} />
-          <span>Quadro</span>
-        </button>
-        <button 
-          className={`bottom-nav-item ${activeTab === "os" ? "active" : ""}`}
-          onClick={() => { setActiveTab("os"); setShowMobileMoreMenu(false); }}
-        >
-          <CheckSquare size={20} />
-          <span>OS</span>
-        </button>
-        <button 
-          className={`bottom-nav-item ${activeTab === "warehouse" ? "active" : ""}`}
-          onClick={() => { setActiveTab("warehouse"); setShowMobileMoreMenu(false); }}
-        >
-          <Archive size={20} />
-          <span>Estoque</span>
-        </button>
-        <button 
-          className={`bottom-nav-item ${activeTab === "employees" ? "active" : ""}`}
-          onClick={() => { setActiveTab("employees"); setShowMobileMoreMenu(false); }}
-        >
-          <Users size={20} />
-          <span>Equipe</span>
-        </button>
-        <button 
-          className={`bottom-nav-item ${["financial", "logistics", "crm", "orcamentos", "auditoria"].includes(activeTab) || showMobileMoreMenu ? "active" : ""}`}
-          onClick={() => setShowMobileMoreMenu(prev => !prev)}
-        >
-          <Settings size={20} />
-          <span>Mais</span>
-        </button>
-      </nav>
-
-      {/* Popover de Módulos adicionais para celular */}
-      {showMobileMoreMenu && (
-        <div 
-          style={{
-            position: "fixed",
-            bottom: "74px",
-            right: "12px",
-            backgroundColor: "var(--bg-card)",
-            border: "1px solid var(--border)",
-            borderRadius: "12px",
-            boxShadow: "var(--shadow-lg)",
-            padding: "8px",
-            zIndex: 1001,
-            display: "flex",
-            flexDirection: "column",
-            gap: "4px",
-            minWidth: "180px"
-          }}
-        >
-          <div style={{ padding: "6px 12px", fontSize: "10px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase", borderBottom: "1px solid var(--border)" }}>
-            Outros Módulos
-          </div>
-          {hasAccess("crm") && (
-            <button 
-              className={`dropdown-item ${activeTab === "crm" ? "active" : ""}`}
-              onClick={() => { setActiveTab("crm"); setShowMobileMoreMenu(false); }}
-              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
-            >
-              <Building2 size={14} /> CRM & Clientes
-            </button>
-          )}
-          {hasAccess("orcamentos") && (
-            <button 
-              className={`dropdown-item ${activeTab === "orcamentos" ? "active" : ""}`}
-              onClick={() => { setActiveTab("orcamentos"); setShowMobileMoreMenu(false); }}
-              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
-            >
-              <FileText size={14} /> Orçamentos & Propostas
-            </button>
-          )}
-          {hasAccess("financial") && (
-            <button 
-              className={`dropdown-item ${activeTab === "financial" ? "active" : ""}`}
-              onClick={() => { setActiveTab("financial"); setShowMobileMoreMenu(false); }}
-              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
-            >
-              <DollarSign size={14} /> Financeiro & Custos
-            </button>
-          )}
-          {hasAccess("logistics") && (
-            <button 
-              className={`dropdown-item ${activeTab === "logistics" ? "active" : ""}`}
-              onClick={() => { setActiveTab("logistics"); setShowMobileMoreMenu(false); }}
-              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
-            >
-              <Truck size={14} /> Logística & Frota
-            </button>
-          )}
-          {hasAccess("auditoria") && (
-            <button 
-              className={`dropdown-item ${activeTab === "auditoria" ? "active" : ""}`}
-              onClick={() => { setActiveTab("auditoria"); setShowMobileMoreMenu(false); }}
-              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
-            >
-              <Shield size={14} /> Auditoria & Configs
-            </button>
-          )}
-          {hasAccess("agenda") && (
-            <button 
-              className={`dropdown-item ${activeTab === "agenda" ? "active" : ""}`}
-              onClick={() => { setActiveTab("agenda"); setShowMobileMoreMenu(false); }}
-              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
-            >
-              <Calendar size={14} /> Agenda do Dia
-            </button>
-          )}
-          {hasAccess("tarefas") && (
-            <button 
-              className={`dropdown-item ${activeTab === "tarefas" ? "active" : ""}`}
-              onClick={() => { setActiveTab("tarefas"); setShowMobileMoreMenu(false); }}
-              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
-            >
-              <ClipboardCheck size={14} /> Checklist de Tarefas
-            </button>
-          )}
-          {hasAccess("notifications") && (
-            <button 
-              className={`dropdown-item ${activeTab === "notifications" ? "active" : ""}`}
-              onClick={() => { setActiveTab("notifications"); setShowMobileMoreMenu(false); }}
-              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", fontSize: "13px", background: "none", border: "none", width: "100%", textAlign: "left", color: "var(--text-primary)", cursor: "pointer", borderRadius: "6px" }}
-            >
-              <Bell size={14} /> Central de Notificações
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 }
