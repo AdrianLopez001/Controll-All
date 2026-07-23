@@ -2,10 +2,11 @@ import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { 
   FileText, CheckSquare, Plus, Trash2, Camera, ShieldAlert, 
-  User, MapPin, PenTool, CheckCircle, ChevronRight, X, Clock, HelpCircle, Printer
+  User, MapPin, PenTool, CheckCircle, ChevronRight, X, Clock, HelpCircle, Printer, FileDown
 } from "lucide-react";
 import type { Project, Employee, WarehouseItem, OSComentario, OSFoto, OSAssinaturas, AssignedEmployee } from "../types";
 import logoImg from "../assets/logo.png";
+import { exportElementToPDF } from "../utils/pdfGenerator";
 
 interface OrdensServicoProps {
   events: Project[];
@@ -212,32 +213,56 @@ export default function OrdensServico({
     });
   };
 
-  // Photo Upload Simulation
-  const handleSimulatePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
+
+  const handleDownloadOSPdf = async () => {
+    if (!selectedOS) return;
+    setIsPdfLoading(true);
+    try {
+      const fileName = `OrdemDeServico_${selectedOS.codigo}_${selectedOS.client.replace(/[^a-zA-Z0-9]/g, "_")}`;
+      await exportElementToPDF("print-os-dossier", fileName);
+    } catch (err) {
+      console.error("Erro ao gerar PDF da OS:", err);
+      window.print();
+    } finally {
+      setIsPdfLoading(false);
+    }
+  };
+
+  // Real Photo Upload Handler with FileReader (Base64)
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>, itemLabel?: string) => {
     if (!selectedOS || !e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
-    
-    const newPhoto: OSFoto = {
-      id: `photo-${Date.now()}`,
-      name: file.name,
-      url: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=200", // placeholder image for cenography
-      date: new Date().toLocaleString("pt-BR")
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      const photoName = itemLabel ? `[Checklist: ${itemLabel}] ${file.name}` : file.name;
+
+      const newPhoto: OSFoto = {
+        id: `photo-${Date.now()}`,
+        name: photoName,
+        url: dataUrl,
+        date: new Date().toLocaleString("pt-BR")
+      };
+
+      const log = {
+        id: `log-${Date.now()}`,
+        campo: "Fotos/Evidências",
+        antes: "-",
+        depois: `Anexada foto: "${photoName}"`,
+        date: new Date().toISOString().split("T")[0],
+        usuario: "JCEventos (Coordenador)"
+      };
+
+      onUpdateEvent({
+        ...selectedOS,
+        fotos: [...(selectedOS.fotos || []), newPhoto],
+        historicoAlteracoes: [...(selectedOS.historicoAlteracoes || []), log]
+      });
     };
 
-    const log = {
-      id: `log-${Date.now()}`,
-      campo: "Fotos/Evidências",
-      antes: "-",
-      depois: `Anexada foto: "${file.name}"`,
-      date: new Date().toISOString().split("T")[0],
-      usuario: "JCEventos (Coordenador)"
-    };
-
-    onUpdateEvent({
-      ...selectedOS,
-      fotos: [...(selectedOS.fotos || []), newPhoto],
-      historicoAlteracoes: [...(selectedOS.historicoAlteracoes || []), log]
-    });
+    reader.readAsDataURL(file);
   };
 
   const handleRemovePhoto = (photoId: string) => {
@@ -632,34 +657,77 @@ export default function OrdensServico({
             {/* TAB CONTENTS */}
             {activeTab === "checklist" && (
               <div>
-                <h4 className="text-sm font-semibold" style={{ marginBottom: "12px" }}>Checklist de Homologação da OS</h4>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                  <h4 className="text-sm font-semibold">Checklist de Homologação da OS</h4>
+                  <span className="text-xs text-muted">Anexe fotos comprovatórias para cada etapa da montagem</span>
+                </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {selectedOS.checklist.map((item) => (
-                    <div 
-                      key={item.id} 
-                      onClick={() => toggleChecklistItem(item.id)}
-                      style={{
-                        display: "flex", 
-                        alignItems: "center", 
-                        gap: "10px", 
-                        padding: "8px 12px", 
-                        borderRadius: "6px", 
-                        background: item.done ? "var(--success-glow)" : "rgba(0,0,0,0.01)", 
-                        border: "1px solid var(--border)",
-                        cursor: "pointer"
-                      }}
-                    >
-                      <input 
-                        type="checkbox" 
-                        checked={item.done} 
-                        onChange={() => {}} 
-                        style={{ cursor: "pointer" }}
-                      />
-                      <span style={{ fontSize: "13px", textDecoration: item.done ? "line-through" : "none", color: item.done ? "var(--success-text)" : "var(--text-primary)" }}>
-                        {item.text}
-                      </span>
-                    </div>
-                  ))}
+                  {selectedOS.checklist.map((item) => {
+                    const itemPhotos = (selectedOS.fotos || []).filter(f => f.name.includes(item.text));
+                    return (
+                      <div 
+                        key={item.id} 
+                        style={{
+                          display: "flex", 
+                          flexDirection: "column",
+                          gap: "8px", 
+                          padding: "10px 14px", 
+                          borderRadius: "8px", 
+                          background: item.done ? "var(--success-glow)" : "var(--bg-card)", 
+                          border: "1px solid var(--border)",
+                          boxShadow: "var(--shadow-sm)"
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+                          <div 
+                            onClick={() => toggleChecklistItem(item.id)}
+                            style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", flex: 1 }}
+                          >
+                            <input 
+                              type="checkbox" 
+                              checked={item.done} 
+                              onChange={() => {}} 
+                              style={{ cursor: "pointer", width: "16px", height: "16px" }}
+                            />
+                            <span style={{ fontSize: "13px", fontWeight: "600", textDecoration: item.done ? "line-through" : "none", color: item.done ? "var(--success-text)" : "var(--text-primary)" }}>
+                              {item.text}
+                            </span>
+                          </div>
+
+                          <label 
+                            style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: "600", padding: "4px 10px", borderRadius: "6px", backgroundColor: "var(--bg-main)", color: "var(--accent)", border: "1px solid var(--border)", flexShrink: 0 }}
+                            title="Anexar foto técnica para esta atividade"
+                          >
+                            <Camera size={13} /> Foto
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={(e) => handlePhotoUpload(e, item.text)}
+                              style={{ display: "none" }}
+                            />
+                          </label>
+                        </div>
+
+                        {itemPhotos.length > 0 && (
+                          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", paddingTop: "6px", borderTop: "1px dashed var(--border)" }}>
+                            {itemPhotos.map(photo => (
+                              <div key={photo.id} style={{ position: "relative", width: "64px", height: "64px", borderRadius: "6px", overflow: "hidden", border: "1px solid var(--border)" }}>
+                                <img src={photo.url} alt={photo.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); handleRemovePhoto(photo.id); }}
+                                  style={{ position: "absolute", top: "2px", right: "2px", background: "rgba(194, 47, 47, 0.9)", color: "white", border: "none", borderRadius: "50%", width: "16px", height: "16px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                  title="Excluir foto"
+                                >
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -889,7 +957,7 @@ export default function OrdensServico({
                     <input 
                       type="file" 
                       accept="image/*" 
-                      onChange={handleSimulatePhotoUpload} 
+                      onChange={handlePhotoUpload} 
                       style={{ display: "none" }}
                     />
                   </label>
@@ -1101,6 +1169,15 @@ export default function OrdensServico({
               <button 
                 type="button" 
                 className="btn-primary" 
+                onClick={handleDownloadOSPdf} 
+                disabled={isPdfLoading}
+                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", padding: "6px 12px" }}
+              >
+                <FileDown size={14} /> Download PDF da OS
+              </button>
+              <button 
+                type="button" 
+                className="btn-secondary" 
                 onClick={() => { window.print(); }} 
                 style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", padding: "6px 12px" }}
               >
@@ -1205,6 +1282,24 @@ export default function OrdensServico({
                   </tbody>
                 </table>
               </div>
+
+              {/* OS Photo Evidences Gallery in Print / PDF */}
+              {selectedOS.fotos && selectedOS.fotos.length > 0 && (
+                <div style={{ marginBottom: "20px" }}>
+                  <h4 style={{ fontSize: "12px", fontWeight: "700", borderBottom: "1px solid #144580", paddingBottom: "6px", color: "#144580", textTransform: "uppercase", marginBottom: "8px" }}>
+                    Evidências Fotográficas da Montagem ({selectedOS.fotos.length} fotos)
+                  </h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+                    {selectedOS.fotos.map((photo) => (
+                      <div key={photo.id} style={{ border: "1px solid #ddd", borderRadius: "6px", padding: "6px", backgroundColor: "#fafafa" }}>
+                        <img src={photo.url} alt={photo.name} style={{ width: "100%", height: "90px", objectFit: "cover", borderRadius: "4px" }} />
+                        <p style={{ margin: "4px 0 0 0", fontSize: "9px", fontWeight: "bold", color: "#333", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{photo.name}</p>
+                        <p style={{ margin: "2px 0 0 0", fontSize: "8px", color: "#666" }}>{photo.date}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* OS Checklist Status */}
               <div style={{ marginBottom: "20px" }}>

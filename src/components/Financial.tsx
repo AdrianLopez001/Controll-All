@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   DollarSign, TrendingUp, TrendingDown, Wallet, Calendar, Plus, Tag, 
   X, FileText, Upload, Trash2, Link
@@ -21,6 +21,10 @@ export default function Financial({
   const [activeSubTab, setActiveSubTab] = useState<"fluxo" | "pagar" | "receber" | "boletos" | "nfe" | "centro_custo" | "caixinha">(
     (initialSubTab as any) || "fluxo"
   );
+
+  useEffect(() => {
+    if (initialSubTab) setActiveSubTab(initialSubTab as any);
+  }, [initialSubTab]);
   const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.id || "");
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceLog | null>(null);

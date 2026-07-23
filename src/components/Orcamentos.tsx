@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import type { Orcamento, WarehouseItem, OrcamentoItemDetalhado } from "../types";
 import logoImg from "../assets/logo.png";
+import { exportElementToPDF } from "../utils/pdfGenerator";
 
 interface OrcamentosProps {
   orcamentos: Orcamento[];
@@ -43,6 +44,23 @@ export default function Orcamentos({
   // 3.1 Budget Model Switcher States
   const [tipo, setTipo] = useState<"simplificado" | "detalhado">("detalhado");
   const [nomeOrcamento, setNomeOrcamento] = useState("");
+
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    if (!selectedOrc) return;
+    setIsPdfLoading(true);
+    try {
+      const fileName = `Proposta_${selectedOrc.codigo}_${selectedOrc.cliente.replace(/[^a-zA-Z0-9]/g, "_")}`;
+      await exportElementToPDF("print-proposal-dossier", fileName);
+    } catch (err) {
+      console.error("Erro ao gerar PDF:", err);
+      window.print();
+    } finally {
+      setIsPdfLoading(false);
+    }
+  };
+
   const [descricaoSimplificada, setDescricaoSimplificada] = useState("");
   const [valorTotalSimplificado, setValorTotalSimplificado] = useState(0);
 
@@ -72,25 +90,6 @@ export default function Orcamentos({
   const [emailTo, setEmailTo] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
-
-  // PDF generation state
-  const [isPdfLoading, setIsPdfLoading] = useState(false);
-
-  // Real PDF generation using html2pdf.js
-  const handleDownloadPDF = async () => {
-    const element = document.getElementById("print-proposal-dossier");
-    if (!element || !selectedOrc) return;
-
-    setIsPdfLoading(true);
-    try {
-      window.print();
-    } catch (err) {
-      console.error("Erro ao gerar PDF:", err);
-      alert("Utilize a opção Salvar como PDF na janela de impressão do navegador.");
-    } finally {
-      setIsPdfLoading(false);
-    }
-  };
 
   const handleAddProduct = () => {
     const prod = warehouseItems.find(p => p.id === selectedProdId);

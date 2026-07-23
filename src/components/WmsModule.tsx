@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Archive, Search, QrCode, ClipboardList, MapPin, Plus, 
   Upload, FileText, Trash2, CheckCircle, TrendingUp, HelpCircle
@@ -11,15 +11,20 @@ interface WmsModuleProps {
   onUpdateWarehouseItem: (updated: WarehouseItem) => void;
   onAddWarehouseItem?: (newItem: Omit<WarehouseItem, "id">) => void;
   onDeleteWarehouseItem?: (id: string) => void;
+  initialSubTab?: "inventario" | "locacoes" | "entradas" | "ajustes";
 }
 
 export default function WmsModule({ 
-  items, onUpdateStock, onUpdateWarehouseItem, onAddWarehouseItem, onDeleteWarehouseItem 
+  items, onUpdateStock, onUpdateWarehouseItem, onAddWarehouseItem, onDeleteWarehouseItem, initialSubTab
 }: WmsModuleProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"all" | "locacao" | "ferramenta" | "venda">("all");
   const [selectedItemId, setSelectedItemId] = useState<string>(items[0]?.id || "");
-  const [activeSubTab, setActiveSubTab] = useState<"inventario" | "locacoes" | "entradas" | "ajustes">("inventario");
+  const [activeSubTab, setActiveSubTab] = useState<"inventario" | "locacoes" | "entradas" | "ajustes">(initialSubTab || "inventario");
+
+  useEffect(() => {
+    if (initialSubTab) setActiveSubTab(initialSubTab);
+  }, [initialSubTab]);
   const [isLocacaoModalOpen, setIsLocacaoModalOpen] = useState(false);
 
   // Modal States
