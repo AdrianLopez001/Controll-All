@@ -292,7 +292,7 @@ export interface InvoiceLog {
   // JC Eventos 2.0 financial transactions extensions
   tipo: "receita" | "despesa";
   categoria: string; // ex: "Madeira", "Passagem", "Diária"
-  formaPagamento: "Pix" | "Boleto" | "TED" | "Dinheiro";
+  formaPagamento: "Pix" | "Boleto" | "TED" | "Dinheiro" | "Transferência Bancária" | "Boleto Bancário" | "Cartão de Crédito" | string;
   status: "pago" | "pendente" | "atrasado";
   eventoId?: string; // Vínculo com projeto
   comprovante?: string; // Simulação de anexo
@@ -307,6 +307,96 @@ export interface InvoiceLog {
   recorrente?: boolean;
   recebimentoParcial?: number;
   inadimplente?: boolean;
+
+  // Modulo Financeiro Avancado
+  cartaoCreditoId?: string;
+  contaBancariaId?: string;
+  transferenciaOrigemId?: string;
+  transferenciaDestinoId?: string;
+  isTransferencia?: boolean;
+  diasEmAtraso?: number;
+  etiquetas?: string[];
+  centroCustoId?: string;
+  pagoA?: string;
+  recebidoDe?: string;
+  vencimento?: string;
+  responsavel?: string;
+}
+
+export interface BankAccount {
+  id: string;
+  nome: string;
+  tipo: string;
+  saldoInicial: number;
+  saldoAtual: number;
+  bancoLogo?: string;
+  ativa: boolean;
+}
+
+export interface CreditCard {
+  id: string;
+  nome: string;
+  bandeira: string;
+  limite: number;
+  faturaAtual: number;
+  diaFechamento: number;
+  diaVencimento: number;
+  ativo: boolean;
+}
+
+export interface CategoriaFinanceira {
+  id: string;
+  nome: string;
+  natureza: "receita" | "despesa";
+  grupoDRE?: string;
+  classificacao?: string;
+}
+
+export interface CentroCustoConfig {
+  id: string;
+  nome: string;
+  classificacao?: string;
+}
+
+export interface FormaPagamentoConfig {
+  id: string;
+  nome: string;
+}
+
+export interface ContatoEntidade {
+  id: string;
+  nome: string;
+  tipo?: "cliente" | "fornecedor" | "ambos";
+}
+
+export interface TagFinanceira {
+  id: string;
+  nome: string;
+  tipo: "receita" | "despesa";
+}
+
+export interface DREConfig {
+  id: string;
+  sped?: string;
+  nome: string;
+  natureza: "(+) Receitas" | "(-) Despesas" | "(=) Totalizador";
+}
+
+export interface OFXImportHistory {
+  id: string;
+  dataImportacao: string;
+  banco: string;
+  conta: string;
+  qtdLancamentos: number;
+  status: "conciliado" | "pendente" | "processado";
+  transacoes?: {
+    id: string;
+    data: string;
+    descricao: string;
+    valor: number;
+    tipo: "receita" | "despesa";
+    conciliado: boolean;
+  }[];
 }
 
 export interface AuditoriaLog {
@@ -413,6 +503,10 @@ export interface NotaFiscal {
   numero: string;
   serie?: string;
   cliente: string;
+  empresa?: string;
+  nossoNumero?: string;
+  pedido?: string;
+  tomador?: string;
   valor: number;
   dataEmissao: string;
   produtos: string[];

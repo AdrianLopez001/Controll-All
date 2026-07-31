@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { 
-  BarChart2, FileText, Download, Calendar, DollarSign, 
-  TrendingUp, Users, Archive, CheckSquare, ShieldCheck 
+  Download, DollarSign, 
+  TrendingUp, Archive, ShieldCheck 
 } from "lucide-react";
 import type { Project, Employee, WarehouseItem, InvoiceLog } from "../types";
 
@@ -23,7 +23,7 @@ export default function Relatorios({
 
   // 1. Calculations: Financial report
   const totalSales = events.reduce((sum, e) => sum + e.valorContratado, 0);
-  const totalReceived = events.reduce((sum, e) => sum + e.valorRecebido, 0);
+  const _totalReceived = events.reduce((sum, e) => sum + e.valorRecebido, 0);
   const totalCosts = invoices.filter(i => i.tipo === "despesa").reduce((sum, i) => sum + i.value, 0);
   const netMargin = totalSales > 0 ? ((totalSales - totalCosts) / totalSales) * 100 : 0;
 

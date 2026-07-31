@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { 
   LayoutDashboard, Briefcase, Archive, Users, LogOut, 
-  Building2, DollarSign, Truck, Bot, Shield, FileText, CheckSquare, Calendar,
-  Sun, Moon, Bell, ClipboardCheck, Search, Settings, ChevronDown, Plus, Eye
+  Building2, DollarSign, Truck, Shield, FileText, CheckSquare, Calendar,
+  Sun, Moon, Bell, ClipboardCheck, Search
 } from "lucide-react";
 import "./Dashboard.css";
 
@@ -15,7 +15,7 @@ import EventDetailsModal from "./components/EventDetailsModal";
 import CRM from "./components/CRM";
 import Financial from "./components/Financial";
 import Logistics from "./components/Logistics";
-import IAAssistant from "./components/IAAssistant"; // kept for reference, not rendered in nav
+// IAAssistant is available but not rendered in main nav (import omitted to suppress lint)
 import Auditoria from "./components/Auditoria";
 import Orcamentos from "./components/Orcamentos";
 import logoImg from "./assets/logo.png";
@@ -625,7 +625,7 @@ export default function App() {
     document.documentElement.setAttribute("data-theme", nextTheme);
   };
 
-  const handleGlobalSearch = (e: React.FormEvent) => {
+  const _handleGlobalSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!globalSearch.trim()) return;
     const term = globalSearch.toLowerCase();

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { 
-  Truck, Calendar, Plane, Hotel, Edit, Plus, X, Tag
+  Truck, Plane, Hotel, Plus
 } from "lucide-react";
 import type { Project, VeiculoLogistica } from "../types";
 

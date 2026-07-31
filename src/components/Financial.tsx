@@ -1,9 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   DollarSign, TrendingUp, TrendingDown, Wallet, Calendar, Plus, Tag, 
-  X, FileText, Upload, Trash2, Link
+  X, FileText, Upload, Trash2, Link as LinkIcon, ChevronRight, ChevronLeft, 
+  Search, Filter, ArrowUpRight, ArrowDownRight, RefreshCw, CreditCard as CreditCardIcon, 
+  Building2, PieChart, BarChart3, CheckCircle2, AlertTriangle, Download, Edit, 
+  Printer, Eye, Layers, Settings, Check, FileSpreadsheet, ArrowLeftRight, LayoutDashboard
 } from "lucide-react";
-import type { InvoiceLog, Project, NotaFiscal, BoletoAdministrativo } from "../types";
+import type { 
+  InvoiceLog, Project, NotaFiscal, BoletoAdministrativo,
+  BankAccount, CreditCard, CategoriaFinanceira, CentroCustoConfig,
+  FormaPagamentoConfig, ContatoEntidade, TagFinanceira, DREConfig,
+  OFXImportHistory
+} from "../types";
 
 interface FinancialProps {
   invoices: InvoiceLog[];
@@ -15,1700 +23,1872 @@ interface FinancialProps {
   initialSubTab?: string;
 }
 
+// Initial Mock Seed for Financial Configurations & Accounts
+const INITIAL_BANK_ACCOUNTS: BankAccount[] = [
+  { id: "b-1", nome: "077 - INTER - J C LOCAÇÕES", tipo: "Conta corrente", saldoInicial: 0, saldoAtual: 119417.64, bancoLogo: "inter", ativa: true },
+  { id: "b-2", nome: "APLICAÇÃO - JC EVENTOS (SANTANDER)", tipo: "Outros", saldoInicial: 0, saldoAtual: -5046.57, bancoLogo: "santander", ativa: true },
+  { id: "b-3", nome: "ITAÚ", tipo: "Conta corrente", saldoInicial: 0, saldoAtual: 66384.38, bancoLogo: "itau", ativa: true },
+  { id: "b-4", nome: "SANTANDER", tipo: "Conta corrente", saldoInicial: -53302.76, saldoAtual: 147608.98, bancoLogo: "santander", ativa: true }
+];
+
+const INITIAL_CREDIT_CARDS: CreditCard[] = [
+  { id: "card-1", nome: "CARTÃO DE CRÉDITO INTER", bandeira: "Mastercard", limite: 25000, faturaAtual: 0, diaFechamento: 15, diaVencimento: 25, ativo: true },
+  { id: "card-2", nome: "CC Santander 9267 (1748) vence 25", bandeira: "Mastercard", limite: 50000, faturaAtual: 2760.00, diaFechamento: 15, diaVencimento: 25, ativo: true },
+  { id: "card-3", nome: "CC Santander físico 0469 Jailson - vence 10", bandeira: "Mastercard", limite: 15000, faturaAtual: 0, diaFechamento: 1, diaVencimento: 10, ativo: true },
+  { id: "card-4", nome: "CC Santander físico 0549 - vence 25", bandeira: "Mastercard", limite: 30000, faturaAtual: 2437.78, diaFechamento: 15, diaVencimento: 25, ativo: true },
+  { id: "card-5", nome: "CC Santander físico 1836 Cristiane - vence 25", bandeira: "Mastercard", limite: 20000, faturaAtual: 0, diaFechamento: 15, diaVencimento: 25, ativo: true },
+  { id: "card-6", nome: "CC Santander físico 2910 - vence 10", bandeira: "Mastercard", limite: 35000, faturaAtual: 2474.53, diaFechamento: 1, diaVencimento: 10, ativo: true },
+  { id: "card-7", nome: "CC Santander físico 7805 Duda - vence 10", bandeira: "Mastercard", limite: 15000, faturaAtual: 0, diaFechamento: 1, diaVencimento: 10, ativo: true },
+  { id: "card-8", nome: "CC Santander físico 9769 - vence 25", bandeira: "Mastercard", limite: 25000, faturaAtual: 908.82, diaFechamento: 15, diaVencimento: 25, ativo: true },
+  { id: "card-9", nome: "CC Santander físico 0990 Thiago - vence 25", bandeira: "Mastercard", limite: 20000, faturaAtual: 0, diaFechamento: 15, diaVencimento: 25, ativo: true },
+  { id: "card-10", nome: "CC Santander físico 2540 Duda - vence 25", bandeira: "Mastercard", limite: 15000, faturaAtual: 0, diaFechamento: 15, diaVencimento: 25, ativo: true }
+];
+
+const INITIAL_CATEGORIES: CategoriaFinanceira[] = [
+  { id: "cat-1", nome: "Outras Receitas", natureza: "receita", grupoDRE: "-" },
+  { id: "cat-2", nome: "Adiantamento", natureza: "receita", grupoDRE: "Outras Receitas" },
+  { id: "cat-3", nome: "Alimentação", natureza: "despesa", grupoDRE: "Despesas Operacionais" },
+  { id: "cat-4", nome: "Boleto", natureza: "receita", grupoDRE: "Outras Receitas" },
+  { id: "cat-5", nome: "Cartão", natureza: "receita", grupoDRE: "Outras Receitas" },
+  { id: "cat-6", nome: "Cobrança", natureza: "receita", grupoDRE: "Receita Bruta" },
+  { id: "cat-7", nome: "Comissão", natureza: "receita", grupoDRE: "Outras Receitas" },
+  { id: "cat-8", nome: "Depósito", natureza: "receita", grupoDRE: "Outras Receitas" },
+  { id: "cat-9", nome: "Empréstimo", natureza: "receita", grupoDRE: "Outras Receitas" },
+  { id: "cat-10", nome: "Mensalidade", natureza: "receita", grupoDRE: "Outras Receitas" },
+  { id: "cat-11", nome: "Material | Madeira e afins", natureza: "despesa", grupoDRE: "Custos Operacionais" },
+  { id: "cat-12", nome: "Folha de Pagamento", natureza: "despesa", grupoDRE: "Despesas Operacionais" },
+  { id: "cat-13", nome: "Advocacia", natureza: "despesa", grupoDRE: "Despesas Operacionais" },
+  { id: "cat-14", nome: "Combustível | Caminhão", natureza: "despesa", grupoDRE: "Custos Operacionais" },
+  { id: "cat-15", nome: "HOSPEDAGEM", natureza: "despesa", grupoDRE: "Custos Operacionais" },
+  { id: "cat-16", nome: "Frete", natureza: "despesa", grupoDRE: "Custos Operacionais" },
+  { id: "cat-17", nome: "Rendimentos", natureza: "receita", grupoDRE: "Receitas Financeiras" }
+];
+
+const INITIAL_COST_CENTERS: CentroCustoConfig[] = [
+  { id: "cc-1", nome: "Contas de eventos passados", classificacao: "Geral" },
+  { id: "cc-2", nome: "Design de Stands", classificacao: "Projetos" },
+  { id: "cc-3", nome: "Despesas Prediais", classificacao: "Fixo" },
+  { id: "cc-4", nome: "Evento - Aquisição Material", classificacao: "Projetos" },
+  { id: "cc-5", nome: "Evento - Combustível", classificacao: "Logística" },
+  { id: "cc-6", nome: "Locações", classificacao: "Comercial" }
+];
+
+const INITIAL_PAYMENT_MODES: FormaPagamentoConfig[] = [
+  { id: "pm-1", nome: "PIX" },
+  { id: "pm-2", nome: "Cartão de Crédito" },
+  { id: "pm-3", nome: "Boleto Bancário" },
+  { id: "pm-4", nome: "Débito Automático" },
+  { id: "pm-5", nome: "Não Informado" },
+  { id: "pm-6", nome: "Transferência Bancária" },
+  { id: "pm-7", nome: "Cartão de Débito" },
+  { id: "pm-8", nome: "Depósito" },
+  { id: "pm-9", nome: "Dinheiro" },
+  { id: "pm-10", nome: "Débito Inter - J C locações" },
+  { id: "pm-11", nome: "Pagamentos Digitais" },
+  { id: "pm-12", nome: "Promissória" },
+  { id: "pm-13", nome: "Cheque" }
+];
+
+const INITIAL_CONTACTS: ContatoEntidade[] = [
+  { id: "cnt-1", nome: "NAZARIA DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS LTDA", tipo: "cliente" },
+  { id: "cnt-2", nome: "AMANDA ROCHA EVENTOS", tipo: "cliente" },
+  { id: "cnt-3", nome: "Alexandro T. Gomes", tipo: "cliente" },
+  { id: "cnt-4", nome: "FIIBO SAUDE E BEM-ESTAR LTDA", tipo: "cliente" },
+  { id: "cnt-5", nome: "LIGA CONTRA O CANCER", tipo: "cliente" },
+  { id: "cnt-6", nome: "NEW ORLEANS EVENTOS FEIRAS E LAZER", tipo: "cliente" },
+  { id: "cnt-7", nome: "ICT FARMACEUTICA LTDA", tipo: "cliente" },
+  { id: "cnt-8", nome: "Associação Brasileira de Supermercados", tipo: "cliente" },
+  { id: "cnt-9", nome: "FLASH APP", tipo: "fornecedor" },
+  { id: "cnt-10", nome: "BANCO SANTANDER (BRASIL) S.A.", tipo: "fornecedor" },
+  { id: "cnt-11", nome: "POSTO DE GASOLINA", tipo: "fornecedor" },
+  { id: "cnt-12", nome: "ARMAZEM RIBEIRA DISTRIBUIDORA LTDA", tipo: "fornecedor" },
+  { id: "cnt-13", nome: "Comercial de Madeiras RN", tipo: "fornecedor" },
+  { id: "cnt-14", nome: "Eletro Ferragens Natal", tipo: "fornecedor" }
+];
+
+const INITIAL_TAGS: TagFinanceira[] = [
+  { id: "tag-1", nome: "Frete", tipo: "despesa" },
+  { id: "tag-2", nome: "Locação", tipo: "receita" },
+  { id: "tag-3", nome: "Urgente", tipo: "despesa" },
+  { id: "tag-4", nome: "Stand Octanorm", tipo: "receita" },
+  { id: "tag-5", nome: "Equipe Externa", tipo: "despesa" }
+];
+
+const INITIAL_DRE_CONFIG: DREConfig[] = [
+  { id: "dre-1", sped: "", nome: "Receita Bruta", natureza: "(+) Receitas" },
+  { id: "dre-2", sped: "", nome: "Receita de Serviços", natureza: "(+) Receitas" },
+  { id: "dre-3", sped: "", nome: "Receita de Produtos", natureza: "(+) Receitas" },
+  { id: "dre-4", sped: "", nome: "Receita de Aluguel", natureza: "(+) Receitas" },
+  { id: "dre-5", sped: "", nome: "Deduções", natureza: "(-) Despesas" },
+  { id: "dre-6", sped: "", nome: "Impostos Sobre Vendas", natureza: "(-) Despesas" },
+  { id: "dre-7", sped: "", nome: "Comissões Sobre Vendas", natureza: "(-) Despesas" },
+  { id: "dre-8", sped: "", nome: "Devolução de Vendas", natureza: "(-) Despesas" },
+  { id: "dre-9", sped: "", nome: "Descontos Comerciais", natureza: "(-) Despesas" },
+  { id: "dre-10", sped: "", nome: "Receita Líquida", natureza: "(=) Totalizador" },
+  { id: "dre-11", sped: "", nome: "Custos Operacionais", natureza: "(-) Despesas" },
+  { id: "dre-12", sped: "", nome: "Despesas Operacionais", natureza: "(-) Despesas" },
+  { id: "dre-13", sped: "", nome: "Lucro Operacional", natureza: "(=) Totalizador" }
+];
+
+// Initial Transactions (Mock Extrato Dashboard)
+const SEED_TRANSACTIONS: InvoiceLog[] = [
+  {
+    id: "tx-1",
+    vendor: "JC DESIGN DE STANDS LTDA",
+    invoiceNumber: "PIX-60701190",
+    value: 12072.80,
+    description: "50% - Adiantamento Stand XIV CONGRESSO BRASILEIRO DE HISPANISTAS",
+    date: "2026-07-01",
+    tipo: "receita",
+    categoria: "Adiantamento",
+    formaPagamento: "Pix",
+    status: "pago",
+    contaBancariaId: "b-1",
+    responsavel: "Eventos | (Alexandro T. Gomes)",
+    pagoA: "",
+    recebidoDe: "Alexandro T. Gomes"
+  },
+  {
+    id: "tx-2",
+    vendor: "ITAU UNIBANCO S.A.",
+    invoiceNumber: "REND-001",
+    value: 0.42,
+    description: "REND PAGO APLIC AUT APR",
+    date: "2026-07-01",
+    tipo: "receita",
+    categoria: "Rendimentos",
+    formaPagamento: "TED",
+    status: "pago",
+    contaBancariaId: "b-3",
+    responsavel: "Fornecedores/Parceiros",
+    pagoA: "",
+    recebidoDe: "Itaú"
+  },
+  {
+    id: "tx-3",
+    vendor: "ITAU UNIBANCO S.A.",
+    invoiceNumber: "REND-002",
+    value: 0.68,
+    description: "REND PAGO APLIC AUT APR",
+    date: "2026-07-02",
+    tipo: "receita",
+    categoria: "Rendimentos",
+    formaPagamento: "TED",
+    status: "pago",
+    contaBancariaId: "b-3",
+    responsavel: "Fornecedores/Parceiros"
+  },
+  {
+    id: "tx-4",
+    vendor: "Transferência Interna",
+    invoiceNumber: "TRF-001",
+    value: 2000.00,
+    description: "Transferência: Itaú → 077 - INTER - J C LOCAÇÕES",
+    date: "2026-07-03",
+    tipo: "despesa",
+    categoria: "Transferência",
+    formaPagamento: "Transferência Bancária",
+    status: "pago",
+    contaBancariaId: "b-3",
+    transferenciaOrigemId: "b-3",
+    transferenciaDestinoId: "b-1",
+    isTransferencia: true,
+    responsavel: "Itaú > 077 - INTER - J C LOCAÇÕES"
+  },
+  {
+    id: "tx-5",
+    vendor: "Transferência Interna",
+    invoiceNumber: "TRF-002",
+    value: 5000.00,
+    description: "Transferência: Itaú → 077 - INTER - J C LOCAÇÕES",
+    date: "2026-07-03",
+    tipo: "despesa",
+    categoria: "Transferência",
+    formaPagamento: "Transferência Bancária",
+    status: "pago",
+    contaBancariaId: "b-3",
+    transferenciaOrigemId: "b-3",
+    transferenciaDestinoId: "b-1",
+    isTransferencia: true,
+    responsavel: "Itaú > 077 - INTER - J C LOCAÇÕES"
+  },
+  {
+    id: "tx-6",
+    vendor: "ITAU UNIBANCO S.A.",
+    invoiceNumber: "REND-003",
+    value: 4.04,
+    description: "REND PAGO APLIC AUT APR",
+    date: "2026-07-03",
+    tipo: "receita",
+    categoria: "Rendimentos",
+    formaPagamento: "TED",
+    status: "pago",
+    contaBancariaId: "b-3"
+  },
+  {
+    id: "tx-7",
+    vendor: "JC DESIGN DE STANDS LTDA",
+    invoiceNumber: "PIX-60701191",
+    value: 2000.00,
+    description: "Pix recebido: Cp :60701190-JC DESIGN DE STANDS LTDA",
+    date: "2026-07-03",
+    tipo: "receita",
+    categoria: "Cobrança",
+    formaPagamento: "Pix",
+    status: "pago",
+    contaBancariaId: "b-1"
+  },
+  {
+    id: "tx-8",
+    vendor: "JC DESIGN DE STANDS LTDA",
+    invoiceNumber: "PIX-60701192",
+    value: 5000.00,
+    description: "Pix recebido: Cp :60701190-JC DESIGN DE STANDS LTDA",
+    date: "2026-07-03",
+    tipo: "receita",
+    categoria: "Cobrança",
+    formaPagamento: "Pix",
+    status: "pago",
+    contaBancariaId: "b-1"
+  },
+  {
+    id: "tx-9",
+    vendor: "NAZARIA DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS LTDA",
+    invoiceNumber: "LOC-2026-04",
+    value: 800.00,
+    description: "LOCAÇÃO DE VITRINE EM OCTANORM - nazaria torrente",
+    date: "2026-07-04",
+    tipo: "receita",
+    categoria: "Cobrança",
+    formaPagamento: "Boleto Bancário",
+    status: "pago",
+    contaBancariaId: "b-4",
+    responsavel: "Eventos | (NAZARIA DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS LTDA) | (21/05/2026 | Mega Feira da Nazaria - Teresina/PI)",
+    recebidoDe: "NAZARIA DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS LTDA"
+  },
+  {
+    id: "tx-10",
+    vendor: "NAZARIA DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS LTDA",
+    invoiceNumber: "LOC-2026-05",
+    value: 250.00,
+    description: "LOCAÇÃO DE 02 CONJUNTOS DE MESA COM 04 CADEIRAS - nazaria momenta",
+    date: "2026-07-04",
+    tipo: "receita",
+    categoria: "Cobrança",
+    formaPagamento: "Boleto Bancário",
+    status: "pago",
+    contaBancariaId: "b-4",
+    responsavel: "Eventos | (NAZARIA DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS LTDA) | (21/05/2026 | Mega Feira da Nazaria - Teresina/PI)",
+    recebidoDe: "NAZARIA DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS LTDA"
+  },
+  {
+    id: "tx-11",
+    vendor: "NAZARIA DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS LTDA",
+    invoiceNumber: "LOC-2026-06",
+    value: 250.00,
+    description: "LOCAÇÃO DE 01 CONJUNTO DE MESA COM 04 CADEIRAS PARA - nazaria isdin",
+    date: "2026-07-04",
+    tipo: "receita",
+    categoria: "Cobrança",
+    formaPagamento: "Boleto Bancário",
+    status: "pago",
+    contaBancariaId: "b-4",
+    responsavel: "Eventos | (NAZARIA DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS LTDA) | (21/05/2026 | Mega Feira da Nazaria - Teresina/PI)",
+    recebidoDe: "NAZARIA DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS LTDA"
+  },
+  {
+    id: "tx-12",
+    vendor: "Comercial de Madeiras RN",
+    invoiceNumber: "NF-9921",
+    value: 4500.00,
+    description: "Aquisição de chapas MDF 18mm para Stand Unimed Feicon",
+    date: "2026-07-05",
+    tipo: "despesa",
+    categoria: "Material | Madeira e afins",
+    formaPagamento: "Pix",
+    status: "pago",
+    contaBancariaId: "b-4",
+    pagoA: "Comercial de Madeiras RN"
+  },
+  {
+    id: "tx-13",
+    vendor: "Eletro Ferragens Natal",
+    invoiceNumber: "NF-4412",
+    value: 2437.78,
+    description: "Compra de refletores LED e fiamento elétrico",
+    date: "2026-07-06",
+    tipo: "despesa",
+    categoria: "Iluminação e Materiais Elétricos",
+    formaPagamento: "Cartão de Crédito",
+    status: "pago",
+    cartaoCreditoId: "card-4",
+    pagoA: "Eletro Ferragens Natal"
+  }
+];
+
+// Seed for Late Collections & Payments
+const LATE_RECEIVABLES = [
+  { id: "lr-1", desc: "Saldo Final Stand Unimed Feicon 2026", valor: 15000.00, vencimento: "2026-07-15", diasAtraso: 15, cliente: "Unimed Natal" },
+  { id: "lr-2", desc: "Locação Estande Misto Hospitalar Recife", valor: 45000.00, vencimento: "2026-07-10", diasAtraso: 20, cliente: "Hapvida Saúde" },
+  { id: "lr-3", desc: "Parcela 2/3 Chevrolet Salão Automóvel", valor: 34000.00, vencimento: "2026-07-18", diasAtraso: 12, cliente: "Chevrolet Potiguar" },
+  { id: "lr-4", desc: "Adiantamento Estande Feira de Noivas", valor: 18500.00, vencimento: "2026-07-20", diasAtraso: 10, cliente: "Noivas & Cia" },
+  { id: "lr-5", desc: "Taxa de Montagem Adicional ExpoSaúde", valor: 8019.44, vencimento: "2026-07-05", diasAtraso: 25, cliente: "Potiguar Farma" },
+  { id: "lr-6", desc: "Locação Mobiliário Especial Stand VIP", valor: 90000.00, vencimento: "2026-07-01", diasAtraso: 29, cliente: "Volkswagen Brasil" }
+];
+
+const LATE_PAYABLES = [
+  { id: "lp-1", desc: "Frete Carreta Natal x Recife (Caminhão Ford)", valor: 8500.00, vencimento: "2026-07-12", diasAtraso: 18, fornecedor: "Transportes Potiguar Cargas" },
+  { id: "lp-2", desc: "Móveis Alugados (Balcão recepção e bistrôs)", valor: 12400.00, vencimento: "2026-07-14", diasAtraso: 16, fornecedor: "Móveis Eventos Express" },
+  { id: "lp-3", desc: "Fatura Cartão Santander final 0549", valor: 2437.78, vencimento: "2026-07-25", diasAtraso: 5, fornecedor: "Banco Santander" },
+  { id: "lp-4", desc: "Diárias Equipe Marcenaria Terceirizada", valor: 6800.00, vencimento: "2026-07-22", diasAtraso: 8, fornecedor: "Marcenaria Silva" },
+  { id: "lp-5", desc: "Hospedagem Hotel Ibis Recife (6 montadores)", valor: 15400.00, vencimento: "2026-07-19", diasAtraso: 11, fornecedor: "Accor Hotels" },
+  { id: "lp-6", desc: "Consumo Elétrico e Taxas Pavilhão ExpoRecife", valor: 197753.00, vencimento: "2026-07-08", diasAtraso: 22, fornecedor: "Pavilhão Expo Recife" }
+];
+
 export default function Financial({ 
   invoices, events, fornecedores, onAddInvoice, onUpdateInvoice, onUpdateEvent, initialSubTab 
 }: FinancialProps) {
-  const [activeSubTab, setActiveSubTab] = useState<"fluxo" | "pagar" | "receber" | "boletos" | "nfe" | "centro_custo" | "caixinha">(
-    (initialSubTab as any) || "fluxo"
-  );
-  const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.id || "");
-  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceLog | null>(null);
+
+  // Navigation main tabs
+  const [activeMainTab, setActiveMainTab] = useState<"dashboard" | "conciliacao" | "relatorios" | "configuracoes">("dashboard");
   
-  // Invoice form states (Creation)
-  const [vendor, setVendor] = useState("");
-  const [invoiceNumber, setInvoiceNumber] = useState("");
-  const [value, setValue] = useState(0);
-  const [description, setDescription] = useState("");
-  const [tipo, setTipo] = useState<"receita" | "despesa">("despesa");
-  const [categoria, setCategoria] = useState("Madeira");
-  const [formaPagamento, setFormaPagamento] = useState<InvoiceLog["formaPagamento"]>("Pix");
-  const [status, setStatus] = useState<InvoiceLog["status"]>("pago");
-  const [eventoId, setEventoId] = useState("");
+  // Dashboard Sub-filters
+  const [dashboardTipoFilter, setDashboardTipoFilter] = useState<"todos" | "receitas" | "despesas">("todos");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterBank, setFilterBank] = useState<string>("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterCostCenter, setFilterCostCenter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // 3.0 new form fields
-  const [parcelas, setParcelas] = useState(1);
-  const [recorrente, setRecorrente] = useState(false);
-  const [recebimentoParcial, setRecebimentoParcial] = useState(0);
-  const [inadimplente, setInadimplente] = useState(false);
+  // Period Navigator State
+  const [selectedMonth, setSelectedMonth] = useState<number>(7); // 7 = Julho
+  const [selectedYear, setSelectedYear] = useState<number>(2026);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState<boolean>(false);
 
-  // Nota Fiscal States
-  const [nfs, setNfs] = useState<NotaFiscal[]>([
-    { id: "nf-1", tipo: "NF-e", numero: "000.108.924", serie: "1", cliente: "Volkswagen do Brasil Ltda", valor: 90000.00, dataEmissao: "2026-07-08", produtos: ["Cenografia Estande Feicon 2026", "Painel de Madeira MDF"], osVinculada: "evt-2", status: "emitida", pdfAnexoNome: "nfe_108924_volkswagen.pdf", xmlAnexoNome: "nfe_108924_volkswagen.xml" },
-    { id: "nf-2", tipo: "NFS-e", numero: "2026.00941", serie: "1", cliente: "Nestlé S/A", valor: 80000.00, dataEmissao: "2026-07-15", produtos: ["Serviço de Montagem de Stand Bienal"], osVinculada: "evt-1", status: "emitida", pdfAnexoNome: "nfse_00941_nestle.pdf" }
+  // Financial Configuration State Lists (CRUD Managed)
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>(INITIAL_BANK_ACCOUNTS);
+  const [creditCards, setCreditCards] = useState<CreditCard[]>(INITIAL_CREDIT_CARDS);
+  const [categories, setCategories] = useState<CategoriaFinanceira[]>(INITIAL_CATEGORIES);
+  const [costCenters, setCostCenters] = useState<CentroCustoConfig[]>(INITIAL_COST_CENTERS);
+  const [paymentModes, setPaymentModes] = useState<FormaPagamentoConfig[]>(INITIAL_PAYMENT_MODES);
+  const [contacts, setContacts] = useState<ContatoEntidade[]>(INITIAL_CONTACTS);
+  const [tags, setTags] = useState<TagFinanceira[]>(INITIAL_TAGS);
+  const [dreConfigs, setDreConfigs] = useState<DREConfig[]>(INITIAL_DRE_CONFIG);
+
+  // Active Transaction List combining props and seed
+  const [allTransactions, setAllTransactions] = useState<InvoiceLog[]>([
+    ...SEED_TRANSACTIONS,
+    ...invoices.filter(inv => !SEED_TRANSACTIONS.some(s => s.id === inv.id))
   ]);
-  const [isNfeModalOpen, setIsNfeModalOpen] = useState(false);
-  const [nfTipo, setNfTipo] = useState<NotaFiscal["tipo"]>("NF-e");
-  const [nfCliente, setNfCliente] = useState("");
-  const [nfValor, setNfValor] = useState(0);
-  const [nfOS, setNfOS] = useState("");
-  const [nfProdutos, setNfProdutos] = useState("");
-  const [nfNumeroInput, setNfNumeroInput] = useState("");
-  const [nfSerieInput, setNfSerieInput] = useState("1");
-  const [nfDataInput, setNfDataInput] = useState("");
-  const [nfPdfInput, setNfPdfInput] = useState("");
-  const [nfXmlInput, setNfXmlInput] = useState("");
 
-  // 3.1 Boleto state
-  const [boletos, setBoletos] = useState<BoletoAdministrativo[]>([
+  // Late lists state
+  const [lateReceivables, setLateReceivables] = useState(LATE_RECEIVABLES);
+  const [latePayables, setLatePayables] = useState(LATE_PAYABLES);
+
+  // Modals state
+  const [isRecebimentoModalOpen, setIsRecebimentoModalOpen] = useState(false);
+  const [isDespesaModalOpen, setIsDespesaModalOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
+  const [selectedTxForEdit, setSelectedTxForEdit] = useState<InvoiceLog | null>(null);
+
+  // Transfer Form State
+  const [trfData, setTrfData] = useState("2026-07-30");
+  const [trfOrigem, setTrfOrigem] = useState(bankAccounts[3]?.id || "");
+  const [trfDestino, setTrfDestino] = useState(bankAccounts[0]?.id || "");
+  const [trfValor, setTrfValor] = useState<number>(0);
+
+  // OFX Reconciliation & History State
+  const [ofxSubTab, setOfxSubTab] = useState<"import" | "history" | "nfe">("import");
+  const [ofxSelectedBank, setOfxSelectedBank] = useState("SANTANDER");
+  const [ofxImportsHistory, setOfxImportsHistory] = useState<OFXImportHistory[]>([
     {
-      id: "bol-1",
-      numero: "34191.79001 01043.513184 91020.150008 7 98020000015000",
-      cliente: "Nestlé S/A",
-      valor: 1500.00,
-      vencimento: "2026-07-25",
-      status: "pendente",
-      pdfAnexoNome: "boleto_nestle_feicon.pdf",
-      historicoLogs: ["Boleto gerado pelo sistema e enviado em 2026-07-15"]
-    },
-    {
-      id: "bol-2",
-      numero: "00190.00009 02332.415617 89000.120042 1 97940000050000",
-      cliente: "Volkswagen do Brasil Ltda",
-      valor: 5000.00,
-      vencimento: "2026-07-18",
-      status: "pago",
-      pdfAnexoNome: "boleto_volkswagen_3d.pdf",
-      comprovanteAnexoNome: "comprovante_volkswagen_pix.pdf",
-      historicoLogs: [
-        "Boleto gerado em 2026-07-10",
-        "Pagamento confirmado via Pix e comprovante anexado em 2026-07-17"
+      id: "ofx-1",
+      dataImportacao: "2026-07-28",
+      banco: "SANTANDER",
+      conta: "147.608,98",
+      qtdLancamentos: 14,
+      status: "conciliado",
+      transacoes: [
+        { id: "o-1", data: "2026-07-04", descricao: "LOCAÇÃO DE VITRINE OCTANORM", valor: 800.00, tipo: "receita", conciliado: true },
+        { id: "o-2", data: "2026-07-05", descricao: "COMPRA MDF PINHEIRO", valor: 4500.00, tipo: "despesa", conciliado: true }
       ]
     }
   ]);
-  const [isBoletoModalOpen, setIsBoletoModalOpen] = useState(false);
-  const [bolNumero, setBolNumero] = useState("");
-  const [bolCliente, setBolCliente] = useState("");
-  const [bolValor, setBolValor] = useState(0);
-  const [bolVencimento, setBolVencimento] = useState("");
-  const [bolPdf, setBolPdf] = useState("");
-  const [bolComprovante, setBolComprovante] = useState("");
+  const [ofxMatchedRows, setOfxMatchedRows] = useState<any[]>([]);
+  const [ofxFileLoaded, setOfxFileLoaded] = useState(false);
 
-  // Boleto filter
-  const [boletoStatusFilter, setBoletoStatusFilter] = useState<"all" | InvoiceLog["status"] | "vencido" | "cancelado">("all");
-
-  const handleEmitNFe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nfCliente || nfValor <= 0) return;
-
-    const newNf: NotaFiscal = {
-      id: `nf-${Date.now()}`,
-      tipo: nfTipo,
-      numero: nfNumeroInput || `000.${Math.floor(100000 + Math.random() * 900000)}`,
-      serie: nfSerieInput || "1",
-      cliente: nfCliente,
-      valor: nfValor,
-      dataEmissao: nfDataInput || new Date().toISOString().split("T")[0],
-      produtos: nfProdutos.split(",").map(p => p.trim()),
-      osVinculada: nfOS || undefined,
+  // Central NFe State
+  const [centralNFeList, setCentralNFeList] = useState<NotaFiscal[]>([
+    {
+      id: "nf-cent-1",
+      tipo: "NF-e",
+      numero: "000.108.924",
+      nossoNumero: "3419108924",
+      empresa: "JC LOCAÇÕES E EVENTOS LTDA",
+      pedido: "PED-2026-08",
+      tomador: "Volkswagen do Brasil Ltda",
+      cliente: "Volkswagen do Brasil Ltda",
+      valor: 90000.00,
+      dataEmissao: "2026-07-08",
+      produtos: ["Cenografia Estande Feicon 2026", "Painel de Madeira MDF"],
+      osVinculada: "evt-2",
       status: "emitida",
-      pdfAnexoNome: nfPdfInput || undefined,
-      xmlAnexoNome: nfXmlInput || undefined
-    };
-
-    setNfs([newNf, ...nfs]);
-    setIsNfeModalOpen(false);
-    setNfCliente("");
-    setNfValor(0);
-    setNfOS("");
-    setNfProdutos("");
-    setNfNumeroInput("");
-    setNfSerieInput("1");
-    setNfDataInput("");
-    setNfPdfInput("");
-    setNfXmlInput("");
-    alert("Nota Fiscal registrada com sucesso e armazenada administrativamente!");
-  };
-
-  const handleAddBoleto = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!bolCliente || bolValor <= 0 || !bolVencimento) return;
-
-    const newBoleto: BoletoAdministrativo = {
-      id: `bol-${Date.now()}`,
-      numero: bolNumero || `34191.79001 ${Math.floor(10000 + Math.random() * 90000)}.${Math.floor(100000 + Math.random() * 900000)} ${Math.floor(100000 + Math.random() * 900000)} 7 ${Math.floor(90000000000000 + Math.random() * 9000000000000)}`,
-      cliente: bolCliente,
-      valor: bolValor,
-      vencimento: bolVencimento,
-      status: "pendente",
-      pdfAnexoNome: bolPdf || undefined,
-      comprovanteAnexoNome: bolComprovante || undefined,
-      historicoLogs: [`Boleto registrado administrativamente em ${new Date().toISOString().split("T")[0]}`]
-    };
-
-    setBoletos([newBoleto, ...boletos]);
-    setIsBoletoModalOpen(false);
-    setBolNumero("");
-    setBolCliente("");
-    setBolValor(0);
-    setBolVencimento("");
-    setBolPdf("");
-    setBolComprovante("");
-    alert("Boleto bancário registrado com sucesso!");
-  };
-
-  const handlePayBoleto = (id: string) => {
-    const receipt = prompt("Nome do arquivo do comprovante de pagamento (simulado):", "comprovante_pix.pdf");
-    if (!receipt) return;
-    setBoletos(boletos.map(b => {
-      if (b.id === id) {
-        return {
-          ...b,
-          status: "pago",
-          comprovanteAnexoNome: receipt,
-          historicoLogs: [...b.historicoLogs, `Pagamento confirmado administrativamente em ${new Date().toISOString().split("T")[0]}. Comprovante: ${receipt}`]
-        };
-      }
-      return b;
-    }));
-    alert("Boleto marcado como PAGO com comprovante de pagamento vinculado!");
-  };
-
-  const handleCancelBoleto = (id: string) => {
-    if (!window.confirm("Deseja realmente cancelar este boleto administrativamente?")) return;
-    setBoletos(boletos.map(b => {
-      if (b.id === id) {
-        return {
-          ...b,
-          status: "cancelado",
-          historicoLogs: [...b.historicoLogs, `Boleto cancelado administrativamente em ${new Date().toISOString().split("T")[0]}`]
-        };
-      }
-      return b;
-    }));
-  };
-
-  // Edit Invoice states
-  const [editVendor, setEditVendor] = useState("");
-  const [editInvoiceNumber, setEditInvoiceNumber] = useState("");
-  const [editValue, setEditValue] = useState(0);
-  const [editCategoria, setEditCategoria] = useState("");
-  const [editFormaPagamento, setEditFormaPagamento] = useState<InvoiceLog["formaPagamento"]>("Pix");
-  const [editStatus, setEditStatus] = useState<InvoiceLog["status"]>("pago");
-  const [editEventoId, setEditEventoId] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-
-  // Caixinha logs
-  const [caixinhaLogs, setCaixinhaLogs] = useState([
-    { id: "c-1", colaborador: "Claudio Barbosa Silva", tipo: "vale", valor: 150.00, desc: "Almoço equipe montagem Feicon", date: "2026-07-14", status: "prestado" },
-    { id: "c-2", colaborador: "José Alves de Oliveira", tipo: "adiantamento", valor: 500.00, desc: "Combustível e pedágio viagem GRU", date: "2026-07-15", status: "pendente" }
-  ]);
-  const [colaboradorNome, setColaboradorNome] = useState("");
-  const [caixinhaTipo, setCaixinhaTipo] = useState("vale");
-  const [caixinhaValor, setCaixinhaValor] = useState(0);
-  const [caixinhaDesc, setCaixinhaDesc] = useState("");
-
-  const handleAddCaixinha = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!colaboradorNome || caixinhaValor <= 0) return;
-    const newLog = {
-      id: `c-${Date.now()}`,
-      colaborador: colaboradorNome,
-      tipo: caixinhaTipo,
-      valor: caixinhaValor,
-      desc: caixinhaDesc,
-      date: new Date().toISOString().split("T")[0],
-      status: "pendente"
-    };
-    setCaixinhaLogs([newLog, ...caixinhaLogs]);
-    setColaboradorNome("");
-    setCaixinhaValor(0);
-    setCaixinhaDesc("");
-  };
-
-  const handleInvoiceSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!vendor || value <= 0) return;
-    onAddInvoice({
-      vendor,
-      invoiceNumber: invoiceNumber || `REC-${Date.now().toString().substring(8)}`,
-      value,
-      description,
-      tipo,
-      categoria,
-      formaPagamento,
-      status,
-      eventoId: eventoId || undefined,
-      parcelas: parcelas || 1,
-      recorrente: recorrente || false,
-      recebimentoParcial: recebimentoParcial || 0,
-      inadimplente: inadimplente || false
-    });
-    setVendor("");
-    setInvoiceNumber("");
-    setValue(0);
-    setDescription("");
-    setEventoId("");
-    setParcelas(1);
-    setRecorrente(false);
-    setRecebimentoParcial(0);
-    setInadimplente(false);
-    setIsInvoiceModalOpen(false);
-  };
-
-  const handleOpenEditModal = (inv: InvoiceLog) => {
-    setSelectedInvoice(inv);
-    setEditVendor(inv.vendor);
-    setEditInvoiceNumber(inv.invoiceNumber);
-    setEditValue(inv.value);
-    setEditCategoria(inv.categoria);
-    setEditFormaPagamento(inv.formaPagamento);
-    setEditStatus(inv.status);
-    setEditEventoId(inv.eventoId || "");
-    setEditDescription(inv.description);
-  };
-
-  const handleSaveChanges = () => {
-    if (!selectedInvoice) return;
-    const updated: InvoiceLog = {
-      ...selectedInvoice,
-      vendor: editVendor,
-      invoiceNumber: editInvoiceNumber,
-      value: editValue,
-      categoria: editCategoria,
-      formaPagamento: editFormaPagamento,
-      status: editStatus,
-      eventoId: editEventoId || undefined,
-      description: editDescription
-    };
-    onUpdateInvoice(updated);
-    setSelectedInvoice(updated);
-    alert("Transação financeira atualizada com sucesso!");
-  };
-
-  const handleUploadBoleto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!selectedInvoice || !e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
-    const updated: InvoiceLog = {
-      ...selectedInvoice,
-      pdfBoleto: file.name
-    };
-    onUpdateInvoice(updated);
-    setSelectedInvoice(updated);
-  };
-
-  const handleUploadNFe = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!selectedInvoice || !e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
-    const updated: InvoiceLog = {
-      ...selectedInvoice,
-      pdfNFe: file.name
-    };
-    onUpdateInvoice(updated);
-    setSelectedInvoice(updated);
-  };
-
-  const handleUploadAnexo = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!selectedInvoice || !e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
-    const newAnexo = {
-      id: `anx-${Date.now()}`,
-      name: file.name,
-      date: new Date().toISOString().split("T")[0]
-    };
-    const updated: InvoiceLog = {
-      ...selectedInvoice,
-      anexos: [...(selectedInvoice.anexos || []), newAnexo]
-    };
-    onUpdateInvoice(updated);
-    setSelectedInvoice(updated);
-  };
-
-  const handleDeleteAnexo = (anxId: string) => {
-    if (!selectedInvoice) return;
-    const updated: InvoiceLog = {
-      ...selectedInvoice,
-      anexos: (selectedInvoice.anexos || []).filter(a => a.id !== anxId)
-    };
-    onUpdateInvoice(updated);
-    setSelectedInvoice(updated);
-  };
-
-  const handleRemoveBoleto = () => {
-    if (!selectedInvoice) return;
-    const updated = { ...selectedInvoice };
-    delete updated.pdfBoleto;
-    onUpdateInvoice(updated);
-    setSelectedInvoice(updated);
-  };
-
-  const handleRemoveNFe = () => {
-    if (!selectedInvoice) return;
-    const updated = { ...selectedInvoice };
-    delete updated.pdfNFe;
-    onUpdateInvoice(updated);
-    setSelectedInvoice(updated);
-  };
-
-  // Calculations for Fluxo de Caixa
-  const totalReceitas = invoices
-    .filter(i => i.tipo === "receita")
-    .reduce((acc, curr) => acc + curr.value, 0) + 180000.00; // adding client deposits seed
-  
-  const totalDespesas = invoices
-    .filter(i => i.tipo === "despesa")
-    .reduce((acc, curr) => acc + curr.value, 0);
-
-  const saldoTotal = totalReceitas - totalDespesas;
-
-  // Selected event cost center details
-  const selectedEvent = events.find(e => e.id === selectedEventId);
-  const eventInvoices = invoices.filter(i => i.eventoId === selectedEventId);
-  
-  // Calculate dynamic costs for selected event from invoices
-  const dynamicCosts = {
-    madeiraMdf: selectedEvent?.centroCusto?.madeiraMdf || 0,
-    vidrosVidraçaria: selectedEvent?.centroCusto?.vidrosVidraçaria || 0,
-    iluminacaoEletrica: selectedEvent?.centroCusto?.iluminacaoEletrica || 0,
-    mobiliarioAlugado: selectedEvent?.centroCusto?.mobiliarioAlugado || 0,
-    fretes: selectedEvent?.centroCusto?.fretes || 0,
-    combustivelPedagios: selectedEvent?.centroCusto?.combustivelPedagios || 0,
-    hospedagemPassagens: selectedEvent?.centroCusto?.hospedagemPassagens || 0,
-    equipePropria: selectedEvent?.centroCusto?.equipePropria || 0,
-    terceirizados: selectedEvent?.centroCusto?.terceirizados || 0,
-    taxasOrganizador: selectedEvent?.centroCusto?.taxasOrganizador || 0
-  };
-
-  // Supplement category costs from linked invoices
-  eventInvoices.forEach(inv => {
-    if (inv.tipo === "despesa") {
-      const cat = inv.categoria.toLowerCase();
-      if (cat.includes("madeira") || cat.includes("mdf")) dynamicCosts.madeiraMdf += inv.value;
-      else if (cat.includes("vidro")) dynamicCosts.vidrosVidraçaria += inv.value;
-      else if (cat.includes("ilumina") || cat.includes("eletri")) dynamicCosts.iluminacaoEletrica += inv.value;
-      else if (cat.includes("mobil")) dynamicCosts.mobiliarioAlugado += inv.value;
-      else if (cat.includes("frete")) dynamicCosts.fretes += inv.value;
-      else if (cat.includes("combust") || cat.includes("pedag")) dynamicCosts.combustivelPedagios += inv.value;
-      else if (cat.includes("hosped") || cat.includes("passag") || cat.includes("voo")) dynamicCosts.hospedagemPassagens += inv.value;
-      else if (cat.includes("equipe") || cat.includes("claudio") || cat.includes("jose")) dynamicCosts.equipePropria += inv.value;
-      else if (cat.includes("terceir")) dynamicCosts.terceirizados += inv.value;
-      else if (cat.includes("taxa") || cat.includes("organiz")) dynamicCosts.taxasOrganizador += inv.value;
+      pdfAnexoNome: "nfe_108924_volkswagen.pdf",
+      xmlAnexoNome: "nfe_108924_volkswagen.xml"
+    },
+    {
+      id: "nf-cent-2",
+      tipo: "NFS-e",
+      numero: "2026.00941",
+      nossoNumero: "202600941",
+      empresa: "JC LOCAÇÕES E EVENTOS LTDA",
+      pedido: "PED-2026-14",
+      tomador: "Nestlé S/A",
+      cliente: "Nestlé S/A",
+      valor: 80000.00,
+      dataEmissao: "2026-07-15",
+      produtos: ["Serviço de Montagem de Stand Bienal"],
+      osVinculada: "evt-1",
+      status: "emitida",
+      pdfAnexoNome: "nfse_00941_nestle.pdf"
     }
-  });
+  ]);
+  const [nfFilterType, setNfFilterType] = useState("all");
+  const [nfSearchQuery, setNfSearchQuery] = useState("");
 
-  const totalCustoEvento = Object.values(dynamicCosts).reduce((acc, curr) => acc + curr, 0);
-  const receitaContratada = selectedEvent?.valorContratado || 0;
-  const lucroRealizado = receitaContratada - totalCustoEvento;
-  const margemLucro = receitaContratada > 0 ? (lucroRealizado / receitaContratada) * 100 : 0;
+  // Relatórios Avançados State
+  const [relatorioSelectedTab, setRelatorioSelectedTab] = useState<string>("performance");
 
-  const categoriesList = [
-    { key: "madeiraMdf", label: "Madeira & MDF" },
-    { key: "vidrosVidraçaria", label: "Vidros & Vidraçaria" },
-    { key: "iluminacaoEletrica", label: "Iluminação & Elétrica" },
-    { key: "mobiliarioAlugado", label: "Mobiliário Alugado" },
-    { key: "fretes", label: "Fretes & Transportes" },
-    { key: "combustivelPedagios", label: "Combustível & Pedágios" },
-    { key: "hospedagemPassagens", label: "Hospedagem & Passagens" },
-    { key: "equipePropria", label: "Mão de Obra Própria" },
-    { key: "terceirizados", label: "Diárias de Terceirizados" },
-    { key: "taxasOrganizador", label: "Taxas do Organizador" }
-  ] as const;
+  // Configurações Financeiras Sub-Tab State
+  const [configActiveTab, setConfigActiveTab] = useState<"contas" | "cartoes" | "categorias" | "centro_custo" | "modo_pagamento" | "recebido_pago" | "tags" | "dre">("contas");
+  const [configModalOpen, setConfigModalOpen] = useState(false);
+  const [configInputName, setConfigInputName] = useState("");
+  const [configInputExtra1, setConfigInputExtra1] = useState("");
+  const [configInputExtra2, setConfigInputExtra2] = useState("");
 
-  const handleAssignSupplier = (category: string, supplierName: string) => {
-    if (!selectedEvent) return;
-    const currentFornecedores = selectedEvent.centroCusto.fornecedoresDespesas || {};
-    const updatedFornecedores = {
-      ...currentFornecedores,
-      [category]: supplierName
+  // Month names for period selector
+  const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+  const shortMonthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Aug", "Set", "Out", "Nov", "Dez"];
+
+  // Filtered Transactions
+  const filteredTransactions = useMemo(() => {
+    return allTransactions.filter(tx => {
+      if (dashboardTipoFilter === "receitas" && tx.tipo !== "receita") return false;
+      if (dashboardTipoFilter === "despesas" && tx.tipo !== "despesa") return false;
+      if (filterStatus !== "all" && tx.status !== filterStatus) return false;
+      if (filterBank !== "all" && tx.contaBancariaId !== filterBank) return false;
+      if (filterCategory !== "all" && tx.categoria !== filterCategory) return false;
+      if (filterCostCenter !== "all" && tx.centroCustoId !== filterCostCenter) return false;
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesDesc = tx.description.toLowerCase().includes(query);
+        const matchesVendor = tx.vendor.toLowerCase().includes(query);
+        const matchesCat = tx.categoria.toLowerCase().includes(query);
+        if (!matchesDesc && !matchesVendor && !matchesCat) return false;
+      }
+      return true;
+    });
+  }, [allTransactions, dashboardTipoFilter, filterStatus, filterBank, filterCategory, filterCostCenter, searchQuery]);
+
+  // Dashboard Totals Calculations
+  const receitasJulho = useMemo(() => {
+    return allTransactions
+      .filter(tx => tx.tipo === "receita" && !tx.isTransferencia)
+      .reduce((acc, curr) => acc + curr.value, 0) + 245422.47;
+  }, [allTransactions]);
+
+  const despesasJulho = useMemo(() => {
+    return allTransactions
+      .filter(tx => tx.tipo === "despesa" && !tx.isTransferencia)
+      .reduce((acc, curr) => acc + curr.value, 0) + 300000.00;
+  }, [allTransactions]);
+
+  const saldoGeral = useMemo(() => {
+    return bankAccounts.reduce((acc, curr) => acc + curr.saldoAtual, 0);
+  }, [bankAccounts]);
+
+  const totalLateReceivables = useMemo(() => {
+    return lateReceivables.reduce((acc, curr) => acc + curr.valor, 0);
+  }, [lateReceivables]);
+
+  const totalLatePayables = useMemo(() => {
+    return latePayables.reduce((acc, curr) => acc + curr.valor, 0);
+  }, [latePayables]);
+
+  // Quick Action handlers
+  const handleQuickSettleReceivable = (id: string) => {
+    const item = lateReceivables.find(r => r.id === id);
+    if (!item) return;
+    const newTx: InvoiceLog = {
+      id: `tx-rec-${Date.now()}`,
+      vendor: item.cliente,
+      invoiceNumber: `REC-${Math.floor(1000 + Math.random() * 9000)}`,
+      value: item.valor,
+      description: item.desc,
+      date: new Date().toISOString().split("T")[0],
+      tipo: "receita",
+      categoria: "Cobrança",
+      formaPagamento: "Pix",
+      status: "pago",
+      contaBancariaId: bankAccounts[0].id,
+      recebidoDe: item.cliente
     };
-    onUpdateEvent({
-      ...selectedEvent,
-      centroCusto: {
-        ...selectedEvent.centroCusto,
-        fornecedoresDespesas: updatedFornecedores
-      }
-    });
+    setAllTransactions([newTx, ...allTransactions]);
+    setLateReceivables(lateReceivables.filter(r => r.id !== id));
+    // update bank balance
+    setBankAccounts(bankAccounts.map(b => b.id === bankAccounts[0].id ? { ...b, saldoAtual: b.saldoAtual + item.valor } : b));
+    alert(`Recebimento de R$ ${item.valor.toLocaleString("pt-BR")} baixado com sucesso!`);
   };
 
-  const getAccountsPayableBySupplier = () => {
-    const payables: { [supplierName: string]: number } = {};
-    if (!selectedEvent) return [];
-    
-    categoriesList.forEach((cat) => {
-      const supplierName = selectedEvent.centroCusto.fornecedoresDespesas?.[cat.key];
-      if (supplierName) {
-        const costVal = dynamicCosts[cat.key] || 0;
-        payables[supplierName] = (payables[supplierName] || 0) + costVal;
-      }
-    });
-    
-    return Object.entries(payables).map(([name, total]) => ({ name, total }));
+  const handleQuickSettlePayable = (id: string) => {
+    const item = latePayables.find(p => p.id === id);
+    if (!item) return;
+    const newTx: InvoiceLog = {
+      id: `tx-pag-${Date.now()}`,
+      vendor: item.fornecedor,
+      invoiceNumber: `PAG-${Math.floor(1000 + Math.random() * 9000)}`,
+      value: item.valor,
+      description: item.desc,
+      date: new Date().toISOString().split("T")[0],
+      tipo: "despesa",
+      categoria: "Outras Despesas",
+      formaPagamento: "Pix",
+      status: "pago",
+      contaBancariaId: bankAccounts[3].id,
+      pagoA: item.fornecedor
+    };
+    setAllTransactions([newTx, ...allTransactions]);
+    setLatePayables(latePayables.filter(p => p.id !== id));
+    // update bank balance
+    setBankAccounts(bankAccounts.map(b => b.id === bankAccounts[3].id ? { ...b, saldoAtual: b.saldoAtual - item.valor } : b));
+    alert(`Pagamento de R$ ${item.valor.toLocaleString("pt-BR")} baixado com sucesso!`);
   };
 
-  const supplierPayables = getAccountsPayableBySupplier();
+  // Transfer execution
+  const handleExecuteTransfer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (trfOrigem === trfDestino) {
+      alert("A conta de Origem não pode ser a mesma de Destino!");
+      return;
+    }
+    if (trfValor <= 0) {
+      alert("Informe um valor válido para a transferência!");
+      return;
+    }
+    const origenAcc = bankAccounts.find(b => b.id === trfOrigem);
+    const destinoAcc = bankAccounts.find(b => b.id === trfDestino);
 
-  // Most profitable events ranking
-  const getEventProfitSummary = (evt: Project) => {
-    const evtInvs = invoices.filter(i => i.eventoId === evt.id);
-    let totalC = Object.values(evt.centroCusto || {}).reduce((a, b) => a + b, 0);
-    evtInvs.forEach(inv => {
-      if (inv.tipo === "despesa") totalC += inv.value;
-    });
-    const rev = evt.valorContratado || 0;
-    const profit = rev - totalC;
-    const margin = rev > 0 ? (profit / rev) * 100 : 0;
-    return { name: evt.name, client: evt.client, profit, margin, revenue: rev, totalCost: totalC };
+    const newTransferTx: InvoiceLog = {
+      id: `trf-${Date.now()}`,
+      vendor: `Transferência: ${origenAcc?.nome || "Origem"} → ${destinoAcc?.nome || "Destino"}`,
+      invoiceNumber: `TRF-${Math.floor(1000 + Math.random() * 9000)}`,
+      value: trfValor,
+      description: `Transferência entre contas (${origenAcc?.nome} → ${destinoAcc?.nome})`,
+      date: trfData,
+      tipo: "despesa",
+      categoria: "Transferência",
+      formaPagamento: "Transferência Bancária",
+      status: "pago",
+      contaBancariaId: trfOrigem,
+      transferenciaOrigemId: trfOrigem,
+      transferenciaDestinoId: trfDestino,
+      isTransferencia: true,
+      responsavel: `${origenAcc?.nome} > ${destinoAcc?.nome}`
+    };
+
+    setAllTransactions([newTransferTx, ...allTransactions]);
+    // update accounts balance
+    setBankAccounts(bankAccounts.map(b => {
+      if (b.id === trfOrigem) return { ...b, saldoAtual: b.saldoAtual - trfValor };
+      if (b.id === trfDestino) return { ...b, saldoAtual: b.saldoAtual + trfValor };
+      return b;
+    }));
+
+    setIsTransferModalOpen(false);
+    setTrfValor(0);
+    alert("Transferência realizada com sucesso!");
   };
 
-  const rankedEvents = [...events]
-    .map(getEventProfitSummary)
-    .sort((a, b) => b.profit - a.profit);
+  // OFX Upload Processing Simulation
+  const handleSimulateOFXUpload = () => {
+    setOfxFileLoaded(true);
+    setOfxMatchedRows([
+      { id: "ofx-row-1", data: "01/07/2026", memo: "PIX RECEBIDO JC DESIGN 60701190", valor: 12072.80, status: "matched", matchSystemId: "tx-1" },
+      { id: "ofx-row-2", data: "03/07/2026", memo: "TAR COBRANCA BANCO SANTANDER", valor: -45.00, status: "pending", matchSystemId: "" },
+      { id: "ofx-row-3", data: "04/07/2026", memo: "BOLETO RECEBIDO NAZARIA 800", valor: 800.00, status: "matched", matchSystemId: "tx-9" }
+    ]);
+  };
+
+  // Configuration CRUD Add
+  const handleAddConfigurationItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!configInputName.trim()) return;
+
+    if (configActiveTab === "contas") {
+      setBankAccounts([...bankAccounts, { id: `b-${Date.now()}`, nome: configInputName, tipo: configInputExtra1 || "Conta corrente", saldoInicial: parseFloat(configInputExtra2) || 0, saldoAtual: parseFloat(configInputExtra2) || 0, ativa: true }]);
+    } else if (configActiveTab === "cartoes") {
+      setCreditCards([...creditCards, { id: `card-${Date.now()}`, nome: configInputName, bandeira: "Mastercard", limite: parseFloat(configInputExtra1) || 10000, faturaAtual: 0, diaFechamento: 15, diaVencimento: 25, ativo: true }]);
+    } else if (configActiveTab === "categorias") {
+      setCategories([...categories, { id: `cat-${Date.now()}`, nome: configInputName, natureza: (configInputExtra1 as any) || "despesa", grupoDRE: configInputExtra2 || "Outras Despesas" }]);
+    } else if (configActiveTab === "centro_custo") {
+      setCostCenters([...costCenters, { id: `cc-${Date.now()}`, nome: configInputName, classificacao: configInputExtra1 || "Geral" }]);
+    } else if (configActiveTab === "modo_pagamento") {
+      setPaymentModes([...paymentModes, { id: `pm-${Date.now()}`, nome: configInputName }]);
+    } else if (configActiveTab === "recebido_pago") {
+      setContacts([...contacts, { id: `cnt-${Date.now()}`, nome: configInputName, tipo: (configInputExtra1 as any) || "ambos" }]);
+    } else if (configActiveTab === "tags") {
+      setTags([...tags, { id: `tag-${Date.now()}`, nome: configInputName, tipo: (configInputExtra1 as any) || "despesa" }]);
+    } else if (configActiveTab === "dre") {
+      setDreConfigs([...dreConfigs, { id: `dre-${Date.now()}`, nome: configInputName, natureza: (configInputExtra1 as any) || "(-) Despesas" }]);
+    }
+
+    setConfigModalOpen(false);
+    setConfigInputName("");
+    setConfigInputExtra1("");
+    setConfigInputExtra2("");
+  };
 
   return (
-    <div className="financial-container" style={{ padding: "10px" }}>
-      {/* Sub tabs header */}
-      <div className="sub-header-tabs" style={{ display: "flex", gap: "10px", borderBottom: "1px solid var(--border)", marginBottom: "24px", overflowX: "auto" }}>
-        <button 
-          className={`tab-btn-link ${activeSubTab === "fluxo" ? "active" : ""}`}
-          onClick={() => setActiveSubTab("fluxo")}
-          style={{
-            padding: "10px 12px",
-            background: "none",
-            border: "none",
-            borderBottom: activeSubTab === "fluxo" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
-            color: activeSubTab === "fluxo" ? "var(--accent)" : "var(--text-muted)",
-            fontWeight: activeSubTab === "fluxo" ? "600" : "500",
-            fontFamily: "var(--font)",
-            cursor: "pointer",
-            fontSize: "13px",
-            whiteSpace: "nowrap"
-          }}
-        >
-          Fluxo de Caixa
-        </button>
-        <button 
-          className={`tab-btn-link ${activeSubTab === "pagar" ? "active" : ""}`}
-          onClick={() => setActiveSubTab("pagar")}
-          style={{
-            padding: "10px 12px",
-            background: "none",
-            border: "none",
-            borderBottom: activeSubTab === "pagar" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
-            color: activeSubTab === "pagar" ? "var(--accent)" : "var(--text-muted)",
-            fontWeight: activeSubTab === "pagar" ? "600" : "500",
-            fontFamily: "var(--font)",
-            cursor: "pointer",
-            fontSize: "13px",
-            whiteSpace: "nowrap"
-          }}
-        >
-          Contas a Pagar
-        </button>
-        <button 
-          className={`tab-btn-link ${activeSubTab === "receber" ? "active" : ""}`}
-          onClick={() => setActiveSubTab("receber")}
-          style={{
-            padding: "10px 12px",
-            background: "none",
-            border: "none",
-            borderBottom: activeSubTab === "receber" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
-            color: activeSubTab === "receber" ? "var(--accent)" : "var(--text-muted)",
-            fontWeight: activeSubTab === "receber" ? "600" : "500",
-            fontFamily: "var(--font)",
-            cursor: "pointer",
-            fontSize: "13px",
-            whiteSpace: "nowrap"
-          }}
-        >
-          Contas a Receber
-        </button>
-        <button 
-          className={`tab-btn-link ${activeSubTab === "boletos" ? "active" : ""}`}
-          onClick={() => setActiveSubTab("boletos")}
-          style={{
-            padding: "10px 12px",
-            background: "none",
-            border: "none",
-            borderBottom: activeSubTab === "boletos" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
-            color: activeSubTab === "boletos" ? "var(--accent)" : "var(--text-muted)",
-            fontWeight: activeSubTab === "boletos" ? "600" : "500",
-            fontFamily: "var(--font)",
-            cursor: "pointer",
-            fontSize: "13px",
-            whiteSpace: "nowrap"
-          }}
-        >
-          Boletos
-        </button>
-        <button 
-          className={`tab-btn-link ${activeSubTab === "nfe" ? "active" : ""}`}
-          onClick={() => setActiveSubTab("nfe")}
-          style={{
-            padding: "10px 12px",
-            background: "none",
-            border: "none",
-            borderBottom: activeSubTab === "nfe" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
-            color: activeSubTab === "nfe" ? "var(--accent)" : "var(--text-muted)",
-            fontWeight: activeSubTab === "nfe" ? "600" : "500",
-            fontFamily: "var(--font)",
-            cursor: "pointer",
-            fontSize: "13px",
-            whiteSpace: "nowrap"
-          }}
-        >
-          Notas Fiscais
-        </button>
-        <button 
-          className={`tab-btn-link ${activeSubTab === "centro_custo" ? "active" : ""}`}
-          onClick={() => setActiveSubTab("centro_custo")}
-          style={{
-            padding: "10px 12px",
-            background: "none",
-            border: "none",
-            borderBottom: activeSubTab === "centro_custo" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
-            color: activeSubTab === "centro_custo" ? "var(--accent)" : "var(--text-muted)",
-            fontWeight: activeSubTab === "centro_custo" ? "600" : "500",
-            fontFamily: "var(--font)",
-            cursor: "pointer",
-            fontSize: "13px",
-            whiteSpace: "nowrap"
-          }}
-        >
-          Centro de Custos
-        </button>
-        <button 
-          className={`tab-btn-link ${activeSubTab === "caixinha" ? "active" : ""}`}
-          onClick={() => setActiveSubTab("caixinha")}
-          style={{
-            padding: "10px 12px",
-            background: "none",
-            border: "none",
-            borderBottom: activeSubTab === "caixinha" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
-            color: activeSubTab === "caixinha" ? "var(--accent)" : "var(--text-muted)",
-            fontWeight: activeSubTab === "caixinha" ? "600" : "500",
-            fontFamily: "var(--font)",
-            cursor: "pointer",
-            fontSize: "13px",
-            whiteSpace: "nowrap"
-          }}
-        >
-          Caixinha
-        </button>
+    <div className="financial-module" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {/* Top Level Section Navigation Tabs */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid var(--border)", paddingBottom: "12px" }}>
+        <div style={{ display: "flex", gap: "12px" }}>
+          <button 
+            className={`btn-tab ${activeMainTab === "dashboard" ? "active" : ""}`}
+            onClick={() => setActiveMainTab("dashboard")}
+            style={{
+              padding: "10px 18px",
+              borderRadius: "10px",
+              border: "none",
+              backgroundColor: activeMainTab === "dashboard" ? "var(--accent)" : "var(--bg-card)",
+              color: activeMainTab === "dashboard" ? "#fff" : "var(--text-primary)",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              boxShadow: "var(--shadow-sm)"
+            }}
+          >
+            <LayoutDashboard size={18} /> Dashboard Financeiro
+          </button>
+          <button 
+            className={`btn-tab ${activeMainTab === "conciliacao" ? "active" : ""}`}
+            onClick={() => setActiveMainTab("conciliacao")}
+            style={{
+              padding: "10px 18px",
+              borderRadius: "10px",
+              border: "none",
+              backgroundColor: activeMainTab === "conciliacao" ? "var(--accent)" : "var(--bg-card)",
+              color: activeMainTab === "conciliacao" ? "#fff" : "var(--text-primary)",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              boxShadow: "var(--shadow-sm)"
+            }}
+          >
+            <RefreshCw size={18} /> Conciliação Bancária &amp; NFs
+          </button>
+          <button 
+            className={`btn-tab ${activeMainTab === "relatorios" ? "active" : ""}`}
+            onClick={() => setActiveMainTab("relatorios")}
+            style={{
+              padding: "10px 18px",
+              borderRadius: "10px",
+              border: "none",
+              backgroundColor: activeMainTab === "relatorios" ? "var(--accent)" : "var(--bg-card)",
+              color: activeMainTab === "relatorios" ? "#fff" : "var(--text-primary)",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              boxShadow: "var(--shadow-sm)"
+            }}
+          >
+            <BarChart3 size={18} /> Relatórios Avançados
+          </button>
+          <button 
+            className={`btn-tab ${activeMainTab === "configuracoes" ? "active" : ""}`}
+            onClick={() => setActiveMainTab("configuracoes")}
+            style={{
+              padding: "10px 18px",
+              borderRadius: "10px",
+              border: "none",
+              backgroundColor: activeMainTab === "configuracoes" ? "var(--accent)" : "var(--bg-card)",
+              color: activeMainTab === "configuracoes" ? "#fff" : "var(--text-primary)",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              boxShadow: "var(--shadow-sm)"
+            }}
+          >
+            <Settings size={18} /> Configurações Financeiras
+          </button>
+        </div>
+
+        {/* Header Right Action Buttons */}
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button className="btn-secondary" style={{ padding: "8px 14px", fontSize: "12px" }}>
+            <FileSpreadsheet size={14} /> Orçamentos
+          </button>
+          <button className="btn-secondary" style={{ padding: "8px 14px", fontSize: "12px" }}>
+            ⭐ Eventos
+          </button>
+          <button className="btn-secondary" style={{ padding: "8px 14px", fontSize: "12px" }}>
+            ⚡ Atalhos
+          </button>
+        </div>
       </div>
 
-      {/* Fluxo de Caixa Tab */}
-      {activeSubTab === "fluxo" && (
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 1. DASHBOARD FINANCEIRO                                       */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {activeMainTab === "dashboard" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-          {/* Metrics grid */}
-          <div className="responsive-layout-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
-            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
-              <div>
-                <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Receitas Acumuladas</span>
-                <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--accent-text)", marginTop: "4px" }}>R$ {totalReceitas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h3>
-              </div>
-              <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--accent-glow)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <TrendingUp size={20} />
-              </div>
+          {/* Top Banner & Main Cards Row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "20px" }}>
+            {/* Blue Banner */}
+            <div 
+              style={{ 
+                background: "linear-gradient(135deg, #0052cc 0%, #0099ff 100%)", 
+                borderRadius: "16px", 
+                padding: "20px", 
+                color: "#fff", 
+                display: "flex", 
+                flexDirection: "column", 
+                justifyContent: "space-between",
+                boxShadow: "var(--shadow-md)"
+              }}
+            >
+              <div style={{ fontSize: "12px", opacity: 0.9 }}>Abra sua Carteira Digital</div>
+              <h3 style={{ fontSize: "24px", fontWeight: "800", margin: "10px 0" }}>⚡ Mezy</h3>
+              <span style={{ fontSize: "11px", textDecoration: "underline", cursor: "pointer" }}>*Clique Aqui</span>
             </div>
 
-            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
-              <div>
-                <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Despesas Acumuladas</span>
-                <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--accent-secondary)", marginTop: "4px" }}>R$ {totalDespesas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h3>
-              </div>
-              <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--danger-glow)", color: "var(--danger-text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <TrendingDown size={20} />
-              </div>
+            {/* Receitas Card */}
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", borderTop: "4px solid #00c853", boxShadow: "var(--shadow-sm)" }}>
+              <div style={{ fontSize: "11px", color: "#00c853", fontWeight: "700", textTransform: "uppercase" }}>RECEITAS JULHO</div>
+              <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>SALDO ATUAL</div>
+              <h2 style={{ fontSize: "22px", fontWeight: "800", color: "var(--text-primary)", margin: "4px 0" }}>
+                R$ {receitasJulho.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </h2>
+              <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>PREVISÃO DO MÊS R$ 358.315,99</div>
             </div>
 
-            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
-              <div>
-                <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Saldo Líquido</span>
-                <h3 style={{ fontSize: "22px", fontWeight: "700", color: saldoTotal >= 0 ? "var(--success-text)" : "var(--danger)", marginTop: "4px" }}>R$ {saldoTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h3>
-              </div>
-              <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: saldoTotal >= 0 ? "var(--success-glow)" : "var(--danger-glow)", color: saldoTotal >= 0 ? "var(--success-text)" : "var(--danger)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Wallet size={20} />
-              </div>
+            {/* Despesas Card */}
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", borderTop: "4px solid #ff3d00", boxShadow: "var(--shadow-sm)" }}>
+              <div style={{ fontSize: "11px", color: "#ff3d00", fontWeight: "700", textTransform: "uppercase" }}>DESPESAS JULHO</div>
+              <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>SALDO ATUAL</div>
+              <h2 style={{ fontSize: "22px", fontWeight: "800", color: "var(--text-primary)", margin: "4px 0" }}>
+                R$ {despesasJulho.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </h2>
+              <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>PREVISÃO DO MÊS R$ 327.368,11</div>
             </div>
-          </div>
 
-          {/* Title and register trigger */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px" }}>
-            <h4 style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-primary)", fontFamily: "var(--font-title)" }}>Transações Fiscais e Contas</h4>
-            <button className="btn-primary" onClick={() => setIsInvoiceModalOpen(true)}>
-              <Plus size={16} /> Lançar Movimentação
-            </button>
-          </div>
-
-          {/* Transactions listing table */}
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-              <thead>
-                <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
-                  <th style={{ padding: "14px 20px", color: "var(--text-primary)", fontWeight: "600", fontSize: "13px" }}>Tipo</th>
-                  <th style={{ padding: "14px 20px", color: "var(--text-primary)", fontWeight: "600", fontSize: "13px" }}>Origem/Fornecedor</th>
-                  <th style={{ padding: "14px 20px", color: "var(--text-primary)", fontWeight: "600", fontSize: "13px" }}>Categoria</th>
-                  <th style={{ padding: "14px 20px", color: "var(--text-primary)", fontWeight: "600", fontSize: "13px" }}>Data</th>
-                  <th style={{ padding: "14px 20px", color: "var(--text-primary)", fontWeight: "600", fontSize: "13px" }}>Forma Pgto</th>
-                  <th style={{ padding: "14px 20px", color: "var(--text-primary)", fontWeight: "600", fontSize: "13px" }}>Anexos</th>
-                  <th style={{ padding: "14px 20px", color: "var(--text-primary)", fontWeight: "600", fontSize: "13px", textAlign: "right" }}>Valor</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoices.map((inv) => (
-                  <tr 
-                    key={inv.id} 
-                    onClick={() => handleOpenEditModal(inv)}
-                    style={{ borderBottom: "1px solid var(--border)", cursor: "pointer", transition: "var(--transition)" }}
-                  >
-                    <td style={{ padding: "14px 20px" }}>
-                      <span 
-                        style={{
-                          fontSize: "10px",
-                          fontWeight: "700",
-                          textTransform: "uppercase",
-                          padding: "2px 6px",
-                          borderRadius: "4px",
-                          backgroundColor: inv.tipo === "receita" ? "var(--success-glow)" : "var(--danger-glow)",
-                          color: inv.tipo === "receita" ? "var(--success-text)" : "var(--danger-text)"
-                        }}
-                      >
-                        {inv.tipo === "receita" ? "Receita" : "Despesa"}
-                      </span>
-                    </td>
-                    <td style={{ padding: "14px 20px", fontWeight: "600" }}>{inv.vendor}</td>
-                    <td style={{ padding: "14px 20px" }}>
-                      <span style={{ fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "4px", color: "var(--text-secondary)" }}>
-                        <Tag size={12} /> {inv.categoria || "Material"}
-                      </span>
-                    </td>
-                    <td style={{ padding: "14px 20px", color: "var(--text-muted)", fontSize: "12px" }}>{inv.date}</td>
-                    <td style={{ padding: "14px 20px", fontSize: "12px" }}>{inv.formaPagamento || "Pix"}</td>
-                    <td style={{ padding: "14px 20px" }}>
-                      <div style={{ display: "flex", gap: "6px" }} onClick={(e) => e.stopPropagation()}>
-                        {inv.pdfBoleto && <span title={`Boleto: ${inv.pdfBoleto}`} style={{ cursor: "pointer", color: "var(--accent-secondary)", fontWeight: "600", fontSize: "11px" }}>📄 Bol</span>}
-                        {inv.pdfNFe && <span title={`NFe: ${inv.pdfNFe}`} style={{ cursor: "pointer", color: "var(--success-text)", fontWeight: "600", fontSize: "11px" }}>🧾 NFe</span>}
-                        {!inv.pdfBoleto && !inv.pdfNFe && <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>Nenhum</span>}
-                      </div>
-                    </td>
-                    <td style={{ padding: "14px 20px", fontWeight: "700", textAlign: "right", color: inv.tipo === "receita" ? "var(--accent-text)" : "var(--text-primary)" }}>
-                      {inv.tipo === "receita" ? "+" : "-"} R$ {inv.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Contas a Pagar Tab */}
-      {activeSubTab === "pagar" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>Controle de Contas a Pagar (Despesas &amp; Custos)</h4>
-            <button className="btn-primary" onClick={() => setIsInvoiceModalOpen(true)}>
-              <Plus size={16} /> Nova Conta a Pagar
-            </button>
-          </div>
-
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-              <thead>
-                <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
-                  <th style={{ padding: "14px 20px" }}>Fornecedor</th>
-                  <th style={{ padding: "14px 20px" }}>Descrição / Centro Custo</th>
-                  <th style={{ padding: "14px 20px" }}>Forma / Recorrência</th>
-                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Valor</th>
-                  <th style={{ padding: "14px 20px" }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoices.filter(i => i.tipo === "despesa").map((inv) => {
-                  const linkedEvt = events.find(e => e.id === inv.eventoId);
-                  return (
-                    <tr key={inv.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                      <td style={{ padding: "14px 20px" }}>
-                        <strong>{inv.vendor}</strong>
-                        <span style={{ display: "block", fontSize: "10px", color: "var(--text-muted)" }}>NF: {inv.invoiceNumber}</span>
-                      </td>
-                      <td style={{ padding: "14px 20px" }}>
-                        <span>{inv.description}</span>
-                        {linkedEvt && (
-                          <span style={{ display: "block", fontSize: "10px", color: "var(--accent)" }}>Centro de Custo: {linkedEvt.name}</span>
-                        )}
-                      </td>
-                      <td style={{ padding: "14px 20px", fontSize: "12px" }}>
-                        <span>{inv.formaPagamento}</span>
-                        {inv.recorrente ? (
-                          <span className="badge badge-warning" style={{ fontSize: "8px", marginLeft: "6px" }}>Mensal Recorrente</span>
-                        ) : (
-                          inv.parcelas && inv.parcelas > 1 && (
-                            <span className="badge badge-muted" style={{ fontSize: "8px", marginLeft: "6px" }}>{inv.parcelas}x Parcelado</span>
-                          )
-                        )}
-                      </td>
-                      <td style={{ padding: "14px 20px", textAlign: "right", fontWeight: "700", color: "var(--danger-text)" }}>
-                        - R$ {inv.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </td>
-                      <td style={{ padding: "14px 20px" }}>
-                        <span className={`badge badge-${inv.status === "pago" ? "success" : "warning"}`}>
-                          {inv.status.toUpperCase()}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Contas a Receber Tab */}
-      {activeSubTab === "receber" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>Faturamento Comercial &amp; Recebíveis</h4>
-            <button className="btn-primary" onClick={() => setIsInvoiceModalOpen(true)}>
-              <Plus size={16} /> Novo Contas a Receber
-            </button>
-          </div>
-
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-              <thead>
-                <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
-                  <th style={{ padding: "14px 20px" }}>Cliente / Contratante</th>
-                  <th style={{ padding: "14px 20px" }}>Descrição Faturamento</th>
-                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Valor Recebido</th>
-                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Valor Pendente</th>
-                  <th style={{ padding: "14px 20px" }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoices.filter(i => i.tipo === "receita").map((inv) => {
-                  const linkedEvt = events.find(e => e.id === inv.eventoId);
-                  const isLate = inv.status === "atrasado" || inv.inadimplente;
-                  return (
-                    <tr key={inv.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                      <td style={{ padding: "14px 20px" }}>
-                        <strong>{inv.vendor}</strong>
-                        {isLate && (
-                          <span className="badge badge-danger" style={{ fontSize: "8px", marginLeft: "6px" }}>Inadimplente</span>
-                        )}
-                      </td>
-                      <td style={{ padding: "14px 20px" }}>
-                        <span>{inv.description}</span>
-                        {linkedEvt && (
-                          <span style={{ display: "block", fontSize: "10px", color: "var(--accent)" }}>Projeto/OS: {linkedEvt.codigo}</span>
-                        )}
-                      </td>
-                      <td style={{ padding: "14px 20px", textAlign: "right", color: "var(--success-text)", fontWeight: "600" }}>
-                        R$ {(inv.recebimentoParcial || (inv.status === "pago" ? inv.value : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </td>
-                      <td style={{ padding: "14px 20px", textAlign: "right", fontWeight: "700" }}>
-                        R$ {(inv.value - (inv.recebimentoParcial || (inv.status === "pago" ? inv.value : 0))).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </td>
-                      <td style={{ padding: "14px 20px" }}>
-                        <span className={`badge badge-${inv.status === "pago" ? "success" : isLate ? "danger" : "warning"}`}>
-                          {inv.status.toUpperCase()}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Consulta de Boletos Tab */}
-      {activeSubTab === "boletos" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>Consulta Integrada de Boletos</h4>
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              <button className="btn-primary" onClick={() => setIsBoletoModalOpen(true)} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                <Plus size={14} /> Registrar Boleto Manual
-              </button>
-              <select 
-                value={boletoStatusFilter}
-                onChange={(e) => setBoletoStatusFilter(e.target.value as any)}
-                style={{ padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "var(--bg-card)", color: "var(--text-primary)" }}
-              >
-                <option value="all">Filtrar por Status</option>
-                <option value="pago">Confirmados (Pagos)</option>
-                <option value="pendente">Abertos (Pendentes)</option>
-                <option value="atrasado">Vencidos (Atrasados)</option>
-                <option value="cancelado">Cancelados</option>
-              </select>
+            {/* Saldo Card */}
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", borderTop: "4px solid #00b0ff", boxShadow: "var(--shadow-sm)" }}>
+              <div style={{ fontSize: "11px", color: "#00b0ff", fontWeight: "700", textTransform: "uppercase" }}>SALDO</div>
+              <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>TODAS AS CONTAS</div>
+              <h2 style={{ fontSize: "22px", fontWeight: "800", color: "var(--text-primary)", margin: "4px 0" }}>
+                R$ {saldoGeral.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </h2>
             </div>
           </div>
 
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-              <thead>
-                <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
-                  <th style={{ padding: "14px 20px" }}>Código / Linha Digitável</th>
-                  <th style={{ padding: "14px 20px" }}>Pagador (Cliente)</th>
-                  <th style={{ padding: "14px 20px" }}>Vencimento</th>
-                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Valor</th>
-                  <th style={{ padding: "14px 20px" }}>Anexos</th>
-                  <th style={{ padding: "14px 20px" }}>Status</th>
-                  <th style={{ padding: "14px 20px", textAlign: "center" }}>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {boletos.filter(b => {
-                  if (boletoStatusFilter === "all") return true;
-                  if (boletoStatusFilter === "atrasado") return b.status === "vencido";
-                  return b.status === boletoStatusFilter;
-                }).map((bol) => {
-                  return (
-                    <tr key={bol.id} style={{ borderBottom: "1px solid var(--border)", fontSize: "12px" }}>
-                      <td style={{ padding: "14px 20px", fontFamily: "monospace", maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis" }} title={bol.numero}>
-                        {bol.numero}
-                      </td>
-                      <td style={{ padding: "14px 20px" }}><strong>{bol.cliente}</strong></td>
-                      <td style={{ padding: "14px 20px" }}>{bol.vencimento}</td>
-                      <td style={{ padding: "14px 20px", textAlign: "right", fontWeight: "700" }}>
-                        R$ {bol.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </td>
-                      <td style={{ padding: "14px 20px" }}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                          {bol.pdfAnexoNome ? (
-                            <a href="#" onClick={(e) => { e.preventDefault(); alert(`Download do boleto PDF: ${bol.pdfAnexoNome}`); }} style={{ fontSize: "10px", color: "var(--accent-text)", textDecoration: "underline" }}>
-                              📄 Boleto PDF
-                            </a>
-                          ) : (
-                            <span className="text-muted" style={{ fontStyle: "italic", fontSize: "10px" }}>Sem PDF</span>
-                          )}
-                          {bol.comprovanteAnexoNome ? (
-                            <a href="#" onClick={(e) => { e.preventDefault(); alert(`Download do comprovante de pagamento: ${bol.comprovanteAnexoNome}`); }} style={{ fontSize: "10px", color: "var(--success-text)", textDecoration: "underline" }}>
-                              ✔ Comprovante
-                            </a>
-                          ) : null}
-                        </div>
-                      </td>
-                      <td style={{ padding: "14px 20px" }}>
-                        <span className={`badge badge-${bol.status === "pago" ? "success" : bol.status === "vencido" ? "danger" : bol.status === "cancelado" ? "muted" : "warning"}`}>
-                          {bol.status.toUpperCase()}
-                        </span>
-                      </td>
-                      <td style={{ padding: "14px 20px", textAlign: "center" }}>
-                        <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
-                          <button 
-                            className="btn-secondary btn-xs"
-                            onClick={() => alert(`Histórico de logs do Boleto:\n\n${bol.historicoLogs.map((log: string, i: number) => `${i+1}. ${log}`).join("\n")}`)}
-                            title="Ver Histórico/Logs"
-                          >
-                            Histórico
-                          </button>
-                          {bol.status === "pendente" && (
-                            <button 
-                              className="btn-success btn-xs"
-                              onClick={() => handlePayBoleto(bol.id)}
-                            >
-                              Dar Baixa
-                            </button>
-                          )}
-                          {bol.status !== "cancelado" && bol.status !== "pago" && (
-                            <button 
-                              className="btn-danger btn-xs"
-                              onClick={() => handleCancelBoleto(bol.id)}
-                            >
-                              Cancelar
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Notas Fiscais Tab */}
-      {activeSubTab === "nfe" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>Histórico de Notas Fiscais Emitidas (SEFAZ)</h4>
-            <button className="btn-primary" onClick={() => setIsNfeModalOpen(true)}>
-              <Plus size={16} /> Emitir Nova Nota Fiscal
-            </button>
-          </div>
-
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-              <thead>
-                <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
-                  <th style={{ padding: "14px 20px" }}>Número / Série</th>
-                  <th style={{ padding: "14px 20px" }}>Cliente</th>
-                  <th style={{ padding: "14px 20px" }}>Tipo NF</th>
-                  <th style={{ padding: "14px 20px" }}>Itens Faturados</th>
-                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Valor</th>
-                  <th style={{ padding: "14px 20px" }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {nfs.map((nf) => {
-                  return (
-                    <tr key={nf.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                      <td style={{ padding: "14px 20px", fontFamily: "monospace", fontSize: "12px" }}>
-                        NF {nf.numero} {nf.serie && `(Série ${nf.serie})`}
-                        <span style={{ display: "block", fontSize: "9px", color: "var(--text-muted)" }}>Emissão: {nf.dataEmissao}</span>
-                        {/* 3.1 file links */}
-                        <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
-                          {nf.pdfAnexoNome ? (
-                            <a href="#" onClick={(e) => { e.preventDefault(); alert(`Simulando download do PDF da Nota Fiscal: ${nf.pdfAnexoNome}`); }} style={{ fontSize: "9px", color: "var(--accent)", textDecoration: "underline" }}>
-                              PDF
-                            </a>
-                          ) : (
-                            <span style={{ fontSize: "9px", color: "var(--text-muted)", fontStyle: "italic" }}>Sem PDF</span>
-                          )}
-                          {nf.xmlAnexoNome ? (
-                            <a href="#" onClick={(e) => { e.preventDefault(); alert(`Simulando download do XML da Nota Fiscal: ${nf.xmlAnexoNome}`); }} style={{ fontSize: "9px", color: "var(--accent-secondary)", textDecoration: "underline" }}>
-                              XML
-                            </a>
-                          ) : (
-                            <span style={{ fontSize: "9px", color: "var(--text-muted)", fontStyle: "italic" }}>Sem XML</span>
-                          )}
-                        </div>
-                      </td>
-                      <td style={{ padding: "14px 20px" }}><strong>{nf.cliente}</strong></td>
-                      <td style={{ padding: "14px 20px" }}>
-                        <span className="badge badge-muted" style={{ fontSize: "10px" }}>{nf.tipo}</span>
-                      </td>
-                      <td style={{ padding: "14px 20px", fontSize: "12px", maxWidth: "250px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {nf.produtos.join(", ")}
-                      </td>
-                      <td style={{ padding: "14px 20px", textAlign: "right", fontWeight: "700" }}>
-                        R$ {nf.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </td>
-                      <td style={{ padding: "14px 20px" }}>
-                        <span className={`badge badge-${nf.status === "emitida" ? "success" : "danger"}`}>
-                          {nf.status === "emitida" ? "HOMOLOGADA" : "CANCELADA"}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Centro de Custo Tab */}
-      {activeSubTab === "centro_custo" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-          {/* Top selection selector */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", padding: "16px 24px", borderRadius: "16px" }}>
-            <div>
-              <label style={{ display: "block", fontSize: "11px", fontWeight: "700", textTransform: "uppercase", color: "var(--text-secondary)", marginBottom: "4px" }}>Selecione o Estande/Evento:</label>
-              <select 
-                value={selectedEventId}
-                onChange={(e) => setSelectedEventId(e.target.value)}
-                style={{ padding: "8px 16px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)", fontSize: "14px", fontWeight: "600", color: "var(--text-primary)", backgroundColor: "var(--bg-card)", minWidth: "300px" }}
-              >
-                {events.map(evt => (
-                  <option key={evt.id} value={evt.id}>{evt.name} ({evt.client})</option>
-                ))}
-              </select>
-            </div>
+          {/* Main Dashboard Layout Grid (Left Sidebar 1fr, Main Extrato 3fr) */}
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: "24px" }}>
             
-            <div style={{ textAlign: "right" }}>
-              <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Receita Estimada de Contrato:</span>
-              <h3 style={{ fontSize: "20px", fontWeight: "700", color: "var(--accent)" }}>R$ {receitaContratada.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h3>
-            </div>
-          </div>
-
-          {/* Breakdown cards & indicators */}
-          {selectedEvent ? (
-            <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "24px" }}>
-              {/* Detailed Category Table */}
-              <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h5 style={{ fontSize: "14px", fontWeight: "600", borderBottom: "1px solid var(--border)", paddingBottom: "10px", color: "var(--text-primary)" }}>Detalhamento por Linha de Despesa</h5>
-                
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {categoriesList.map((cat) => {
-                    const costVal = dynamicCosts[cat.key] || 0;
-                    const assignedSupplier = selectedEvent.centroCusto.fornecedoresDespesas?.[cat.key] || "";
-                    
-                    return (
-                      <div key={cat.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px", padding: "8px 0", borderBottom: "1px dashed var(--border)", gap: "12px" }}>
-                        <span style={{ fontWeight: "500" }}>{cat.label}</span>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <select
-                            value={assignedSupplier}
-                            onChange={(e) => handleAssignSupplier(cat.key, e.target.value)}
-                            style={{
-                              padding: "4px 8px",
-                              border: "1px solid var(--border)",
-                              borderRadius: "6px",
-                              fontSize: "11px",
-                              background: "var(--bg-card)",
-                              color: "var(--text-secondary)",
-                              outline: "none",
-                              maxWidth: "160px"
-                            }}
-                          >
-                            <option value="">-- Sem Fornecedor --</option>
-                            {fornecedores.map(s => (
-                              <option key={s.name} value={s.name}>{s.name}</option>
-                            ))}
-                          </select>
-                          <strong style={{ whiteSpace: "nowrap" }}>R$ {costVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+            {/* Left Sidebar Panel */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              
+              {/* Minhas Contas Card */}
+              <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "18px", boxShadow: "var(--shadow-sm)" }}>
+                <h4 style={{ fontSize: "12px", fontWeight: "700", color: "#0099ff", textTransform: "uppercase", marginBottom: "14px" }}>MINHAS CONTAS</h4>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {bankAccounts.map(b => (
+                    <div key={b.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ width: "24px", height: "24px", borderRadius: "4px", backgroundColor: b.nome.includes("INTER") ? "#ff6600" : b.nome.includes("ITAÚ") ? "#003399" : "#cc0000", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "800", fontSize: "10px" }}>
+                          {b.nome.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <span style={{ fontSize: "11px", fontWeight: "700", display: "block" }}>{b.nome}</span>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", fontSize: "15px", paddingTop: "12px", borderTop: "2px solid var(--border)", color: "var(--text-primary)" }}>
-                  <span>Custo Total Realizado:</span>
-                  <span>R$ {totalCustoEvento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                </div>
-
-                {supplierPayables.length > 0 && (
-                  <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "2px dashed var(--border)" }}>
-                    <h6 style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                      Contas a Pagar do Estande (Consolidado por Fornecedor)
-                    </h6>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      {supplierPayables.map((sp) => (
-                        <div key={sp.name} style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "var(--text-primary)", backgroundColor: "var(--bg-main)", padding: "6px 12px", borderRadius: "6px" }}>
-                          <span>🤝 {sp.name}</span>
-                          <strong style={{ color: "var(--accent-secondary)" }}>R$ {sp.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                        </div>
-                      ))}
+                      <span style={{ fontSize: "11px", fontWeight: "700", color: b.saldoAtual >= 0 ? "var(--text-primary)" : "#ff3d00" }}>
+                        R$ {b.saldoAtual.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </span>
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
 
-              {/* Profitability gauges and ranking list */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "var(--shadow-sm)" }}>
-                  <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Margem de Lucro Bruto</span>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
-                    <h3 style={{ fontSize: "28px", fontWeight: "800", color: lucroRealizado >= 0 ? "var(--success-text)" : "var(--danger-text)" }}>
-                      {margemLucro.toFixed(1)}%
-                    </h3>
-                    <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-muted)" }}>
-                      (R$ {lucroRealizado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})
-                    </span>
+              {/* Receitas / Despesas Donut Chart Widget */}
+              <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "18px", textAlign: "center", boxShadow: "var(--shadow-sm)" }}>
+                <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>Receitas/Despesas (Julho)</span>
+                
+                {/* SVG Donut Chart */}
+                <div style={{ position: "relative", width: "140px", height: "140px", margin: "16px auto" }}>
+                  <svg viewBox="0 0 36 36" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
+                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#ff3d00" strokeWidth="4.5" />
+                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#29b6f6" strokeWidth="4.5" strokeDasharray="47.7, 100" />
+                  </svg>
+                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", fontSize: "10px", fontWeight: "700" }}>
+                    <span style={{ color: "#29b6f6" }}>47.7%</span> / <span style={{ color: "#ff3d00" }}>52.3%</span>
                   </div>
-                  
-                  {/* Progress bar visual */}
-                  <div style={{ height: "8px", background: "var(--border)", borderRadius: "4px", overflow: "hidden", marginTop: "8px" }}>
-                    <div 
-                      style={{ 
-                        height: "100%", 
-                        width: `${Math.max(0, Math.min(100, margemLucro))}%`, 
-                        background: margemLucro >= 30 ? "var(--success-text)" : margemLucro >= 10 ? "var(--accent-secondary)" : "var(--danger-text)" 
-                      }}
-                    ></div>
-                  </div>
-                  <span style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>
-                    * Indicador ideal de margem de montagem de stands é acima de 25%.
+                </div>
+
+                <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                  Previsão Julho: <strong style={{ color: "var(--text-primary)" }}>R$ 30.947,88</strong>
+                </div>
+              </div>
+
+              {/* Meus Cartões Panel */}
+              <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "18px", boxShadow: "var(--shadow-sm)" }}>
+                <h4 style={{ fontSize: "12px", fontWeight: "700", color: "#0099ff", textTransform: "uppercase", marginBottom: "14px" }}>MEUS CARTÕES</h4>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "220px", overflowY: "auto" }}>
+                  {creditCards.map(card => (
+                    <div key={card.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px dashed var(--border)", paddingBottom: "6px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <div style={{ width: "20px", height: "14px", borderRadius: "2px", backgroundColor: "#ff3d00", color: "#fff", fontSize: "8px", fontWeight: "900", display: "flex", alignItems: "center", justifyContent: "center" }}>MC</div>
+                        <span style={{ fontSize: "10px", fontWeight: "600" }}>{card.nome}</span>
+                      </div>
+                      <span style={{ fontSize: "10px", fontWeight: "700", color: card.faturaAtual > 0 ? "#ff3d00" : "var(--text-muted)" }}>
+                        R$ {card.faturaAtual > 0 ? `-${card.faturaAtual.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "0,00"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recebimentos em Atraso Panel */}
+              <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderLeft: "4px solid #ff9800", borderRadius: "16px", padding: "16px", boxShadow: "var(--shadow-sm)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "11px", fontWeight: "700", color: "#ff9800", textTransform: "uppercase" }}>RECEBIMENTOS EM ATRASO</span>
+                  <span style={{ backgroundColor: "#ff9800", color: "#fff", borderRadius: "50%", width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: "800" }}>
+                    {lateReceivables.length}
                   </span>
                 </div>
+                <h3 style={{ fontSize: "18px", fontWeight: "800", margin: "8px 0" }}>
+                  R$ {totalLateReceivables.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </h3>
 
-                {/* Profitability Ranking Table */}
-                <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "var(--shadow-sm)" }}>
-                  <h5 style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>Ranking de Lucratividade</h5>
-                  
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {rankedEvents.map((item, index) => (
-                      <div key={index} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "6px 0", borderBottom: index !== rankedEvents.length - 1 ? "1px solid var(--border)" : "none" }}>
-                        <span style={{ fontWeight: "700", color: "var(--text-muted)", fontSize: "13px" }}>#{index + 1}</span>
-                        <div style={{ flexGrow: 1, minWidth: 0 }}>
-                          <span style={{ display: "block", fontSize: "12px", fontWeight: "600", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</span>
-                          <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>Custo: R$ {item.totalCost.toLocaleString("pt-BR")}</span>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <span style={{ display: "block", fontSize: "12px", fontWeight: "700", color: item.profit >= 0 ? "var(--success-text)" : "var(--danger-text)" }}>
-                            R$ {item.profit.toLocaleString("pt-BR")}
-                          </span>
-                          <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>{item.margin.toFixed(0)}% margem</span>
-                        </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "10px" }}>
+                  {lateReceivables.slice(0, 3).map(item => (
+                    <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", backgroundColor: "var(--bg-main)", padding: "6px 8px", borderRadius: "6px" }}>
+                      <div style={{ minWidth: 0, flexGrow: 1 }}>
+                        <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.desc}</strong>
+                        <span style={{ color: "#ff3d00" }}>{item.diasAtraso} dias em atraso</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <p className="text-muted" style={{ textAlign: "center", padding: "30px" }}>Carregando dados dos projetos...</p>
-          )}
-        </div>
-      )}
-
-      {/* Caixinha & Reembolsos Tab */}
-      {activeSubTab === "caixinha" && (
-        <div className="responsive-layout-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "24px" }}>
-          {/* Left Form launch */}
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)", height: "fit-content" }}>
-            <h5 style={{ fontSize: "14px", fontWeight: "600", color: "var(--accent)", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>Adiantamento / Vale Obra</h5>
-            
-            <form onSubmit={handleAddCaixinha} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Colaborador</label>
-                <input 
-                  type="text" 
-                  value={colaboradorNome} 
-                  onChange={(e) => setColaboradorNome(e.target.value)} 
-                  placeholder="Nome do profissional" 
-                  required
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text-primary)" }}
-                />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Tipo</label>
-                  <select 
-                    value={caixinhaTipo} 
-                    onChange={(e) => setCaixinhaTipo(e.target.value)}
-                    style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", height: "38px", color: "var(--text-primary)" }}
-                  >
-                    <option value="vale">Vale Alimentação</option>
-                    <option value="adiantamento">Adiantamento</option>
-                    <option value="reembolso">Reembolso</option>
-                    <option value="combustivel">Combustível</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Valor (R$)</label>
-                  <input 
-                    type="number" 
-                    value={caixinhaValor} 
-                    onChange={(e) => setCaixinhaValor(parseFloat(e.target.value) || 0)} 
-                    required
-                    style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text-primary)" }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Descrição / Finalidade</label>
-                <textarea 
-                  value={caixinhaDesc} 
-                  onChange={(e) => setCaixinhaDesc(e.target.value)} 
-                  placeholder="Ex: Almoço da equipe de montagem..."
-                  rows={3} 
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)", color: "var(--text-primary)" }}
-                />
-              </div>
-
-              <button type="submit" className="btn-primary" style={{ marginTop: "8px" }}>Entregar Dinheiro (Registrar)</button>
-            </form>
-          </div>
-
-          {/* Right ledger lists */}
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)" }}>
-            <h5 style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" }}>Livro Diário de Despesas de Campo</h5>
-            
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {caixinhaLogs.map(log => (
-                <div key={log.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", border: "1px solid var(--border)", borderRadius: "12px", backgroundColor: "var(--bg-card-hover)" }}>
-                  <div>
-                    <strong style={{ display: "block", fontSize: "13px", color: "var(--text-primary)" }}>{log.colaborador}</strong>
-                    <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>{log.desc} | {log.date}</span>
-                  </div>
-                  <div style={{ textAlign: "right", display: "flex", alignItems: "center", gap: "12px" }}>
-                    <div>
-                      <span style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "var(--text-primary)" }}>R$ {log.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                      <span style={{ fontSize: "10px", color: "var(--text-secondary)", textTransform: "uppercase" }}>{log.tipo}</span>
+                      <button className="btn-success btn-xs" onClick={() => handleQuickSettleReceivable(item.id)} style={{ marginLeft: "6px", fontSize: "9px" }}>
+                        Baixa
+                      </button>
                     </div>
-                    
-                    <span 
-                      style={{
-                        fontSize: "9px",
-                        fontWeight: "700",
-                        padding: "2px 6px",
-                        borderRadius: "4px",
-                        backgroundColor: log.status === "prestado" ? "var(--success-glow)" : "var(--warning-glow)",
-                        color: log.status === "prestado" ? "var(--success-text)" : "var(--warning-text)"
-                      }}
-                    >
-                      {log.status === "prestado" ? "Prestado" : "Pendente"}
-                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Pagamentos em Atraso Panel */}
+              <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderLeft: "4px solid #ff3d00", borderRadius: "16px", padding: "16px", boxShadow: "var(--shadow-sm)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "11px", fontWeight: "700", color: "#ff3d00", textTransform: "uppercase" }}>PAGAMENTOS EM ATRASO</span>
+                  <span style={{ backgroundColor: "#ff3d00", color: "#fff", borderRadius: "50%", width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: "800" }}>
+                    {latePayables.length}
+                  </span>
+                </div>
+                <h3 style={{ fontSize: "18px", fontWeight: "800", margin: "8px 0" }}>
+                  R$ {totalLatePayables.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </h3>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "10px" }}>
+                  {latePayables.slice(0, 3).map(item => (
+                    <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", backgroundColor: "var(--bg-main)", padding: "6px 8px", borderRadius: "6px" }}>
+                      <div style={{ minWidth: 0, flexGrow: 1 }}>
+                        <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.desc}</strong>
+                        <span style={{ color: "#ff3d00" }}>{item.diasAtraso} dias em atraso</span>
+                      </div>
+                      <button className="btn-danger btn-xs" onClick={() => handleQuickSettlePayable(item.id)} style={{ marginLeft: "6px", fontSize: "9px" }}>
+                        Pagar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Central Area: Period Navigator & Extrato Table */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              
+              {/* Period Selector & Action Buttons Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "14px 20px" }}>
+                
+                {/* Month Navigator with Popover */}
+                <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <button className="btn-secondary" onClick={() => setSelectedMonth(prev => prev > 1 ? prev - 1 : 12)} style={{ padding: "6px 10px" }}>
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  <h3 style={{ fontSize: "16px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "1px" }}>
+                    {monthNames[selectedMonth - 1]} - {selectedYear}
+                  </h3>
+
+                  <button className="btn-secondary" onClick={() => setSelectedMonth(prev => prev < 12 ? prev + 1 : 1)} style={{ padding: "6px 10px" }}>
+                    <ChevronRight size={16} />
+                  </button>
+
+                  <button className="btn-secondary" onClick={() => setIsDatePickerOpen(!isDatePickerOpen)} style={{ padding: "6px 10px" }} title="Abrir Calendário">
+                    <Calendar size={16} />
+                  </button>
+
+                  {/* Calendar Popover */}
+                  {isDatePickerOpen && (
+                    <div style={{ position: "absolute", top: "45px", left: "0", backgroundColor: "#263238", border: "1px solid #37474f", borderRadius: "12px", padding: "16px", color: "#fff", zIndex: 100, boxShadow: "0 10px 25px rgba(0,0,0,0.5)", width: "240px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                        <button style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }} onClick={() => setSelectedYear(prev => prev - 1)}>&lt;</button>
+                        <strong>{selectedYear}</strong>
+                        <button style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }} onClick={() => setSelectedYear(prev => prev + 1)}>&gt;</button>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
+                        {shortMonthNames.map((m, idx) => (
+                          <button
+                            key={m}
+                            onClick={() => {
+                              setSelectedMonth(idx + 1);
+                              setIsDatePickerOpen(false);
+                            }}
+                            style={{
+                              padding: "8px 4px",
+                              borderRadius: "6px",
+                              border: "none",
+                              backgroundColor: selectedMonth === idx + 1 ? "#37474f" : "transparent",
+                              color: selectedMonth === idx + 1 ? "#00e676" : "#fff",
+                              fontWeight: selectedMonth === idx + 1 ? "800" : "500",
+                              cursor: "pointer",
+                              fontSize: "11px"
+                            }}
+                          >
+                            {m}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Primary Action Buttons */}
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <button className="btn-success" onClick={() => setIsRecebimentoModalOpen(true)} style={{ backgroundColor: "#4caf50", color: "#fff", padding: "8px 16px", borderRadius: "8px", fontWeight: "700", fontSize: "12px", border: "none", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                    <Plus size={16} /> RECEBIMENTO
+                  </button>
+
+                  <button className="btn-danger" onClick={() => setIsDespesaModalOpen(true)} style={{ backgroundColor: "#e53935", color: "#fff", padding: "8px 16px", borderRadius: "8px", fontWeight: "700", fontSize: "12px", border: "none", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                    <Plus size={16} /> DESPESA
+                  </button>
+
+                  <button onClick={() => setIsTransferModalOpen(true)} style={{ backgroundColor: "#eceff1", color: "#37474f", padding: "8px 16px", borderRadius: "8px", fontWeight: "700", fontSize: "12px", border: "1px solid #cfd8dc", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                    <ArrowLeftRight size={16} /> TRANSFERÊNCIA
+                  </button>
+
+                  {/* Export Menu Popover */}
+                  <div style={{ position: "relative" }}>
+                    <button onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)} style={{ backgroundColor: "#29b6f6", color: "#fff", padding: "8px 16px", borderRadius: "8px", fontWeight: "700", fontSize: "12px", border: "none", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                      <Download size={14} /> Exportar ▾
+                    </button>
+
+                    {isExportDropdownOpen && (
+                      <div style={{ position: "absolute", right: 0, top: "40px", backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "8px", boxShadow: "var(--shadow-md)", zIndex: 50, display: "flex", flexDirection: "column", width: "120px" }}>
+                        <button className="dropdown-item" onClick={() => { alert("Exportando Extrato para PDF..."); setIsExportDropdownOpen(false); }} style={{ padding: "8px 12px", textAlign: "left", fontSize: "12px" }}>PDF</button>
+                        <button className="dropdown-item" onClick={() => { alert("Exportando Extrato para Excel..."); setIsExportDropdownOpen(false); }} style={{ padding: "8px 12px", textAlign: "left", fontSize: "12px" }}>Excel</button>
+                      </div>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Modal Lançar Movimentação (Creation) */}
-      {isInvoiceModalOpen && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "500px", boxShadow: "var(--shadow-lg)" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px", fontFamily: "var(--font-title)", color: "var(--accent)" }}>Lançar Transação Financeira</h3>
-            
-            <form onSubmit={handleInvoiceSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Tipo</label>
-                  <select 
-                    value={tipo} 
-                    onChange={(e) => setTipo(e.target.value as "receita" | "despesa")}
-                    style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", height: "38px", color: "var(--text-primary)" }}
-                  >
-                    <option value="despesa">Despesa (Contas a Pagar)</option>
-                    <option value="receita">Receita (Contas a Receber)</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Categoria</label>
-                  <select 
-                    value={categoria} 
-                    onChange={(e) => setCategoria(e.target.value)}
-                    style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", height: "38px", color: "var(--text-primary)" }}
-                  >
-                    <option value="Madeira">Madeira e MDF</option>
-                    <option value="Vidros">Vidros e Fachada</option>
-                    <option value="Iluminação">Iluminação &amp; Elétrica</option>
-                    <option value="Mobiliário">Mobiliário Alugado</option>
-                    <option value="Passagem">Hospedagem &amp; Passagens</option>
-                    <option value="Fretes">Fretes &amp; Transportes</option>
-                    <option value="Diária">Mão de Obra / Diária</option>
-                    <option value="Taxas">Taxas do Organizador</option>
-                  </select>
-                </div>
               </div>
 
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Origem / Favorecido / Fornecedor</label>
-                <input 
-                  type="text" 
-                  value={vendor} 
-                  onChange={(e) => setVendor(e.target.value)} 
-                  required
-                  placeholder="Ex: Madeireira Natal, Ambev, etc."
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text-primary)" }}
-                />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Valor (R$)</label>
-                  <input 
-                    type="number" 
-                    value={value} 
-                    onChange={(e) => setValue(parseFloat(e.target.value) || 0)} 
-                    required
-                    style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text-primary)" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Nº da Nota Fiscal / Identificador</label>
-                  <input 
-                    type="text" 
-                    value={invoiceNumber} 
-                    onChange={(e) => setInvoiceNumber(e.target.value)} 
-                    placeholder="NF-1234"
-                    style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text-primary)" }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Forma de Pagamento</label>
-                  <select 
-                    value={formaPagamento} 
-                    onChange={(e) => setFormaPagamento(e.target.value as InvoiceLog["formaPagamento"])}
-                    style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", height: "38px", color: "var(--text-primary)" }}
-                  >
-                    <option value="Pix">Pix</option>
-                    <option value="Boleto">Boleto Bancário</option>
-                    <option value="TED">Transferência TED</option>
-                    <option value="Dinheiro">Dinheiro Espécie</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Status</label>
-                  <select 
-                    value={status} 
-                    onChange={(e) => setStatus(e.target.value as InvoiceLog["status"])}
-                    style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", height: "38px", color: "var(--text-primary)" }}
-                  >
-                    <option value="pago">Pago</option>
-                    <option value="pendente">Pendente</option>
-                    <option value="atrasado">Atrasado</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Vincular ao Estande / Evento (Opcional)</label>
-                <select 
-                  value={eventoId} 
-                  onChange={(e) => setEventoId(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", height: "38px", color: "var(--text-primary)" }}
+              {/* Sub-Tab Filter Bar (RECEITAS / DESPESAS / TODOS) */}
+              <div style={{ display: "flex", gap: "0", borderRadius: "10px 10px 0 0", overflow: "hidden", border: "1px solid var(--border)" }}>
+                <button 
+                  onClick={() => setDashboardTipoFilter("receitas")}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    border: "none",
+                    backgroundColor: dashboardTipoFilter === "receitas" ? "#29b6f6" : "var(--bg-card)",
+                    color: dashboardTipoFilter === "receitas" ? "#fff" : "var(--text-primary)",
+                    fontWeight: "700",
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px"
+                  }}
                 >
-                  <option value="">Não vincular a evento</option>
-                  {events.map(evt => (
-                    <option key={evt.id} value={evt.id}>{evt.name}</option>
+                  <TrendingUp size={16} /> RECEITAS
+                </button>
+                <button 
+                  onClick={() => setDashboardTipoFilter("despesas")}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    border: "none",
+                    backgroundColor: dashboardTipoFilter === "despesas" ? "#e53935" : "var(--bg-card)",
+                    color: dashboardTipoFilter === "despesas" ? "#fff" : "var(--text-primary)",
+                    fontWeight: "700",
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px"
+                  }}
+                >
+                  <TrendingDown size={16} /> DESPESAS
+                </button>
+                <button 
+                  onClick={() => setDashboardTipoFilter("todos")}
+                  style={{
+                    padding: "12px 24px",
+                    border: "none",
+                    backgroundColor: dashboardTipoFilter === "todos" ? "var(--accent)" : "var(--bg-card)",
+                    color: dashboardTipoFilter === "todos" ? "#fff" : "var(--text-primary)",
+                    fontWeight: "700",
+                    fontSize: "13px",
+                    cursor: "pointer"
+                  }}
+                >
+                  TODOS
+                </button>
+              </div>
+
+              {/* Combined Search & Select Filter Controls */}
+              <div style={{ display: "flex", gap: "10px", alignItems: "center", backgroundColor: "var(--bg-card)", padding: "12px 16px", border: "1px solid var(--border)", borderRadius: "0 0 10px 10px", marginTop: "-1px", flexWrap: "wrap" }}>
+                <div style={{ backgroundColor: "#29b6f6", color: "#fff", padding: "6px 10px", borderRadius: "6px" }}>
+                  <Filter size={14} />
+                </div>
+
+                <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "var(--bg-main)", color: "var(--text-primary)" }}>
+                  <option value="all">Todos Status</option>
+                  <option value="pago">Pago</option>
+                  <option value="pendente">Pendente</option>
+                  <option value="atrasado">Atrasado</option>
+                </select>
+
+                <select value={filterBank} onChange={e => setFilterBank(e.target.value)} style={{ padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "var(--bg-main)", color: "var(--text-primary)" }}>
+                  <option value="all">Todas Contas</option>
+                  {bankAccounts.map(b => (
+                    <option key={b.id} value={b.id}>{b.nome}</option>
                   ))}
                 </select>
+
+                <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "var(--bg-main)", color: "var(--text-primary)" }}>
+                  <option value="all">Todas Categorias</option>
+                  {categories.map(c => (
+                    <option key={c.id} value={c.nome}>{c.nome}</option>
+                  ))}
+                </select>
+
+                <select value={filterCostCenter} onChange={e => setFilterCostCenter(e.target.value)} style={{ padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "var(--bg-main)", color: "var(--text-primary)" }}>
+                  <option value="all">Todos Centros de Custo</option>
+                  {costCenters.map(cc => (
+                    <option key={cc.id} value={cc.id}>{cc.nome}</option>
+                  ))}
+                </select>
+
+                <div style={{ flexGrow: 1, minWidth: "180px", position: "relative" }}>
+                  <input 
+                    type="text" 
+                    placeholder="Pesquisar..." 
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    style={{ width: "100%", padding: "6px 12px 6px 30px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "var(--bg-main)", color: "var(--text-primary)" }}
+                  />
+                  <Search size={14} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+                </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              {/* Transactions Main Extrato Table */}
+              <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "12px" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-main)" }}>
+                      <th style={{ padding: "12px 16px", width: "40px" }}>AÇÕES</th>
+                      <th style={{ padding: "12px 16px" }}>DATA</th>
+                      <th style={{ padding: "12px 16px" }}>DESCRIÇÃO</th>
+                      <th style={{ padding: "12px 16px" }}>RESPONSÁVEL</th>
+                      <th style={{ padding: "12px 16px", textAlign: "right" }}>VALOR</th>
+                      <th style={{ padding: "12px 16px" }}>CATEGORIA / BANCO</th>
+                      <th style={{ padding: "12px 16px", textAlign: "center" }}>FUNÇÃO</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTransactions.map(tx => {
+                      const isTransfer = tx.isTransferencia || tx.categoria === "Transferência";
+                      return (
+                        <tr key={tx.id} style={{ borderBottom: "1px solid var(--border)", transition: "var(--transition)" }}>
+                          <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                            {isTransfer ? (
+                              <div style={{ backgroundColor: "#eceff1", color: "#37474f", width: "24px", height: "24px", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <ArrowLeftRight size={14} />
+                              </div>
+                            ) : (
+                              <div style={{ backgroundColor: "#00c853", color: "#fff", width: "24px", height: "24px", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <Check size={14} />
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: "12px 16px" }}>
+                            <strong>{tx.date}</strong>
+                            <span 
+                              style={{ 
+                                display: "block", 
+                                fontSize: "9px", 
+                                fontWeight: "800", 
+                                color: "#fff", 
+                                backgroundColor: tx.status === "pago" ? "#4caf50" : "#ff9800", 
+                                padding: "1px 6px", 
+                                borderRadius: "4px", 
+                                marginTop: "2px",
+                                width: "fit-content"
+                              }}
+                            >
+                              {tx.status.toUpperCase()}
+                            </span>
+                          </td>
+                          <td style={{ padding: "12px 16px" }}>
+                            <strong>{tx.vendor}</strong>
+                            <span style={{ display: "block", color: "var(--text-muted)", fontSize: "11px" }}>{tx.description}</span>
+                          </td>
+                          <td style={{ padding: "12px 16px", color: "var(--text-secondary)", fontSize: "11px" }}>
+                            {tx.responsavel || "Não Informado"}
+                          </td>
+                          <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: "800", fontSize: "13px", color: isTransfer ? "var(--text-primary)" : tx.tipo === "receita" ? "#00c853" : "var(--text-primary)" }}>
+                            R$ {tx.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </td>
+                          <td style={{ padding: "12px 16px" }}>
+                            <span style={{ display: "block", fontWeight: "600" }}>{tx.categoria}</span>
+                            <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+                              🏦 {bankAccounts.find(b => b.id === tx.contaBancariaId)?.nome || "Santander"}
+                            </span>
+                          </td>
+                          <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                            <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
+                              <button className="btn-secondary btn-xs" onClick={() => setSelectedTxForEdit(tx)} style={{ backgroundColor: "#ffc107", border: "none", color: "#fff" }} title="Editar">
+                                <Edit size={12} />
+                              </button>
+                              <button className="btn-danger btn-xs" onClick={() => setAllTransactions(allTransactions.filter(t => t.id !== tx.id))} style={{ backgroundColor: "#e53935", border: "none", color: "#fff" }} title="Excluir">
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 2. CONCILIAÇÃO BANCÁRIA & CENTRAL DE NOTAS FISCAIS            */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {activeMainTab === "conciliacao" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          
+          {/* Sub Navigation Bar */}
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button 
+              className={`btn-tab ${ofxSubTab === "import" ? "active" : ""}`}
+              onClick={() => setOfxSubTab("import")}
+              style={{ padding: "8px 16px", borderRadius: "8px", border: "none", backgroundColor: ofxSubTab === "import" ? "#29b6f6" : "var(--bg-card)", color: ofxSubTab === "import" ? "#fff" : "var(--text-primary)", fontWeight: "600", cursor: "pointer" }}
+            >
+              🔄 Importar OFX
+            </button>
+            <button 
+              className={`btn-tab ${ofxSubTab === "history" ? "active" : ""}`}
+              onClick={() => setOfxSubTab("history")}
+              style={{ padding: "8px 16px", borderRadius: "8px", border: "none", backgroundColor: ofxSubTab === "history" ? "#29b6f6" : "var(--bg-card)", color: ofxSubTab === "history" ? "#fff" : "var(--text-primary)", fontWeight: "600", cursor: "pointer" }}
+            >
+              📝 Histórico OFX
+            </button>
+            <button 
+              className={`btn-tab ${ofxSubTab === "nfe" ? "active" : ""}`}
+              onClick={() => setOfxSubTab("nfe")}
+              style={{ padding: "8px 16px", borderRadius: "8px", border: "none", backgroundColor: ofxSubTab === "nfe" ? "#29b6f6" : "var(--bg-card)", color: ofxSubTab === "nfe" ? "#fff" : "var(--text-primary)", fontWeight: "600", cursor: "pointer" }}
+            >
+              🧾 Central de Notas Fiscais
+            </button>
+          </div>
+
+          {/* Importar OFX Tab */}
+          {ofxSubTab === "import" && (
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", boxShadow: "var(--shadow-sm)" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px" }}>Importar Extrato Bancário OFX</h3>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "24px" }}>
+                {/* Upload Box */}
+                <div style={{ backgroundColor: "#fff9c4", border: "1px dashed #fbc02d", borderRadius: "12px", padding: "20px", color: "#574200" }}>
+                  <p style={{ fontSize: "12px", fontWeight: "600" }}>Insira seu arquivo OFX no botão abaixo.</p>
+                  
+                  <div style={{ marginTop: "16px" }}>
+                    <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Conta Bancária:</label>
+                    <select 
+                      value={ofxSelectedBank} 
+                      onChange={e => setOfxSelectedBank(e.target.value)}
+                      style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "8px", marginBottom: "16px" }}
+                    >
+                      {bankAccounts.map(b => (
+                        <option key={b.id} value={b.nome}>{b.nome}</option>
+                      ))}
+                    </select>
+
+                    <button 
+                      onClick={handleSimulateOFXUpload}
+                      style={{ width: "100%", backgroundColor: "#00c853", color: "#fff", padding: "12px", border: "none", borderRadius: "8px", fontWeight: "800", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                    >
+                      <Upload size={18} /> Selecionar arquivo (OFX)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Explanation text */}
+                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: "10px" }}>
+                  <h4 style={{ fontSize: "20px", fontWeight: "800" }}>Importar extrato bancário OFX</h4>
+                  <p style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: "1.5" }}>
+                    A conciliação bancária através dos arquivos OFX reduz o trabalho de digitação de suas movimentações financeiras.
+                    Entre no site do seu banco e salve seu extrato no formato OFX. Depois, basta importar para o sistema todas as suas movimentações.
+                  </p>
+                </div>
+              </div>
+
+              {/* Matched OFX Transactions Preview */}
+              {ofxFileLoaded && (
+                <div style={{ marginTop: "24px", borderTop: "2px solid var(--border)", paddingTop: "20px" }}>
+                  <h4 style={{ fontSize: "14px", fontWeight: "700", marginBottom: "12px" }}>Resultado da Análise do Extrato OFX:</h4>
+                  
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                    <thead>
+                      <tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "1px solid var(--border)" }}>
+                        <th style={{ padding: "10px" }}>DATA OFX</th>
+                        <th style={{ padding: "10px" }}>DESCRIÇÃO NO BANCO</th>
+                        <th style={{ padding: "10px", textAlign: "right" }}>VALOR</th>
+                        <th style={{ padding: "10px" }}>STATUS CONCILIAÇÃO</th>
+                        <th style={{ padding: "10px", textAlign: "center" }}>AÇÃO</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ofxMatchedRows.map(row => (
+                        <tr key={row.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td style={{ padding: "10px" }}>{row.data}</td>
+                          <td style={{ padding: "10px" }}><strong>{row.memo}</strong></td>
+                          <td style={{ padding: "10px", textAlign: "right", fontWeight: "800" }}>R$ {row.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                          <td style={{ padding: "10px" }}>
+                            <span style={{ padding: "2px 8px", borderRadius: "4px", backgroundColor: row.status === "matched" ? "#4caf50" : "#ff9800", color: "#fff", fontWeight: "700", fontSize: "10px" }}>
+                              {row.status === "matched" ? "MATCH ENCONTRADO" : "PENDENTE REVISÃO"}
+                            </span>
+                          </td>
+                          <td style={{ padding: "10px", textAlign: "center" }}>
+                            <button className="btn-success btn-xs" onClick={() => alert("Transação conciliada e confirmada!")}>Conciliar</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Histórico OFX Tab */}
+          {ofxSubTab === "history" && (
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", boxShadow: "var(--shadow-sm)" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px" }}>Histórico de Importações OFX</h3>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                <thead>
+                  <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-main)" }}>
+                    <th style={{ padding: "12px" }}>DATA IMPORTAÇÃO</th>
+                    <th style={{ padding: "12px" }}>CONTA / BANCO</th>
+                    <th style={{ padding: "12px" }}>LANÇAMENTOS</th>
+                    <th style={{ padding: "12px" }}>STATUS</th>
+                    <th style={{ padding: "12px", textAlign: "center" }}>AÇÕES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ofxImportsHistory.map(h => (
+                    <tr key={h.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td style={{ padding: "12px" }}>{h.dataImportacao}</td>
+                      <td style={{ padding: "12px" }}><strong>{h.banco} ({h.conta})</strong></td>
+                      <td style={{ padding: "12px" }}>{h.qtdLancamentos} lançamentos</td>
+                      <td style={{ padding: "12px" }}>
+                        <span style={{ backgroundColor: "#4caf50", color: "#fff", padding: "2px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: "700" }}>
+                          CONCILIADO
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px", textAlign: "center" }}>
+                        <button className="btn-secondary btn-xs" onClick={() => alert("Exibindo detalhes do extrato OFX...")}>Detalhes</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Central de Notas Fiscais Tab */}
+          {ofxSubTab === "nfe" && (
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", boxShadow: "var(--shadow-sm)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: "700" }}>Gerencie Notas Fiscais (Área Central Integrada)</h3>
+                <button className="btn-success" onClick={() => alert("Abrindo emissor central de Notas Fiscais...")} style={{ backgroundColor: "#00c853", color: "#fff", padding: "8px 16px", borderRadius: "8px", fontWeight: "700", fontSize: "12px", border: "none" }}>
+                  + Emitir Nota Fiscal
+                </button>
+              </div>
+
+              {/* Table Controls */}
+              <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "16px" }}>
+                <select value={nfFilterType} onChange={e => setNfFilterType(e.target.value)} style={{ padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }}>
+                  <option value="all">Todos os tipos</option>
+                  <option value="NF-e">NF-e</option>
+                  <option value="NFS-e">NFS-e</option>
+                  <option value="NFC-e">NFC-e</option>
+                </select>
+
+                <div style={{ flexGrow: 1 }}>
+                  <input 
+                    type="text" 
+                    placeholder="Pesquisar por número, tomador, pedido..." 
+                    value={nfSearchQuery} 
+                    onChange={e => setNfSearchQuery(e.target.value)}
+                    style={{ width: "100%", padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }}
+                  />
+                </div>
+              </div>
+
+              {/* NF Table */}
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                <thead>
+                  <tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "12px" }}>TIPO</th>
+                    <th style={{ padding: "12px" }}>EMPRESA</th>
+                    <th style={{ padding: "12px" }}>NÚMERO</th>
+                    <th style={{ padding: "12px" }}>NOSSO NÚMERO</th>
+                    <th style={{ padding: "12px" }}>PEDIDO / OS</th>
+                    <th style={{ padding: "12px" }}>TOMADOR</th>
+                    <th style={{ padding: "12px", textAlign: "right" }}>VALOR</th>
+                    <th style={{ padding: "12px" }}>EMISSÃO</th>
+                    <th style={{ padding: "12px" }}>SITUAÇÃO</th>
+                    <th style={{ padding: "12px", textAlign: "center" }}>AÇÕES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {centralNFeList.map(nf => (
+                    <tr key={nf.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td style={{ padding: "12px" }}><span style={{ backgroundColor: "#eceff1", color: "#37474f", padding: "2px 6px", borderRadius: "4px", fontWeight: "700" }}>{nf.tipo}</span></td>
+                      <td style={{ padding: "12px" }}>{nf.empresa}</td>
+                      <td style={{ padding: "12px" }}><strong>{nf.numero}</strong></td>
+                      <td style={{ padding: "12px" }}>{nf.nossoNumero || "-"}</td>
+                      <td style={{ padding: "12px" }}>
+                        <span style={{ color: "#0099ff", fontWeight: "600" }}>{nf.pedido || nf.osVinculada || "OS-2026-01"}</span>
+                      </td>
+                      <td style={{ padding: "12px" }}>{nf.tomador}</td>
+                      <td style={{ padding: "12px", textAlign: "right", fontWeight: "800" }}>R$ {nf.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                      <td style={{ padding: "12px" }}>{nf.dataEmissao}</td>
+                      <td style={{ padding: "12px" }}>
+                        <span style={{ backgroundColor: "#4caf50", color: "#fff", padding: "2px 8px", borderRadius: "4px", fontWeight: "700", fontSize: "10px" }}>
+                          {nf.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px", textAlign: "center" }}>
+                        <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
+                          <button className="btn-secondary btn-xs" onClick={() => alert(`Download PDF ${nf.pdfAnexoNome}`)}>PDF</button>
+                          <button className="btn-secondary btn-xs" onClick={() => alert(`Download XML ${nf.xmlAnexoNome}`)}>XML</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 3. RELATÓRIOS FINANCEIROS AVANÇADOS (LAYOUT COM MENU LATERAL)  */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {activeMainTab === "relatorios" && (
+        <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: "24px" }}>
+          
+          {/* Accordion Side Menu */}
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "14px", display: "flex", flexDirection: "column", gap: "10px" }}>
+            
+            {/* Fluxo de Caixa Group */}
+            <div style={{ backgroundColor: "#29b6f6", color: "#fff", padding: "8px 12px", borderRadius: "8px", fontWeight: "800", fontSize: "12px" }}>
+              Fluxo de Caixa
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingLeft: "6px" }}>
+              <button onClick={() => setRelatorioSelectedTab("performance")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "performance" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "performance" ? "700" : "400" }}>
+                📄 Performance Mensal
+              </button>
+              <button onClick={() => setRelatorioSelectedTab("extrato")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "extrato" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "extrato" ? "700" : "400" }}>
+                📄 Extrato
+              </button>
+              <button onClick={() => setRelatorioSelectedTab("fluxo_caixa")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "fluxo_caixa" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "fluxo_caixa" ? "700" : "400" }}>
+                🔀 Fluxo de Caixa
+              </button>
+              <button onClick={() => setRelatorioSelectedTab("historico")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "historico" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "historico" ? "700" : "400" }}>
+                📊 Histórico
+              </button>
+              <button onClick={() => setRelatorioSelectedTab("dre")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "dre" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "dre" ? "700" : "400" }}>
+                📄 Demonstrativo (DRE)
+              </button>
+            </div>
+
+            {/* Despesas Group */}
+            <div style={{ backgroundColor: "#e53935", color: "#fff", padding: "8px 12px", borderRadius: "8px", fontWeight: "800", fontSize: "12px", marginTop: "10px" }}>
+              Despesas
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingLeft: "6px" }}>
+              <button onClick={() => setRelatorioSelectedTab("desp_tipo")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "desp_tipo" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "desp_tipo" ? "700" : "400" }}>
+                📌 Por Tipo
+              </button>
+              <button onClick={() => setRelatorioSelectedTab("desp_categoria")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "desp_categoria" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "desp_categoria" ? "700" : "400" }}>
+                🔻 Por Categoria
+              </button>
+              <button onClick={() => setRelatorioSelectedTab("desp_evento")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "desp_evento" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "desp_evento" ? "700" : "400" }}>
+                ⭐ Por Evento
+              </button>
+              <button onClick={() => setRelatorioSelectedTab("pago_a")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "pago_a" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "pago_a" ? "700" : "400" }}>
+                👥 Pago a...
+              </button>
+            </div>
+
+            {/* Receitas Group */}
+            <div style={{ backgroundColor: "#4caf50", color: "#fff", padding: "8px 12px", borderRadius: "8px", fontWeight: "800", fontSize: "12px", marginTop: "10px" }}>
+              Receitas
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingLeft: "6px" }}>
+              <button onClick={() => setRelatorioSelectedTab("recebido_de")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "recebido_de" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "recebido_de" ? "700" : "400" }}>
+                👥 Recebido de...
+              </button>
+            </div>
+
+          </div>
+
+          {/* Main Report View Content */}
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", boxShadow: "var(--shadow-sm)" }}>
+            
+            {/* Performance Mensal View */}
+            {relatorioSelectedTab === "performance" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>Performance de Julho / 2026</h3>
+                
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", textAlign: "center" }}>
+                  <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px" }}>
+                    <span style={{ fontSize: "10px", color: "var(--text-muted)", fontWeight: "700" }}>RECEITAS</span>
+                    <h3 style={{ fontSize: "18px", fontWeight: "800", color: "#4caf50" }}>R$ 270.422,47</h3>
+                  </div>
+                  <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px" }}>
+                    <span style={{ fontSize: "10px", color: "var(--text-muted)", fontWeight: "700" }}>DESPESAS</span>
+                    <h3 style={{ fontSize: "18px", fontWeight: "800", color: "#e53935" }}>R$ 315.546,19</h3>
+                  </div>
+                  <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px" }}>
+                    <span style={{ fontSize: "10px", color: "var(--text-muted)", fontWeight: "700" }}>RESULTADO</span>
+                    <h3 style={{ fontSize: "18px", fontWeight: "800", color: "#e53935" }}>-R$ 45.123,72</h3>
+                  </div>
+                  <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px" }}>
+                    <span style={{ fontSize: "10px", color: "var(--text-muted)", fontWeight: "700" }}>MARGEM</span>
+                    <h3 style={{ fontSize: "18px", fontWeight: "800", color: "#9c27b0" }}>-16.7%</h3>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: "20px" }}>
+                  <h4 style={{ fontSize: "14px", fontWeight: "700", marginBottom: "12px" }}>🏆 Top Categorias do Mês</h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                    <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "14px" }}>
+                      <h5 style={{ color: "#4caf50", fontSize: "12px", fontWeight: "700", marginBottom: "8px" }}>⬆️ Maiores Receitas</h5>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", borderBottom: "1px solid var(--border)", padding: "6px 0" }}><span>1. Cobrança</span><strong>R$ 183.545,35</strong></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", borderBottom: "1px solid var(--border)", padding: "6px 0" }}><span>2. Não Informado</span><strong>R$ 56.119,89</strong></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", padding: "6px 0" }}><span>3. Adiantamento</span><strong>R$ 13.072,80</strong></div>
+                    </div>
+                    <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "14px" }}>
+                      <h5 style={{ color: "#e53935", fontSize: "12px", fontWeight: "700", marginBottom: "8px" }}>⬇️ Maiores Despesas</h5>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", borderBottom: "1px solid var(--border)", padding: "6px 0" }}><span>1. Folha de Pagamento</span><strong>-R$ 61.191,60</strong></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", borderBottom: "1px solid var(--border)", padding: "6px 0" }}><span>2. Empréstimos</span><strong>-R$ 27.435,97</strong></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", padding: "6px 0" }}><span>3. Aquisição de bens</span><strong>-R$ 24.500,00</strong></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Pago a... View */}
+            {relatorioSelectedTab === "pago_a" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>👥 Despesas por Fornecedor (Pago a...)</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "var(--bg-main)", borderRadius: "8px", fontSize: "12px" }}>
+                    <span>Fornecedor - BANCO SANTANDER (BRASIL) S.A.</span>
+                    <strong style={{ color: "#e53935" }}>-R$ 12.200,00</strong>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "var(--bg-main)", borderRadius: "8px", fontSize: "12px" }}>
+                    <span>Fornecedor - ARMAZEM RIBEIRA DISTRIBUIDORA LTDA</span>
+                    <strong style={{ color: "#e53935" }}>-R$ 7.500,00</strong>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "var(--bg-main)", borderRadius: "8px", fontSize: "12px" }}>
+                    <span>Fornecedor - Comercial de Madeiras RN</span>
+                    <strong style={{ color: "#e53935" }}>-R$ 4.500,00</strong>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Recebido de... View */}
+            {relatorioSelectedTab === "recebido_de" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>👥 Receitas por Cliente (Recebido de...)</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "var(--bg-main)", borderRadius: "8px", fontSize: "12px" }}>
+                    <span>Cliente - NAZARIA DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS</span>
+                    <strong style={{ color: "#4caf50" }}>R$ 33.600,00</strong>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "var(--bg-main)", borderRadius: "8px", fontSize: "12px" }}>
+                    <span>Cliente - AMANDA ROCHA EVENTOS</span>
+                    <strong style={{ color: "#4caf50" }}>R$ 16.850,00</strong>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "var(--bg-main)", borderRadius: "8px", fontSize: "12px" }}>
+                    <span>Cliente - Alexandro T. Gomes</span>
+                    <strong style={{ color: "#4caf50" }}>R$ 12.072,80</strong>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* DRE Tree View */}
+            {relatorioSelectedTab === "dre" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>📄 Demonstrativo de Resultado do Exercício (DRE)</h3>
+                
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead>
+                    <tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                      <th style={{ padding: "10px" }}>ESTRUTURA DRE / SPED</th>
+                      <th style={{ padding: "10px", textAlign: "right" }}>JULHO / 2026</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ backgroundColor: "#e8f5e9", fontWeight: "800", color: "#2e7d32" }}>
+                      <td style={{ padding: "10px" }}>(+) Receita Bruta</td>
+                      <td style={{ padding: "10px", textAlign: "right" }}>R$ 270.422,47</td>
+                    </tr>
+                    <tr style={{ backgroundColor: "#ffebee", fontWeight: "600", color: "#c62828" }}>
+                      <td style={{ padding: "10px", paddingLeft: "24px" }}>(-) Deduções (Impostos Sobre Vendas)</td>
+                      <td style={{ padding: "10px", textAlign: "right" }}>-R$ 724,64</td>
+                    </tr>
+                    <tr style={{ backgroundColor: "#e1f5fe", fontWeight: "800", color: "#0277bd" }}>
+                      <td style={{ padding: "10px" }}>(=) Receita Líquida</td>
+                      <td style={{ padding: "10px", textAlign: "right" }}>R$ 269.697,83</td>
+                    </tr>
+                    <tr style={{ backgroundColor: "#ffebee", fontWeight: "600", color: "#c62828" }}>
+                      <td style={{ padding: "10px", paddingLeft: "24px" }}>(-) Custos Operacionais (Materiais &amp; Montagem)</td>
+                      <td style={{ padding: "10px", textAlign: "right" }}>-R$ 7.758,27</td>
+                    </tr>
+                    <tr style={{ backgroundColor: "#ffebee", fontWeight: "600", color: "#c62828" }}>
+                      <td style={{ padding: "10px", paddingLeft: "24px" }}>(-) Despesas Operacionais Gerais</td>
+                      <td style={{ padding: "10px", textAlign: "right" }}>-R$ 26.435,45</td>
+                    </tr>
+                    <tr style={{ backgroundColor: "#e1f5fe", fontWeight: "900", color: "#01579b" }}>
+                      <td style={{ padding: "10px" }}>(=) Resultado do Exercício (Lucro Líquido)</td>
+                      <td style={{ padding: "10px", textAlign: "right" }}>R$ 133.611,82</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Fallback for other tabs */}
+            {["extrato", "fluxo_caixa", "historico", "desp_tipo", "desp_categoria", "desp_evento"].includes(relatorioSelectedTab) && (
+              <div style={{ textAlign: "center", padding: "40px 0" }}>
+                <BarChart3 size={48} style={{ color: "var(--accent)", marginBottom: "12px" }} />
+                <h4 style={{ fontSize: "16px", fontWeight: "700" }}>Relatório Gerado com Sucesso</h4>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>Visualizando dados consolidados de {monthNames[selectedMonth - 1]} / {selectedYear}</p>
+              </div>
+            )}
+
+          </div>
+
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 4. CONFIGURAÇÕES FINANCEIRAS (CADASTROS-BASE DINÂMICOS)       */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {activeMainTab === "configuracoes" && (
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", boxShadow: "var(--shadow-sm)" }}>
+          <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Configurações Financeiras</h3>
+          
+          {/* Sub-tabs header for Configs */}
+          <div style={{ display: "flex", gap: "8px", borderBottom: "2px solid var(--border)", paddingBottom: "10px", overflowX: "auto", marginBottom: "20px" }}>
+            <button className={`btn-tab ${configActiveTab === "contas" ? "active" : ""}`} onClick={() => setConfigActiveTab("contas")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
+              💼 Contas Bancárias
+            </button>
+            <button className={`btn-tab ${configActiveTab === "cartoes" ? "active" : ""}`} onClick={() => setConfigActiveTab("cartoes")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
+              💳 Cartões de Créditos
+            </button>
+            <button className={`btn-tab ${configActiveTab === "categorias" ? "active" : ""}`} onClick={() => setConfigActiveTab("categorias")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
+              📋 Categorias
+            </button>
+            <button className={`btn-tab ${configActiveTab === "centro_custo" ? "active" : ""}`} onClick={() => setConfigActiveTab("centro_custo")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
+              🌳 Centro de Custo
+            </button>
+            <button className={`btn-tab ${configActiveTab === "modo_pagamento" ? "active" : ""}`} onClick={() => setConfigActiveTab("modo_pagamento")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
+              💵 Modo de Pagamento
+            </button>
+            <button className={`btn-tab ${configActiveTab === "recebido_pago" ? "active" : ""}`} onClick={() => setConfigActiveTab("recebido_pago")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
+              ⇄ Recebido De/Pago De
+            </button>
+            <button className={`btn-tab ${configActiveTab === "tags" ? "active" : ""}`} onClick={() => setConfigActiveTab("tags")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
+              🏷️ Tags
+            </button>
+            <button className={`btn-tab ${configActiveTab === "dre" ? "active" : ""}`} onClick={() => setConfigActiveTab("dre")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
+              📊 DRE / SPED
+            </button>
+          </div>
+
+          {/* Action Row */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+            <button className="btn-success" onClick={() => setConfigModalOpen(true)} style={{ backgroundColor: "#00c853", color: "#fff", padding: "8px 16px", borderRadius: "8px", fontWeight: "700", fontSize: "12px", border: "none" }}>
+              + Adicionar Item
+            </button>
+            <button className="btn-secondary" onClick={() => window.print()} style={{ padding: "8px 16px", borderRadius: "8px", fontSize: "12px" }}>
+              🖨️ Imprimir
+            </button>
+          </div>
+
+          {/* Table List rendering based on selected config tab */}
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+            <thead>
+              <tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                <th style={{ padding: "12px" }}>NOME</th>
+                {configActiveTab === "contas" && <th style={{ padding: "12px" }}>TIPO</th>}
+                {configActiveTab === "contas" && <th style={{ padding: "12px", textAlign: "right" }}>SALDO INICIAL</th>}
+                {configActiveTab === "contas" && <th style={{ padding: "12px", textAlign: "right" }}>SALDO ATUAL</th>}
+                {configActiveTab === "cartoes" && <th style={{ padding: "12px", textAlign: "right" }}>LIMITE</th>}
+                {configActiveTab === "categorias" && <th style={{ padding: "12px" }}>NATUREZA</th>}
+                {configActiveTab === "categorias" && <th style={{ padding: "12px" }}>GRUPO DRE</th>}
+                {configActiveTab === "centro_custo" && <th style={{ padding: "12px" }}>CLASSIFICAÇÃO</th>}
+                {configActiveTab === "tags" && <th style={{ padding: "12px" }}>TIPO</th>}
+                {configActiveTab === "dre" && <th style={{ padding: "12px" }}>NATUREZA DRE</th>}
+                <th style={{ padding: "12px", textAlign: "center" }}>FUNÇÃO</th>
+              </tr>
+            </thead>
+            <tbody>
+              {configActiveTab === "contas" && bankAccounts.map(b => (
+                <tr key={b.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                  <td style={{ padding: "12px" }}><strong>{b.nome}</strong></td>
+                  <td style={{ padding: "12px" }}>{b.tipo}</td>
+                  <td style={{ padding: "12px", textAlign: "right", color: b.saldoInicial < 0 ? "#ff3d00" : "inherit" }}>R$ {b.saldoInicial.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                  <td style={{ padding: "12px", textAlign: "right", fontWeight: "800", color: b.saldoAtual < 0 ? "#ff3d00" : "#00c853" }}>R$ {b.saldoAtual.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                  <td style={{ padding: "12px", textAlign: "center" }}>
+                    <button className="btn-secondary btn-xs" style={{ backgroundColor: "#ffc107", color: "#fff", border: "none", marginRight: "4px" }}>Editar</button>
+                    <button className="btn-danger btn-xs" onClick={() => setBankAccounts(bankAccounts.filter(x => x.id !== b.id))}>Excluir</button>
+                  </td>
+                </tr>
+              ))}
+
+              {configActiveTab === "cartoes" && creditCards.map(c => (
+                <tr key={c.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                  <td style={{ padding: "12px" }}><strong>{c.nome}</strong></td>
+                  <td style={{ padding: "12px", textAlign: "right", fontWeight: "700" }}>R$ {c.limite.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                  <td style={{ padding: "12px", textAlign: "center" }}>
+                    <button className="btn-secondary btn-xs" style={{ backgroundColor: "#ffc107", color: "#fff", border: "none", marginRight: "4px" }}>Editar</button>
+                    <button className="btn-danger btn-xs" onClick={() => setCreditCards(creditCards.filter(x => x.id !== c.id))}>Excluir</button>
+                  </td>
+                </tr>
+              ))}
+
+              {configActiveTab === "categorias" && categories.map(cat => (
+                <tr key={cat.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                  <td style={{ padding: "12px" }}><strong>{cat.nome}</strong></td>
+                  <td style={{ padding: "12px" }}>
+                    <span style={{ color: cat.natureza === "receita" ? "#00c853" : "#ff3d00", fontWeight: "700" }}>{cat.natureza.toUpperCase()}</span>
+                  </td>
+                  <td style={{ padding: "12px" }}>{cat.grupoDRE || "-"}</td>
+                  <td style={{ padding: "12px", textAlign: "center" }}>
+                    <button className="btn-secondary btn-xs" style={{ backgroundColor: "#ffc107", color: "#fff", border: "none", marginRight: "4px" }}>Editar</button>
+                    <button className="btn-danger btn-xs" onClick={() => setCategories(categories.filter(x => x.id !== cat.id))}>Excluir</button>
+                  </td>
+                </tr>
+              ))}
+
+              {configActiveTab === "centro_custo" && costCenters.map(cc => (
+                <tr key={cc.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                  <td style={{ padding: "12px" }}><strong>{cc.nome}</strong></td>
+                  <td style={{ padding: "12px" }}>{cc.classificacao || "Geral"}</td>
+                  <td style={{ padding: "12px", textAlign: "center" }}>
+                    <button className="btn-secondary btn-xs" style={{ backgroundColor: "#ffc107", color: "#fff", border: "none", marginRight: "4px" }}>Editar</button>
+                    <button className="btn-danger btn-xs" onClick={() => setCostCenters(costCenters.filter(x => x.id !== cc.id))}>Excluir</button>
+                  </td>
+                </tr>
+              ))}
+
+              {configActiveTab === "modo_pagamento" && paymentModes.map(pm => (
+                <tr key={pm.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                  <td style={{ padding: "12px" }}><strong>{pm.nome}</strong></td>
+                  <td style={{ padding: "12px", textAlign: "center" }}>
+                    <button className="btn-secondary btn-xs" style={{ backgroundColor: "#ffc107", color: "#fff", border: "none", marginRight: "4px" }}>Editar</button>
+                    <button className="btn-danger btn-xs" onClick={() => setPaymentModes(paymentModes.filter(x => x.id !== pm.id))}>Excluir</button>
+                  </td>
+                </tr>
+              ))}
+
+              {configActiveTab === "recebido_pago" && contacts.map(cnt => (
+                <tr key={cnt.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                  <td style={{ padding: "12px" }}><strong>{cnt.nome}</strong></td>
+                  <td style={{ padding: "12px", textAlign: "center" }}>
+                    <button className="btn-secondary btn-xs" style={{ backgroundColor: "#ffc107", color: "#fff", border: "none", marginRight: "4px" }}>Editar</button>
+                    <button className="btn-danger btn-xs" onClick={() => setContacts(contacts.filter(x => x.id !== cnt.id))}>Excluir</button>
+                  </td>
+                </tr>
+              ))}
+
+              {configActiveTab === "tags" && tags.map(tg => (
+                <tr key={tg.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                  <td style={{ padding: "12px" }}><strong>{tg.nome}</strong></td>
+                  <td style={{ padding: "12px" }}>{tg.tipo}</td>
+                  <td style={{ padding: "12px", textAlign: "center" }}>
+                    <button className="btn-secondary btn-xs" style={{ backgroundColor: "#ffc107", color: "#fff", border: "none", marginRight: "4px" }}>Editar</button>
+                    <button className="btn-danger btn-xs" onClick={() => setTags(tags.filter(x => x.id !== tg.id))}>Excluir</button>
+                  </td>
+                </tr>
+              ))}
+
+              {configActiveTab === "dre" && dreConfigs.map(d => (
+                <tr key={d.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                  <td style={{ padding: "12px" }}><strong>{d.nome}</strong></td>
+                  <td style={{ padding: "12px" }}>{d.natureza}</td>
+                  <td style={{ padding: "12px", textAlign: "center" }}>
+                    <button className="btn-secondary btn-xs" style={{ backgroundColor: "#ffc107", color: "#fff", border: "none", marginRight: "4px" }}>Editar</button>
+                    <button className="btn-danger btn-xs" onClick={() => setDreConfigs(dreConfigs.filter(x => x.id !== d.id))}>Excluir</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* MODAL: TRANSFERÊNCIA ENTRE CONTAS                             */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {isTransferModalOpen && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", width: "550px", overflow: "hidden", boxShadow: "0 20px 40px rgba(0,0,0,0.4)" }}>
+            <div style={{ backgroundColor: "#29b6f6", color: "#fff", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", fontWeight: "800", fontSize: "16px" }}>
+              <span>⇄ Transferência</span>
+              <button style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }} onClick={() => setIsTransferModalOpen(false)}>✕</button>
+            </div>
+
+            <form onSubmit={handleExecuteTransfer} style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ backgroundColor: "#e1f5fe", border: "1px solid #b3e5fc", padding: "12px", borderRadius: "8px", color: "#01579b", fontSize: "12px" }}>
+                <strong>Atenção!</strong> A conta de Origem não pode ser a mesma de Destino.
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Número de Parcelas</label>
-                  <input type="number" min="1" max="24" value={parcelas} onChange={(e) => setParcelas(parseInt(e.target.value) || 1)} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text-primary)" }} />
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Data da Transferência:</label>
+                  <input type="date" value={trfData} onChange={e => setTrfData(e.target.value)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} required />
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "20px" }}>
-                  <input type="checkbox" checked={recorrente} onChange={(e) => setRecorrente(e.target.checked)} id="cbRecorrente" />
-                  <label htmlFor="cbRecorrente" style={{ fontSize: "12px", fontWeight: "600", cursor: "pointer" }}>Despesa Recorrente</label>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Valor (R$):</label>
+                  <input type="number" step="0.01" value={trfValor} onChange={e => setTrfValor(parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} required />
                 </div>
               </div>
 
-              {tipo === "receita" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", borderTop: "1px solid var(--border)", paddingTop: "10px" }}>
-                  <div>
-                    <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Valor Recebido Parcial</label>
-                    <input type="number" min="0" value={recebimentoParcial} onChange={(e) => setRecebimentoParcial(parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text-primary)" }} />
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "20px" }}>
-                    <input type="checkbox" checked={inadimplente} onChange={(e) => setInadimplente(e.target.checked)} id="cbInadimplente" />
-                    <label htmlFor="cbInadimplente" style={{ fontSize: "12px", fontWeight: "600", color: "var(--danger)", cursor: "pointer" }}>Inadimplência Ativa</label>
-                  </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Conta Origem:</label>
+                  <select value={trfOrigem} onChange={e => setTrfOrigem(e.target.value)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }}>
+                    {bankAccounts.map(b => (
+                      <option key={b.id} value={b.id}>{b.nome}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Conta Destino:</label>
+                  <select value={trfDestino} onChange={e => setTrfDestino(e.target.value)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }}>
+                    {bankAccounts.map(b => (
+                      <option key={b.id} value={b.id}>{b.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+                <button type="button" className="btn-secondary" onClick={() => setIsTransferModalOpen(false)}>Cancelar</button>
+                <button type="submit" className="btn-success" style={{ backgroundColor: "#00c853", color: "#fff", padding: "10px 20px", border: "none", borderRadius: "8px", fontWeight: "800" }}>
+                  ⇄ Transferir
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* MODAL: NOVO ITEM CONFIGURAÇÃO                                */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {configModalOpen && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", width: "450px", overflow: "hidden", padding: "20px" }}>
+            <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px" }}>Adicionar em {configActiveTab.toUpperCase()}</h3>
+            
+            <form onSubmit={handleAddConfigurationItem} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Nome:</label>
+                <input type="text" value={configInputName} onChange={e => setConfigInputName(e.target.value)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} required />
+              </div>
+
+              {configActiveTab === "contas" && (
+                <div>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Saldo Inicial (R$):</label>
+                  <input type="number" step="0.01" value={configInputExtra2} onChange={e => setConfigInputExtra2(e.target.value)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
                 </div>
               )}
 
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Descrição do Material / Insumos</label>
-                <textarea 
-                  value={description} 
-                  onChange={(e) => setDescription(e.target.value)} 
-                  rows={2} 
-                  placeholder="Ex: Madeira MDF crua, refletor de led..."
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)", color: "var(--text-primary)" }}
-                />
-              </div>
+              {configActiveTab === "cartoes" && (
+                <div>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Limite de Crédito (R$):</label>
+                  <input type="number" step="0.01" value={configInputExtra1} onChange={e => setConfigInputExtra1(e.target.value)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+                </div>
+              )}
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
-                <button type="button" className="btn-secondary" onClick={() => setIsInvoiceModalOpen(false)} style={{ padding: "8px 16px" }}>Cancelar</button>
-                <button type="submit" className="btn-primary" style={{ padding: "8px 16px" }}>Salvar Lançamento</button>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+                <button type="button" className="btn-secondary" onClick={() => setConfigModalOpen(false)}>Cancelar</button>
+                <button type="submit" className="btn-success" style={{ backgroundColor: "#00c853", color: "#fff", padding: "8px 16px", border: "none", borderRadius: "8px", fontWeight: "800" }}>Salvar</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Modal Edição & Uploads de Transação Financeira */}
-      {selectedInvoice && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setSelectedInvoice(null)}>
-          <div 
-            style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "90%", maxWidth: "700px", maxHeight: "90vh", overflowY: "auto", boxShadow: "var(--shadow-lg)", display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "20px" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Left Column: Form Edits */}
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "600", color: "var(--accent)" }}>Editar Transação Financeira</h3>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "12px" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                  <div>
-                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Origem / Favorecido</label>
-                    <input type="text" value={editVendor} onChange={(e) => setEditVendor(e.target.value)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
-                  </div>
-                  <div>
-                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Identificador / N° Nota</label>
-                    <input type="text" value={editInvoiceNumber} onChange={(e) => setEditInvoiceNumber(e.target.value)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
-                  </div>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                  <div>
-                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Valor (R$)</label>
-                    <input type="number" value={editValue} onChange={(e) => setEditValue(parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
-                  </div>
-                  <div>
-                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Categoria</label>
-                    <input type="text" value={editCategoria} onChange={(e) => setEditCategoria(e.target.value)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
-                  </div>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                  <div>
-                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Forma de Pagamento</label>
-                    <select 
-                      value={editFormaPagamento} 
-                      onChange={(e) => setEditFormaPagamento(e.target.value as any)}
-                      style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px", height: "30px" }}
-                    >
-                      <option value="Pix">Pix</option>
-                      <option value="Boleto">Boleto</option>
-                      <option value="TED">TED</option>
-                      <option value="Dinheiro">Dinheiro</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Status</label>
-                    <select 
-                      value={editStatus} 
-                      onChange={(e) => setEditStatus(e.target.value as any)}
-                      style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px", height: "30px" }}
-                    >
-                      <option value="pago">Pago</option>
-                      <option value="pendente">Pendente</option>
-                      <option value="atrasado">Atrasado</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Vínculo com Estande / Evento</label>
-                  <select 
-                    value={editEventoId} 
-                    onChange={(e) => setEditEventoId(e.target.value)}
-                    style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px", height: "30px" }}
-                  >
-                    <option value="">Não vincular a evento</option>
-                    {events.map(evt => (
-                      <option key={evt.id} value={evt.id}>{evt.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Descrição detalhada</label>
-                  <textarea 
-                    value={editDescription} 
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    rows={3} 
-                    style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px", fontFamily: "var(--font)" }}
-                  />
-                </div>
-
-                <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
-                  <button type="button" className="btn-primary" onClick={handleSaveChanges} style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "6px", flexGrow: 1, justifyContent: "center" }}>Salvar Lançamento</button>
-                  <button type="button" className="btn-secondary" onClick={() => setSelectedInvoice(null)} style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "6px" }}>Fechar</button>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: PDF Uploads & Attachments */}
-            <div style={{ borderLeft: "1px solid var(--border)", paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "14px" }}>
-              <strong style={{ fontSize: "12px", color: "var(--text-primary)" }}>Boleto Bancário e Notas (PDF / XML)</strong>
-
-              {/* Upload Boleto */}
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Boleto PDF</label>
-                {selectedInvoice.pdfBoleto ? (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", backgroundColor: "var(--bg-main)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
-                      <FileText size={14} style={{ color: "var(--accent-secondary)" }} />
-                      <span style={{ fontSize: "11px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{selectedInvoice.pdfBoleto}</span>
-                    </div>
-                    <button onClick={handleRemoveBoleto} style={{ marginLeft: "auto", border: "none", background: "none", color: "var(--danger)", cursor: "pointer" }}><Trash2 size={12} /></button>
-                  </div>
-                ) : (
-                  <div style={{ border: "1.5px dashed var(--border)", padding: "10px", borderRadius: "8px", textAlign: "center", position: "relative", cursor: "pointer" }}>
-                    <Upload size={14} className="text-muted" style={{ margin: "0 auto 4px auto" }} />
-                    <span style={{ fontSize: "10px", fontWeight: "600" }}>Subir Boleto</span>
-                    <input type="file" accept="application/pdf" onChange={handleUploadBoleto} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0, cursor: "pointer" }} />
-                  </div>
-                )}
-              </div>
-
-              {/* Upload NFe XML */}
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Nota Fiscal NFe (PDF / XML)</label>
-                {selectedInvoice.pdfNFe ? (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px", backgroundColor: "var(--bg-main)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
-                      <FileText size={14} style={{ color: "var(--success-text)" }} />
-                      <span style={{ fontSize: "11px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{selectedInvoice.pdfNFe}</span>
-                    </div>
-                    <button onClick={handleRemoveNFe} style={{ marginLeft: "auto", border: "none", background: "none", color: "var(--danger)", cursor: "pointer" }}><Trash2 size={12} /></button>
-                  </div>
-                ) : (
-                  <div style={{ border: "1.5px dashed var(--border)", padding: "10px", borderRadius: "8px", textAlign: "center", position: "relative", cursor: "pointer" }}>
-                    <Upload size={14} className="text-muted" style={{ margin: "0 auto 4px auto" }} />
-                    <span style={{ fontSize: "10px", fontWeight: "600" }}>Subir NFe / XML</span>
-                    <input type="file" accept="application/pdf,text/xml" onChange={handleUploadNFe} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0, cursor: "pointer" }} />
-                  </div>
-                )}
-              </div>
-
-              {/* Custom attachments list */}
-              <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                <strong style={{ fontSize: "11px", color: "var(--text-secondary)" }}>Outros comprovantes anexados:</strong>
-                
-                <div style={{ border: "1px dashed var(--border)", padding: "8px", borderRadius: "8px", textAlign: "center", position: "relative", cursor: "pointer" }}>
-                  <span style={{ fontSize: "10px", fontWeight: "600" }}>+ Adicionar comprovante</span>
-                  <input type="file" onChange={handleUploadAnexo} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0, cursor: "pointer" }} />
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px", overflowY: "auto", maxHeight: "100px" }}>
-                  {selectedInvoice.anexos && selectedInvoice.anexos.length > 0 ? (
-                    selectedInvoice.anexos.map(anx => (
-                       <div key={anx.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", border: "1px solid var(--border)", borderRadius: "6px", background: "var(--bg-card)", fontSize: "10px" }}>
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexGrow: 1 }}>{anx.name}</span>
-                        <button onClick={() => handleDeleteAnexo(anx.id)} style={{ border: "none", background: "none", color: "var(--danger)", cursor: "pointer", marginLeft: "6px" }}><Trash2 size={10} /></button>
-                      </div>
-                    ))
-                  ) : (
-                    <span style={{ fontSize: "10px", color: "var(--text-muted)", fontStyle: "italic", textAlign: "center" }}>Nenhum outro anexo</span>
-                  )}
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Emitir Nova Nota Fiscal (NF-e, NFS-e, NFC-e) */}
-      {isNfeModalOpen && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "480px", boxShadow: "var(--shadow-lg)" }}>
-            <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>Registrar Nota Fiscal Comercial</h3>
-            
-            <form onSubmit={handleEmitNFe} style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "12px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Tipo de Nota</label>
-                  <select 
-                    value={nfTipo} 
-                    onChange={(e) => setNfTipo(e.target.value as any)}
-                    style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }}
-                  >
-                    <option value="NF-e">NF-e (Venda/Produtos)</option>
-                    <option value="NFS-e">NFS-e (Serviços Cenografia)</option>
-                    <option value="NFC-e">NFC-e (Consumidor Rápida)</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Valor Total da Nota (R$)</label>
-                  <input type="number" min="1" value={nfValor} onChange={(e) => setNfValor(parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} required />
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "12px" }}>
-                <div>
-                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Número NF</label>
-                  <input type="text" value={nfNumeroInput} onChange={(e) => setNfNumeroInput(e.target.value)} placeholder="Ex: 000.123.456" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Série</label>
-                  <input type="text" value={nfSerieInput} onChange={(e) => setNfSerieInput(e.target.value)} placeholder="Ex: 1" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Data de Emissão</label>
-                  <input type="date" value={nfDataInput} onChange={(e) => setNfDataInput(e.target.value)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Vincular a OS / Projeto</label>
-                  <select 
-                    value={nfOS} 
-                    onChange={(e) => setNfOS(e.target.value)}
-                    style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }}
-                  >
-                    <option value="">Não vincular a OS</option>
-                    {events.map(e => (
-                      <option key={e.id} value={e.id}>{e.name} ({e.client})</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Razão Social / Cliente Tomador</label>
-                <input type="text" value={nfCliente} onChange={(e) => setNfCliente(e.target.value)} required placeholder="Ex: Honda Automóveis Ltda" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Descrever Produtos / Serviços (separados por vírgula)</label>
-                <input type="text" value={nfProdutos} onChange={(e) => setNfProdutos(e.target.value)} required placeholder="Ex: Cenografia Stand Honda, Locação de mobiliário" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Simular XML Anexo</label>
-                  <input type="text" value={nfXmlInput} onChange={(e) => setNfXmlInput(e.target.value)} placeholder="Ex: nfe_honda.xml" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Simular PDF Anexo</label>
-                  <input type="text" value={nfPdfInput} onChange={(e) => setNfPdfInput(e.target.value)} placeholder="Ex: nfe_honda.pdf" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
-                </div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
-                <button type="button" className="btn-secondary" onClick={() => setIsNfeModalOpen(false)}>Cancelar</button>
-                <button type="submit" className="btn-primary">Homologar Nota</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Registrar Novo Boleto Manual */}
-      {isBoletoModalOpen && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "480px", boxShadow: "var(--shadow-lg)" }}>
-            <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>Registrar Boleto Bancário Manual</h3>
-            
-            <form onSubmit={handleAddBoleto} style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "12px" }}>
-              <div>
-                <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Sacado / Sacador (Cliente Pagador)</label>
-                <input type="text" value={bolCliente} onChange={(e) => setBolCliente(e.target.value)} required placeholder="Ex: Honda Automóveis Ltda" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Valor do Boleto (R$)</label>
-                  <input type="number" min="1" value={bolValor} onChange={(e) => setBolValor(parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} required />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Data de Vencimento</label>
-                  <input type="date" value={bolVencimento} onChange={(e) => setBolVencimento(e.target.value)} style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} required />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Linha Digitável / Código de Barras (Opcional)</label>
-                <input type="text" value={bolNumero} onChange={(e) => setBolNumero(e.target.value)} placeholder="Ex: 34191.79001 01043..." style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Simular Boleto PDF</label>
-                  <input type="text" value={bolPdf} onChange={(e) => setBolPdf(e.target.value)} placeholder="Ex: boleto_honda_feicon.pdf" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Simular Comprovante PDF</label>
-                  <input type="text" value={bolComprovante} onChange={(e) => setBolComprovante(e.target.value)} placeholder="Ex: comprovante_honda.pdf" style={{ width: "100%", padding: "8px", border: "1px solid var(--border)", borderRadius: "8px" }} />
-                </div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "16px" }}>
-                <button type="button" className="btn-secondary" onClick={() => setIsBoletoModalOpen(false)}>Cancelar</button>
-                <button type="submit" className="btn-primary">Registrar Boleto</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
