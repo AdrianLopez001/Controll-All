@@ -732,18 +732,6 @@ export default function Financial({
           </button>
         </div>
 
-        {/* Header Right Action Buttons */}
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button className="btn-secondary" style={{ padding: "8px 14px", fontSize: "12px" }}>
-            <FileSpreadsheet size={14} /> Orçamentos
-          </button>
-          <button className="btn-secondary" style={{ padding: "8px 14px", fontSize: "12px" }}>
-            ⭐ Eventos
-          </button>
-          <button className="btn-secondary" style={{ padding: "8px 14px", fontSize: "12px" }}>
-            ⚡ Atalhos
-          </button>
-        </div>
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
@@ -751,25 +739,8 @@ export default function Financial({
       {/* ───────────────────────────────────────────────────────────── */}
       {activeMainTab === "dashboard" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-          {/* Top Banner & Main Cards Row */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "20px" }}>
-            {/* Blue Banner */}
-            <div 
-              style={{ 
-                background: "linear-gradient(135deg, #0052cc 0%, #0099ff 100%)", 
-                borderRadius: "16px", 
-                padding: "20px", 
-                color: "#fff", 
-                display: "flex", 
-                flexDirection: "column", 
-                justifyContent: "space-between",
-                boxShadow: "var(--shadow-md)"
-              }}
-            >
-              <div style={{ fontSize: "12px", opacity: 0.9 }}>Abra sua Carteira Digital</div>
-              <h3 style={{ fontSize: "24px", fontWeight: "800", margin: "10px 0" }}>⚡ Mezy</h3>
-              <span style={{ fontSize: "11px", textDecoration: "underline", cursor: "pointer" }}>*Clique Aqui</span>
-            </div>
+          {/* Top Summary Cards Row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px" }}>
 
             {/* Receitas Card */}
             <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", borderTop: "4px solid #00c853", boxShadow: "var(--shadow-sm)" }}>
