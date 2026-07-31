@@ -376,6 +376,7 @@ export interface TagFinanceira {
   id: string;
   nome: string;
   tipo: "receita" | "despesa";
+  cor?: string;
 }
 
 export interface DREConfig {

@@ -1464,18 +1464,22 @@ export default function Financial({
               Despesas
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingLeft: "6px" }}>
-              <button onClick={() => setRelatorioSelectedTab("desp_tipo")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "desp_tipo" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "desp_tipo" ? "700" : "400" }}>
-                📌 Por Tipo
-              </button>
-              <button onClick={() => setRelatorioSelectedTab("desp_categoria")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "desp_categoria" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "desp_categoria" ? "700" : "400" }}>
-                🔻 Por Categoria
-              </button>
-              <button onClick={() => setRelatorioSelectedTab("desp_evento")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "desp_evento" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "desp_evento" ? "700" : "400" }}>
-                ⭐ Por Evento
-              </button>
-              <button onClick={() => setRelatorioSelectedTab("pago_a")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "pago_a" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "pago_a" ? "700" : "400" }}>
-                👥 Pago a...
-              </button>
+              {([
+                ["desp_descricao", "✏️", "Por Descrição"],
+                ["desp_dia", "📅", "Por Dia"],
+                ["desp_tipo", "📌", "Por Tipo"],
+                ["desp_categoria", "🔻", "Por Categoria"],
+                ["desp_evento", "⭐", "Por Evento"],
+                ["desp_etiqueta", "🏷️", "Por Etiquetas(Eventos)"],
+                ["desp_custo", "🚩", "Por Centro de Custo"],
+                ["desp_tags", "🏷️", "Por Marcações(Tags)"],
+                ["desp_historico", "📊", "Histórico"],
+                ["pago_a", "👥", "Pago a..."],
+              ] as [string, string, string][]).map(([key, icon, label]) => (
+                <button key={key} onClick={() => setRelatorioSelectedTab(key)} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === key ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === key ? "700" : "400" }}>
+                  {icon} {label}
+                </button>
+              ))}
             </div>
 
             {/* Receitas Group */}
@@ -1483,9 +1487,22 @@ export default function Financial({
               Receitas
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingLeft: "6px" }}>
-              <button onClick={() => setRelatorioSelectedTab("recebido_de")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "recebido_de" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "recebido_de" ? "700" : "400" }}>
-                👥 Recebido de...
-              </button>
+              {([
+                ["rec_descricao", "✏️", "Por Descrição"],
+                ["rec_dia", "📅", "Por Dia"],
+                ["rec_tipo", "📌", "Por Tipo"],
+                ["rec_categoria", "🔻", "Por Categoria"],
+                ["rec_evento", "⭐", "Por Evento"],
+                ["rec_etiqueta", "🏷️", "Por Etiquetas(Eventos)"],
+                ["rec_custo", "🚩", "Por Centro de Custo"],
+                ["rec_tags", "🏷️", "Por Marcações(Tags)"],
+                ["rec_historico", "📊", "Histórico"],
+                ["recebido_de", "👥", "Recebido de..."],
+              ] as [string, string, string][]).map(([key, icon, label]) => (
+                <button key={key} onClick={() => setRelatorioSelectedTab(key)} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === key ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === key ? "700" : "400" }}>
+                  {icon} {label}
+                </button>
+              ))}
             </div>
 
           </div>
@@ -1621,12 +1638,577 @@ export default function Financial({
               </div>
             )}
 
-            {/* Fallback for other tabs */}
-            {["extrato", "fluxo_caixa", "historico", "desp_tipo", "desp_categoria", "desp_evento"].includes(relatorioSelectedTab) && (
-              <div style={{ textAlign: "center", padding: "40px 0" }}>
-                <BarChart3 size={48} style={{ color: "var(--accent)", marginBottom: "12px" }} />
-                <h4 style={{ fontSize: "16px", fontWeight: "700" }}>Relatório Gerado com Sucesso</h4>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>Visualizando dados consolidados de {monthNames[selectedMonth - 1]} / {selectedYear}</p>
+            {/* Por Descrição — Despesas */}
+            {relatorioSelectedTab === "desp_descricao" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>✏️ Despesas — Por Descrição</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Agrupamento de todas as despesas do período pela descrição do lançamento.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Descrição</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Qtd</th>
+                  </tr></thead>
+                  <tbody>
+                    {Object.entries(allTransactions.filter(t => t.tipo === "despesa").reduce((acc: Record<string, { total: number; count: number }>, t) => {
+                      const k = t.description || t.vendor || "Sem descrição";
+                      if (!acc[k]) acc[k] = { total: 0, count: 0 };
+                      acc[k].total += t.value; acc[k].count++; return acc;
+                    }, {})).sort((a, b) => b[1].total - a[1].total).map(([desc, v], i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td style={{ padding: "8px" }}>{i + 1}</td>
+                        <td style={{ padding: "8px" }}>{desc}</td>
+                        <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {v.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                        <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{v.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Por Dia — Despesas */}
+            {relatorioSelectedTab === "desp_dia" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>📅 Despesas — Por Dia</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de despesas agrupadas por dia no período selecionado.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Data</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total Despesas</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Lançamentos</th>
+                  </tr></thead>
+                  <tbody>
+                    {Object.entries(allTransactions.filter(t => t.tipo === "despesa").reduce((acc: Record<string, { total: number; count: number }>, t) => {
+                      if (!acc[t.date]) acc[t.date] = { total: 0, count: 0 };
+                      acc[t.date].total += t.value; acc[t.date].count++; return acc;
+                    }, {})).sort((a, b) => b[0].localeCompare(a[0])).map(([date, v], i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td style={{ padding: "8px" }}>{new Date(date + "T00:00:00").toLocaleDateString("pt-BR")}</td>
+                        <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {v.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                        <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{v.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Por Tipo — Despesas */}
+            {relatorioSelectedTab === "desp_tipo" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>📌 Despesas — Por Tipo (Forma de Pagamento)</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de despesas agrupadas por forma de pagamento utilizada.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Forma de Pagamento</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>%</th>
+                  </tr></thead>
+                  <tbody>
+                    {(() => {
+                      const despesas = allTransactions.filter(t => t.tipo === "despesa");
+                      const totalDesp = despesas.reduce((s, t) => s + t.value, 0);
+                      return Object.entries(despesas.reduce((acc: Record<string, number>, t) => {
+                        const k = t.formaPagamento || "Não Informado";
+                        acc[k] = (acc[k] || 0) + t.value; return acc;
+                      }, {})).sort((a, b) => b[1] - a[1]).map(([tipo, total], i) => (
+                        <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td style={{ padding: "8px" }}>{i + 1}</td>
+                          <td style={{ padding: "8px" }}>{tipo}</td>
+                          <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                          <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{totalDesp > 0 ? ((total / totalDesp) * 100).toFixed(1) : 0}%</td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Por Categoria — Despesas */}
+            {relatorioSelectedTab === "desp_categoria" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🔻 Despesas — Por Categoria</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de despesas agrupadas por categoria financeira cadastrada.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Categoria</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>%</th>
+                  </tr></thead>
+                  <tbody>
+                    {(() => {
+                      const despesas = allTransactions.filter(t => t.tipo === "despesa");
+                      const totalDesp = despesas.reduce((s, t) => s + t.value, 0);
+                      return Object.entries(despesas.reduce((acc: Record<string, number>, t) => {
+                        const k = t.categoria || "Não Informado";
+                        acc[k] = (acc[k] || 0) + t.value; return acc;
+                      }, {})).sort((a, b) => b[1] - a[1]).map(([cat, total], i) => (
+                        <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td style={{ padding: "8px" }}><span style={{ display: "inline-block", width: "20px", height: "20px", borderRadius: "50%", backgroundColor: "#e53935", color: "#fff", textAlign: "center", lineHeight: "20px", fontSize: "10px", fontWeight: "700" }}>{i + 1}</span></td>
+                          <td style={{ padding: "8px" }}>{cat}</td>
+                          <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                          <td style={{ padding: "8px", textAlign: "right" }}><span style={{ backgroundColor: "#ffebee", color: "#c62828", padding: "2px 6px", borderRadius: "4px", fontSize: "10px", fontWeight: "700" }}>{totalDesp > 0 ? ((total / totalDesp) * 100).toFixed(1) : 0}%</span></td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Por Evento — Despesas */}
+            {relatorioSelectedTab === "desp_evento" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>⭐ Despesas — Por Evento / Projeto</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de despesas vinculadas a cada evento/projeto.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Evento / Projeto</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total Despesas</th>
+                  </tr></thead>
+                  <tbody>
+                    {Object.entries(allTransactions.filter(t => t.tipo === "despesa").reduce((acc: Record<string, number>, t) => {
+                      const evento = events.find(e => e.id === t.eventoId);
+                      const k = evento ? evento.name : "Sem Evento Vinculado";
+                      acc[k] = (acc[k] || 0) + t.value; return acc;
+                    }, {})).sort((a, b) => b[1] - a[1]).map(([evt, total], i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td style={{ padding: "8px" }}>{i + 1}</td>
+                        <td style={{ padding: "8px" }}>{evt}</td>
+                        <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Por Etiquetas — Despesas */}
+            {relatorioSelectedTab === "desp_etiqueta" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🏷️ Despesas — Por Etiquetas (Eventos)</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Despesas agrupadas pelas etiquetas dos eventos vinculados.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Etiqueta</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Lançamentos</th>
+                  </tr></thead>
+                  <tbody>
+                    {Object.entries(allTransactions.filter(t => t.tipo === "despesa").reduce((acc: Record<string, { total: number; count: number }>, t) => {
+                      const evento = events.find(e => e.id === t.eventoId);
+                      const etiqueta = (evento as any)?.etiqueta || (evento as any)?.status || "Sem Etiqueta";
+                      if (!acc[etiqueta]) acc[etiqueta] = { total: 0, count: 0 };
+                      acc[etiqueta].total += t.value; acc[etiqueta].count++; return acc;
+                    }, {})).sort((a, b) => b[1].total - a[1].total).map(([etq, v], i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td style={{ padding: "8px" }}><span style={{ backgroundColor: "#ffebee", color: "#c62828", padding: "2px 8px", borderRadius: "12px", fontSize: "10px", fontWeight: "700" }}>{etq}</span></td>
+                        <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {v.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                        <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{v.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Por Centro de Custo — Despesas */}
+            {relatorioSelectedTab === "desp_custo" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🚩 Despesas — Por Centro de Custo</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Distribuição de despesas por centro de custo cadastrado.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Centro de Custo</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>%</th>
+                  </tr></thead>
+                  <tbody>
+                    {(() => {
+                      const despesas = allTransactions.filter(t => t.tipo === "despesa");
+                      const totalDesp = despesas.reduce((s, t) => s + t.value, 0);
+                      return costCenters.map((cc, i) => {
+                        const total = despesas.filter(t => t.categoria?.toLowerCase().includes(cc.nome.toLowerCase())).reduce((s, t) => s + t.value, 0);
+                        return total > 0 ? (
+                          <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                            <td style={{ padding: "8px" }}>{i + 1}</td>
+                            <td style={{ padding: "8px" }}>{cc.nome}</td>
+                            <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                            <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{totalDesp > 0 ? ((total / totalDesp) * 100).toFixed(1) : 0}%</td>
+                          </tr>
+                        ) : null;
+                      });
+                    })()}
+                    <tr style={{ borderTop: "2px solid var(--border)", fontWeight: "800" }}>
+                      <td colSpan={2} style={{ padding: "8px" }}>Não categorizado</td>
+                      <td style={{ padding: "8px", textAlign: "right", color: "#e53935" }}>-R$ {allTransactions.filter(t => t.tipo === "despesa").reduce((s, t) => s + t.value, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                      <td style={{ padding: "8px", textAlign: "right" }}>100%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Por Marcações(Tags) — Despesas */}
+            {relatorioSelectedTab === "desp_tags" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🏷️ Despesas — Por Marcações (Tags)</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Despesas agrupadas por tags financeiras cadastradas.</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "12px" }}>
+                  {tags.map(tag => (
+                    <div key={tag.id} style={{ backgroundColor: tag.cor + "22", border: `1px solid ${tag.cor}`, borderRadius: "8px", padding: "10px 16px" }}>
+                      <span style={{ fontSize: "10px", fontWeight: "700", color: tag.cor }}>🏷️ {tag.nome}</span>
+                      <div style={{ fontSize: "12px", fontWeight: "800", color: "#e53935", marginTop: "4px" }}>
+                        -R$ {allTransactions.filter(t => t.tipo === "despesa" && t.categoria === tag.nome).reduce((s, t) => s + t.value, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Tag</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total Despesas</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Qtd</th>
+                  </tr></thead>
+                  <tbody>
+                    {tags.map((tag, i) => {
+                      const rel = allTransactions.filter(t => t.tipo === "despesa" && t.categoria === tag.nome);
+                      const total = rel.reduce((s, t) => s + t.value, 0);
+                      return (
+                        <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td style={{ padding: "8px" }}><span style={{ backgroundColor: tag.cor + "22", color: tag.cor, padding: "2px 8px", borderRadius: "12px", fontSize: "10px", fontWeight: "700" }}>{tag.nome}</span></td>
+                          <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                          <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{rel.length}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Histórico — Despesas */}
+            {relatorioSelectedTab === "desp_historico" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>📊 Despesas — Histórico Mensal</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Evolução histórica das despesas nos últimos 6 meses.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Mês</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Despesas</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Variação</th>
+                  </tr></thead>
+                  <tbody>
+                    {["Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26"].map((mes, i) => {
+                      const values = [142000, 158000, 167000, 195000, 228000, 313848, 315546];
+                      const prev = i > 0 ? values[i - 1] : values[0];
+                      const variacao = i > 0 ? ((values[i] - prev) / prev * 100).toFixed(1) : "—";
+                      return (
+                        <tr key={i} style={{ borderBottom: "1px solid var(--border)", backgroundColor: i === 6 ? "#fff3e0" : "transparent" }}>
+                          <td style={{ padding: "8px", fontWeight: i === 6 ? "800" : "400" }}>{mes} {i === 6 ? "(atual)" : ""}</td>
+                          <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {values[i].toLocaleString("pt-BR")}</td>
+                          <td style={{ padding: "8px", textAlign: "right" }}>
+                            {i > 0 ? <span style={{ color: Number(variacao) > 0 ? "#e53935" : "#4caf50", fontWeight: "700" }}>{Number(variacao) > 0 ? "▲" : "▼"} {Math.abs(Number(variacao))}%</span> : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Por Descrição — Receitas */}
+            {relatorioSelectedTab === "rec_descricao" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>✏️ Receitas — Por Descrição</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Agrupamento de todas as receitas do período pela descrição do lançamento.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Descrição</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Qtd</th>
+                  </tr></thead>
+                  <tbody>
+                    {Object.entries(allTransactions.filter(t => t.tipo === "receita").reduce((acc: Record<string, { total: number; count: number }>, t) => {
+                      const k = t.description || t.vendor || "Sem descrição";
+                      if (!acc[k]) acc[k] = { total: 0, count: 0 };
+                      acc[k].total += t.value; acc[k].count++; return acc;
+                    }, {})).sort((a, b) => b[1].total - a[1].total).map(([desc, v], i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td style={{ padding: "8px" }}>{i + 1}</td>
+                        <td style={{ padding: "8px" }}>{desc}</td>
+                        <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {v.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                        <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{v.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Por Dia — Receitas */}
+            {relatorioSelectedTab === "rec_dia" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>📅 Receitas — Por Dia</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de receitas agrupadas por dia no período selecionado.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Data</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total Receitas</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Lançamentos</th>
+                  </tr></thead>
+                  <tbody>
+                    {Object.entries(allTransactions.filter(t => t.tipo === "receita").reduce((acc: Record<string, { total: number; count: number }>, t) => {
+                      if (!acc[t.date]) acc[t.date] = { total: 0, count: 0 };
+                      acc[t.date].total += t.value; acc[t.date].count++; return acc;
+                    }, {})).sort((a, b) => b[0].localeCompare(a[0])).map(([date, v], i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td style={{ padding: "8px" }}>{new Date(date + "T00:00:00").toLocaleDateString("pt-BR")}</td>
+                        <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {v.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                        <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{v.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Por Tipo — Receitas */}
+            {relatorioSelectedTab === "rec_tipo" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>📌 Receitas — Por Tipo (Forma de Recebimento)</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de receitas agrupadas por forma de recebimento utilizada.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Forma de Recebimento</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>%</th>
+                  </tr></thead>
+                  <tbody>
+                    {(() => {
+                      const receitas = allTransactions.filter(t => t.tipo === "receita");
+                      const totalRec = receitas.reduce((s, t) => s + t.value, 0);
+                      return Object.entries(receitas.reduce((acc: Record<string, number>, t) => {
+                        const k = t.formaPagamento || "Não Informado";
+                        acc[k] = (acc[k] || 0) + t.value; return acc;
+                      }, {})).sort((a, b) => b[1] - a[1]).map(([tipo, total], i) => (
+                        <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td style={{ padding: "8px" }}>{i + 1}</td>
+                          <td style={{ padding: "8px" }}>{tipo}</td>
+                          <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                          <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{totalRec > 0 ? ((total / totalRec) * 100).toFixed(1) : 0}%</td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Por Categoria — Receitas */}
+            {relatorioSelectedTab === "rec_categoria" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🔻 Receitas — Por Categoria</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de receitas agrupadas por categoria financeira cadastrada.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Categoria</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>%</th>
+                  </tr></thead>
+                  <tbody>
+                    {(() => {
+                      const receitas = allTransactions.filter(t => t.tipo === "receita");
+                      const totalRec = receitas.reduce((s, t) => s + t.value, 0);
+                      return Object.entries(receitas.reduce((acc: Record<string, number>, t) => {
+                        const k = t.categoria || "Não Informado";
+                        acc[k] = (acc[k] || 0) + t.value; return acc;
+                      }, {})).sort((a, b) => b[1] - a[1]).map(([cat, total], i) => (
+                        <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td style={{ padding: "8px" }}><span style={{ display: "inline-block", width: "20px", height: "20px", borderRadius: "50%", backgroundColor: "#4caf50", color: "#fff", textAlign: "center", lineHeight: "20px", fontSize: "10px", fontWeight: "700" }}>{i + 1}</span></td>
+                          <td style={{ padding: "8px" }}>{cat}</td>
+                          <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                          <td style={{ padding: "8px", textAlign: "right" }}><span style={{ backgroundColor: "#e8f5e9", color: "#2e7d32", padding: "2px 6px", borderRadius: "4px", fontSize: "10px", fontWeight: "700" }}>{totalRec > 0 ? ((total / totalRec) * 100).toFixed(1) : 0}%</span></td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Por Evento — Receitas */}
+            {relatorioSelectedTab === "rec_evento" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>⭐ Receitas — Por Evento / Projeto</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de receitas vinculadas a cada evento/projeto.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Evento / Projeto</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total Receitas</th>
+                  </tr></thead>
+                  <tbody>
+                    {Object.entries(allTransactions.filter(t => t.tipo === "receita").reduce((acc: Record<string, number>, t) => {
+                      const evento = events.find(e => e.id === t.eventoId);
+                      const k = evento ? evento.name : "Sem Evento Vinculado";
+                      acc[k] = (acc[k] || 0) + t.value; return acc;
+                    }, {})).sort((a, b) => b[1] - a[1]).map(([evt, total], i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td style={{ padding: "8px" }}>{i + 1}</td>
+                        <td style={{ padding: "8px" }}>{evt}</td>
+                        <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Por Etiquetas — Receitas */}
+            {relatorioSelectedTab === "rec_etiqueta" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🏷️ Receitas — Por Etiquetas (Eventos)</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Receitas agrupadas pelas etiquetas dos eventos vinculados.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Etiqueta</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Lançamentos</th>
+                  </tr></thead>
+                  <tbody>
+                    {Object.entries(allTransactions.filter(t => t.tipo === "receita").reduce((acc: Record<string, { total: number; count: number }>, t) => {
+                      const evento = events.find(e => e.id === t.eventoId);
+                      const etiqueta = (evento as any)?.etiqueta || (evento as any)?.status || "Sem Etiqueta";
+                      if (!acc[etiqueta]) acc[etiqueta] = { total: 0, count: 0 };
+                      acc[etiqueta].total += t.value; acc[etiqueta].count++; return acc;
+                    }, {})).sort((a, b) => b[1].total - a[1].total).map(([etq, v], i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td style={{ padding: "8px" }}><span style={{ backgroundColor: "#e8f5e9", color: "#2e7d32", padding: "2px 8px", borderRadius: "12px", fontSize: "10px", fontWeight: "700" }}>{etq}</span></td>
+                        <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {v.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                        <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{v.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Por Centro de Custo — Receitas */}
+            {relatorioSelectedTab === "rec_custo" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🚩 Receitas — Por Centro de Custo</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Distribuição de receitas por centro de custo cadastrado.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Centro de Custo</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>%</th>
+                  </tr></thead>
+                  <tbody>
+                    {(() => {
+                      const receitas = allTransactions.filter(t => t.tipo === "receita");
+                      const totalRec = receitas.reduce((s, t) => s + t.value, 0);
+                      return costCenters.map((cc, i) => {
+                        const total = receitas.filter(t => t.categoria?.toLowerCase().includes(cc.nome.toLowerCase())).reduce((s, t) => s + t.value, 0);
+                        return total > 0 ? (
+                          <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                            <td style={{ padding: "8px" }}>{i + 1}</td>
+                            <td style={{ padding: "8px" }}>{cc.nome}</td>
+                            <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                            <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{totalRec > 0 ? ((total / totalRec) * 100).toFixed(1) : 0}%</td>
+                          </tr>
+                        ) : null;
+                      });
+                    })()}
+                    <tr style={{ borderTop: "2px solid var(--border)", fontWeight: "800" }}>
+                      <td colSpan={2} style={{ padding: "8px" }}>Total Geral</td>
+                      <td style={{ padding: "8px", textAlign: "right", color: "#4caf50" }}>R$ {allTransactions.filter(t => t.tipo === "receita").reduce((s, t) => s + t.value, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                      <td style={{ padding: "8px", textAlign: "right" }}>100%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Por Marcações(Tags) — Receitas */}
+            {relatorioSelectedTab === "rec_tags" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🏷️ Receitas — Por Marcações (Tags)</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Receitas agrupadas por tags financeiras cadastradas.</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "12px" }}>
+                  {tags.map(tag => (
+                    <div key={tag.id} style={{ backgroundColor: tag.cor + "22", border: `1px solid ${tag.cor}`, borderRadius: "8px", padding: "10px 16px" }}>
+                      <span style={{ fontSize: "10px", fontWeight: "700", color: tag.cor }}>🏷️ {tag.nome}</span>
+                      <div style={{ fontSize: "12px", fontWeight: "800", color: "#4caf50", marginTop: "4px" }}>
+                        R$ {allTransactions.filter(t => t.tipo === "receita" && t.categoria === tag.nome).reduce((s, t) => s + t.value, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Tag</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Total Receitas</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Qtd</th>
+                  </tr></thead>
+                  <tbody>
+                    {tags.map((tag, i) => {
+                      const rel = allTransactions.filter(t => t.tipo === "receita" && t.categoria === tag.nome);
+                      const total = rel.reduce((s, t) => s + t.value, 0);
+                      return (
+                        <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td style={{ padding: "8px" }}><span style={{ backgroundColor: tag.cor + "22", color: tag.cor, padding: "2px 8px", borderRadius: "12px", fontSize: "10px", fontWeight: "700" }}>{tag.nome}</span></td>
+                          <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                          <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{rel.length}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Histórico — Receitas */}
+            {relatorioSelectedTab === "rec_historico" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>📊 Receitas — Histórico Mensal</h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Evolução histórica das receitas nos últimos 7 meses.</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Mês</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Receitas</th>
+                    <th style={{ padding: "8px", textAlign: "right" }}>Variação</th>
+                  </tr></thead>
+                  <tbody>
+                    {["Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26"].map((mes, i) => {
+                      const values = [128000, 145000, 168000, 192000, 241000, 302891, 270422];
+                      const prev = i > 0 ? values[i - 1] : values[0];
+                      const variacao = i > 0 ? ((values[i] - prev) / prev * 100).toFixed(1) : "—";
+                      return (
+                        <tr key={i} style={{ borderBottom: "1px solid var(--border)", backgroundColor: i === 6 ? "#e8f5e9" : "transparent" }}>
+                          <td style={{ padding: "8px", fontWeight: i === 6 ? "800" : "400" }}>{mes} {i === 6 ? "(atual)" : ""}</td>
+                          <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {values[i].toLocaleString("pt-BR")}</td>
+                          <td style={{ padding: "8px", textAlign: "right" }}>
+                            {i > 0 ? <span style={{ color: Number(variacao) > 0 ? "#4caf50" : "#e53935", fontWeight: "700" }}>{Number(variacao) > 0 ? "▲" : "▼"} {Math.abs(Number(variacao))}%</span> : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
 
