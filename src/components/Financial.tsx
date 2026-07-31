@@ -1151,8 +1151,8 @@ export default function Financial({
                           </td>
                           <td style={{ padding: "12px 16px" }}>
                             <span style={{ display: "block", fontWeight: "600" }}>{tx.categoria}</span>
-                            <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>
-                              🏦 {bankAccounts.find(b => b.id === tx.contaBancariaId)?.nome || "Santander"}
+                            <span style={{ fontSize: "10px", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "4px", marginTop: "2px" }}>
+                              <Building2 size={12} /> {bankAccounts.find(b => b.id === tx.contaBancariaId)?.nome || "Santander"}
                             </span>
                           </td>
                           <td style={{ padding: "12px 16px", textAlign: "center" }}>
@@ -1189,23 +1189,23 @@ export default function Financial({
             <button 
               className={`btn-tab ${ofxSubTab === "import" ? "active" : ""}`}
               onClick={() => setOfxSubTab("import")}
-              style={{ padding: "8px 16px", borderRadius: "8px", border: "none", backgroundColor: ofxSubTab === "import" ? "#29b6f6" : "var(--bg-card)", color: ofxSubTab === "import" ? "#fff" : "var(--text-primary)", fontWeight: "600", cursor: "pointer" }}
+              style={{ padding: "8px 16px", borderRadius: "8px", border: "none", backgroundColor: ofxSubTab === "import" ? "#0288d1" : "var(--bg-card)", color: ofxSubTab === "import" ? "#fff" : "var(--text-primary)", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
             >
-              🔄 Importar OFX
+              <RefreshCw size={14} /> Importar OFX
             </button>
             <button 
               className={`btn-tab ${ofxSubTab === "history" ? "active" : ""}`}
               onClick={() => setOfxSubTab("history")}
-              style={{ padding: "8px 16px", borderRadius: "8px", border: "none", backgroundColor: ofxSubTab === "history" ? "#29b6f6" : "var(--bg-card)", color: ofxSubTab === "history" ? "#fff" : "var(--text-primary)", fontWeight: "600", cursor: "pointer" }}
+              style={{ padding: "8px 16px", borderRadius: "8px", border: "none", backgroundColor: ofxSubTab === "history" ? "#0288d1" : "var(--bg-card)", color: ofxSubTab === "history" ? "#fff" : "var(--text-primary)", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
             >
-              📝 Histórico OFX
+              <FileText size={14} /> Histórico OFX
             </button>
             <button 
               className={`btn-tab ${ofxSubTab === "nfe" ? "active" : ""}`}
               onClick={() => setOfxSubTab("nfe")}
-              style={{ padding: "8px 16px", borderRadius: "8px", border: "none", backgroundColor: ofxSubTab === "nfe" ? "#29b6f6" : "var(--bg-card)", color: ofxSubTab === "nfe" ? "#fff" : "var(--text-primary)", fontWeight: "600", cursor: "pointer" }}
+              style={{ padding: "8px 16px", borderRadius: "8px", border: "none", backgroundColor: ofxSubTab === "nfe" ? "#0288d1" : "var(--bg-card)", color: ofxSubTab === "nfe" ? "#fff" : "var(--text-primary)", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
             >
-              🧾 Central de Notas Fiscais
+              <FileSpreadsheet size={14} /> Central de Notas Fiscais
             </button>
           </div>
 
@@ -1417,20 +1417,20 @@ export default function Financial({
               Fluxo de Caixa
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingLeft: "6px" }}>
-              <button onClick={() => setRelatorioSelectedTab("performance")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "performance" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "performance" ? "700" : "400" }}>
-                📄 Performance Mensal
+              <button onClick={() => setRelatorioSelectedTab("performance")} style={{ textAlign: "left", padding: "8px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "performance" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "performance" ? "700" : "400", display: "flex", alignItems: "center", gap: "8px" }}>
+                <LayoutDashboard size={14} style={{ color: "var(--accent)" }} /> Performance Mensal
               </button>
-              <button onClick={() => setRelatorioSelectedTab("extrato")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "extrato" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "extrato" ? "700" : "400" }}>
-                📄 Extrato
+              <button onClick={() => setRelatorioSelectedTab("extrato")} style={{ textAlign: "left", padding: "8px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "extrato" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "extrato" ? "700" : "400", display: "flex", alignItems: "center", gap: "8px" }}>
+                <FileText size={14} style={{ color: "var(--accent)" }} /> Extrato
               </button>
-              <button onClick={() => setRelatorioSelectedTab("fluxo_caixa")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "fluxo_caixa" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "fluxo_caixa" ? "700" : "400" }}>
-                🔀 Fluxo de Caixa
+              <button onClick={() => setRelatorioSelectedTab("fluxo_caixa")} style={{ textAlign: "left", padding: "8px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "fluxo_caixa" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "fluxo_caixa" ? "700" : "400", display: "flex", alignItems: "center", gap: "8px" }}>
+                <ArrowLeftRight size={14} style={{ color: "var(--accent)" }} /> Fluxo de Caixa
               </button>
-              <button onClick={() => setRelatorioSelectedTab("historico")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "historico" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "historico" ? "700" : "400" }}>
-                📊 Histórico
+              <button onClick={() => setRelatorioSelectedTab("historico")} style={{ textAlign: "left", padding: "8px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "historico" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "historico" ? "700" : "400", display: "flex", alignItems: "center", gap: "8px" }}>
+                <BarChart3 size={14} style={{ color: "var(--accent)" }} /> Histórico
               </button>
-              <button onClick={() => setRelatorioSelectedTab("dre")} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "dre" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "dre" ? "700" : "400" }}>
-                📄 Demonstrativo (DRE)
+              <button onClick={() => setRelatorioSelectedTab("dre")} style={{ textAlign: "left", padding: "8px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === "dre" ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === "dre" ? "700" : "400", display: "flex", alignItems: "center", gap: "8px" }}>
+                <FileSpreadsheet size={14} style={{ color: "var(--accent)" }} /> Demonstrativo (DRE)
               </button>
             </div>
 
@@ -1440,19 +1440,20 @@ export default function Financial({
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingLeft: "6px" }}>
               {([
-                ["desp_descricao", "✏️", "Por Descrição"],
-                ["desp_dia", "📅", "Por Dia"],
-                ["desp_tipo", "📌", "Por Tipo"],
-                ["desp_categoria", "🔻", "Por Categoria"],
-                ["desp_evento", "⭐", "Por Evento"],
-                ["desp_etiqueta", "🏷️", "Por Etiquetas(Eventos)"],
-                ["desp_custo", "🚩", "Por Centro de Custo"],
-                ["desp_tags", "🏷️", "Por Marcações(Tags)"],
-                ["desp_historico", "📊", "Histórico"],
-                ["pago_a", "👥", "Pago a..."],
-              ] as [string, string, string][]).map(([key, icon, label]) => (
-                <button key={key} onClick={() => setRelatorioSelectedTab(key)} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === key ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === key ? "700" : "400" }}>
-                  {icon} {label}
+                ["desp_descricao", "Por Descrição"],
+                ["desp_dia", "Por Dia"],
+                ["desp_tipo", "Por Tipo"],
+                ["desp_categoria", "Por Categoria"],
+                ["desp_evento", "Por Evento"],
+                ["desp_etiqueta", "Por Etiquetas (Eventos)"],
+                ["desp_custo", "Por Centro de Custo"],
+                ["desp_tags", "Por Marcações (Tags)"],
+                ["desp_historico", "Histórico"],
+                ["pago_a", "Pago a..."],
+              ] as [string, string][]).map(([key, label]) => (
+                <button key={key} onClick={() => setRelatorioSelectedTab(key)} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === key ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === key ? "700" : "400", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#e53935", display: "inline-block" }}></span>
+                  {label}
                 </button>
               ))}
             </div>
@@ -1463,19 +1464,20 @@ export default function Financial({
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingLeft: "6px" }}>
               {([
-                ["rec_descricao", "✏️", "Por Descrição"],
-                ["rec_dia", "📅", "Por Dia"],
-                ["rec_tipo", "📌", "Por Tipo"],
-                ["rec_categoria", "🔻", "Por Categoria"],
-                ["rec_evento", "⭐", "Por Evento"],
-                ["rec_etiqueta", "🏷️", "Por Etiquetas(Eventos)"],
-                ["rec_custo", "🚩", "Por Centro de Custo"],
-                ["rec_tags", "🏷️", "Por Marcações(Tags)"],
-                ["rec_historico", "📊", "Histórico"],
-                ["recebido_de", "👥", "Recebido de..."],
-              ] as [string, string, string][]).map(([key, icon, label]) => (
-                <button key={key} onClick={() => setRelatorioSelectedTab(key)} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === key ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === key ? "700" : "400" }}>
-                  {icon} {label}
+                ["rec_descricao", "Por Descrição"],
+                ["rec_dia", "Por Dia"],
+                ["rec_tipo", "Por Tipo"],
+                ["rec_categoria", "Por Categoria"],
+                ["rec_evento", "Por Evento"],
+                ["rec_etiqueta", "Por Etiquetas (Eventos)"],
+                ["rec_custo", "Por Centro de Custo"],
+                ["rec_tags", "Por Marcações (Tags)"],
+                ["rec_historico", "Histórico"],
+                ["recebido_de", "Recebido de..."],
+              ] as [string, string][]).map(([key, label]) => (
+                <button key={key} onClick={() => setRelatorioSelectedTab(key)} style={{ textAlign: "left", padding: "6px 10px", borderRadius: "6px", border: "none", backgroundColor: relatorioSelectedTab === key ? "var(--bg-main)" : "transparent", color: "var(--text-primary)", fontSize: "12px", cursor: "pointer", fontWeight: relatorioSelectedTab === key ? "700" : "400", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#4caf50", display: "inline-block" }}></span>
+                  {label}
                 </button>
               ))}
             </div>
@@ -1699,7 +1701,7 @@ export default function Financial({
                 isPerformanceView = true;
                 reportTitle = "Performance Mensal (Análise MeEventos)";
               } else if (relatorioSelectedTab === "desp_tipo") {
-                reportTitle = "📌 Despesas por Tipo";
+                reportTitle = "Despesas por Tipo";
                 chartData = [
                   { label: "Outras Despesas", value: 291287.09, color: "#29b6f6" },
                   { label: "Pessoas e Equipe", value: 6858.98, color: "#424242" },
@@ -1707,7 +1709,7 @@ export default function Financial({
                   { label: "Despesas Fixas", value: 8450.00, color: "#ffa726" }
                 ];
               } else if (relatorioSelectedTab === "desp_descricao") {
-                reportTitle = "✏️ Despesas — Por Descrição";
+                reportTitle = "Despesas — Por Descrição";
                 chartData = [
                   { label: "Madeira e MDF para Cenografia", value: 45000, color: "#29b6f6" },
                   { label: "Folha de Pagamento Montadores", value: 61191.60, color: "#e53935" },
@@ -1716,7 +1718,7 @@ export default function Financial({
                   { label: "Outras Despesas Operacionais", value: 158854.59, color: "#78909c" }
                 ];
               } else if (relatorioSelectedTab === "desp_dia") {
-                reportTitle = "📅 Despesas — Por Dia (Distribuição Semanal)";
+                reportTitle = "Despesas — Por Dia (Distribuição Semanal)";
                 chartData = [
                   { label: "Semana 1 (01-07/07)", value: 75400, color: "#29b6f6" },
                   { label: "Semana 2 (08-14/07)", value: 92100, color: "#ab47bc" },
@@ -1724,7 +1726,7 @@ export default function Financial({
                   { label: "Semana 4 (22-30/07)", value: 59546.19, color: "#e53935" }
                 ];
               } else if (relatorioSelectedTab === "desp_categoria") {
-                reportTitle = "🔻 Despesas — Por Categoria";
+                reportTitle = "Despesas — Por Categoria";
                 chartData = [
                   { label: "Não Informado", value: 71904.09, color: "#29b6f6" },
                   { label: "Folha de Pagamento", value: 61191.60, color: "#424242" },
@@ -1734,7 +1736,7 @@ export default function Financial({
                   { label: "Outras Categorias", value: 112372.14, color: "#ab47bc" }
                 ];
               } else if (relatorioSelectedTab === "desp_evento") {
-                reportTitle = "⭐ Despesas — Por Evento / Projeto";
+                reportTitle = "Despesas — Por Evento / Projeto";
                 chartData = [
                   { label: "Mega Feira da Nazaria", value: 95400, color: "#29b6f6" },
                   { label: "Bienal do Livro SP 2026", value: 82000, color: "#ab47bc" },
@@ -1743,7 +1745,7 @@ export default function Financial({
                   { label: "Despesas Gerais de Sede", value: 30746.19, color: "#78909c" }
                 ];
               } else if (relatorioSelectedTab === "desp_etiqueta") {
-                reportTitle = "🏷️ Despesas — Por Etiquetas (Eventos)";
+                reportTitle = "Despesas — Por Etiquetas (Eventos)";
                 chartData = [
                   { label: "Confirmado / Em Produção", value: 145000, color: "#29b6f6" },
                   { label: "Em Montagem no Local", value: 98000, color: "#4caf50" },
@@ -1751,7 +1753,7 @@ export default function Financial({
                   { label: "Orçamento Aprovado", value: 30546.19, color: "#ab47bc" }
                 ];
               } else if (relatorioSelectedTab === "desp_custo") {
-                reportTitle = "🚩 Despesas — Por Centro de Custo";
+                reportTitle = "Despesas — Por Centro de Custo";
                 chartData = [
                   { label: "Estruturas e Marcenaria", value: 110400, color: "#29b6f6" },
                   { label: "Iluminação e Elétrica", value: 75000, color: "#ab47bc" },
@@ -1760,7 +1762,7 @@ export default function Financial({
                   { label: "Outros Centros de Custo", value: 34146.19, color: "#78909c" }
                 ];
               } else if (relatorioSelectedTab === "desp_tags") {
-                reportTitle = "🏷️ Despesas — Por Marcações (Tags)";
+                reportTitle = "Despesas — Por Marcações (Tags)";
                 chartData = [
                   { label: "Urgente / Compra Direta", value: 88000, color: "#e53935" },
                   { label: "Recorrente Mensal", value: 105000, color: "#29b6f6" },
@@ -1768,7 +1770,7 @@ export default function Financial({
                   { label: "Terceirizados Equipe", value: 50546.19, color: "#ffa726" }
                 ];
               } else if (relatorioSelectedTab === "desp_historico") {
-                reportTitle = "📊 Despesas — Histórico Mensal (Evolução 2026)";
+                reportTitle = "Despesas — Histórico Mensal (Evolução 2026)";
                 chartData = [
                   { label: "Julho/26", value: 315546.19, color: "#e53935" },
                   { label: "Junho/26", value: 313848.29, color: "#ffa726" },
@@ -1776,7 +1778,7 @@ export default function Financial({
                   { label: "Abril/26", value: 195000.00, color: "#ab47bc" }
                 ];
               } else if (relatorioSelectedTab === "pago_a") {
-                reportTitle = "👥 Despesas por Fornecedor (Pago a...)";
+                reportTitle = "Despesas por Fornecedor (Pago a...)";
                 chartData = [
                   { label: "BANCO SANTANDER (BRASIL) S.A.", value: 112200.00, color: "#29b6f6" },
                   { label: "ARMAZEM RIBEIRA DISTRIBUIDORA LTDA", value: 78500.00, color: "#424242" },
@@ -1785,7 +1787,7 @@ export default function Financial({
                   { label: "Outros Fornecedores", value: 47846.19, color: "#ab47bc" }
                 ];
               } else if (relatorioSelectedTab === "rec_tipo") {
-                reportTitle = "📌 Receitas — Por Tipo (Forma de Recebimento)";
+                reportTitle = "Receitas — Por Tipo (Forma de Recebimento)";
                 chartData = [
                   { label: "Cobrança Bancária / Boleto", value: 183545.35, color: "#29b6f6" },
                   { label: "Pix Instantâneo", value: 56119.89, color: "#4caf50" },
@@ -1793,7 +1795,7 @@ export default function Financial({
                   { label: "Cartão de Crédito", value: 17684.43, color: "#ffa726" }
                 ];
               } else if (relatorioSelectedTab === "rec_descricao" || relatorioSelectedTab === "rec_categoria") {
-                reportTitle = relatorioSelectedTab === "rec_descricao" ? "✏️ Receitas — Por Descrição" : "🔻 Receitas — Por Categoria";
+                reportTitle = relatorioSelectedTab === "rec_descricao" ? "Receitas — Por Descrição" : "Receitas — Por Categoria";
                 chartData = [
                   { label: "Cobrança", value: 183545.35, color: "#29b6f6" },
                   { label: "Não Informado", value: 56119.89, color: "#424242" },
@@ -1802,7 +1804,7 @@ export default function Financial({
                   { label: "Transferência", value: 5550.00, color: "#ab47bc" }
                 ];
               } else if (relatorioSelectedTab === "rec_evento") {
-                reportTitle = "⭐ Receitas — Por Evento / Projeto";
+                reportTitle = "Receitas — Por Evento / Projeto";
                 chartData = [
                   { label: "Mega Feira da Nazaria", value: 120000, color: "#4caf50" },
                   { label: "Bienal do Livro SP 2026", value: 85000, color: "#29b6f6" },
@@ -1810,28 +1812,28 @@ export default function Financial({
                   { label: "Outros Contratos", value: 20000, color: "#ab47bc" }
                 ];
               } else if (relatorioSelectedTab === "rec_etiqueta") {
-                reportTitle = "🏷️ Receitas — Por Etiquetas (Eventos)";
+                reportTitle = "Receitas — Por Etiquetas (Eventos)";
                 chartData = [
                   { label: "Confirmado / Faturado", value: 180000, color: "#4caf50" },
                   { label: "Em Execução", value: 65422.47, color: "#29b6f6" },
                   { label: "Sinal Pago", value: 25000, color: "#ffa726" }
                 ];
               } else if (relatorioSelectedTab === "rec_custo") {
-                reportTitle = "🚩 Receitas — Por Centro de Custo";
+                reportTitle = "Receitas — Por Centro de Custo";
                 chartData = [
                   { label: "Locação de Stands e Estruturas", value: 165000, color: "#4caf50" },
                   { label: "Cenografia Personalizada", value: 75422.47, color: "#29b6f6" },
                   { label: "Mobiliário e Iluminação", value: 30000, color: "#ab47bc" }
                 ];
               } else if (relatorioSelectedTab === "rec_tags") {
-                reportTitle = "🏷️ Receitas — Por Marcações (Tags)";
+                reportTitle = "Receitas — Por Marcações (Tags)";
                 chartData = [
                   { label: "Cliente VIP / Recorrente", value: 150000, color: "#4caf50" },
                   { label: "Contrato Anual", value: 80000, color: "#29b6f6" },
                   { label: "Projeto Especial", value: 40422.47, color: "#ffa726" }
                 ];
               } else if (relatorioSelectedTab === "rec_historico") {
-                reportTitle = "📊 Receitas — Histórico Mensal (Evolução 2026)";
+                reportTitle = "Receitas — Histórico Mensal (Evolução 2026)";
                 chartData = [
                   { label: "Julho/26", value: 270422.47, color: "#4caf50" },
                   { label: "Junho/26", value: 302891.39, color: "#29b6f6" },
@@ -1839,7 +1841,7 @@ export default function Financial({
                   { label: "Abril/26", value: 192000.00, color: "#ffa726" }
                 ];
               } else if (relatorioSelectedTab === "recebido_de") {
-                reportTitle = "👥 Receitas por Cliente (Recebido de...)";
+                reportTitle = "Receitas por Cliente (Recebido de...)";
                 chartData = [
                   { label: "NAZARIA DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS", value: 133600.00, color: "#4caf50" },
                   { label: "AMANDA ROCHA EVENTOS", value: 66850.00, color: "#29b6f6" },
@@ -1847,26 +1849,26 @@ export default function Financial({
                   { label: "Outros Clientes", value: 27899.67, color: "#ffa726" }
                 ];
               } else if (relatorioSelectedTab === "extrato") {
-                reportTitle = "📄 Extrato de Movimentações Bancárias";
+                reportTitle = "Extrato de Movimentações Bancárias";
                 chartData = [
                   { label: "077 - INTER", value: 119417.64, color: "#ff9800" },
                   { label: "ITAÚ", value: 66384.38, color: "#0288d1" },
                   { label: "SANTANDER", value: 147608.98, color: "#e53935" }
                 ];
               } else if (relatorioSelectedTab === "fluxo_caixa") {
-                reportTitle = "🔀 Fluxo de Caixa Consolidado";
+                reportTitle = "Fluxo de Caixa Consolidado";
                 chartData = [
                   { label: "Total Receitas Entradas", value: 270422.47, color: "#4caf50" },
                   { label: "Total Despesas Saídas", value: 315546.19, color: "#e53935" }
                 ];
               } else if (relatorioSelectedTab === "historico") {
-                reportTitle = "📊 Histórico Financeiro Geral";
+                reportTitle = "Histórico Financeiro Geral";
                 chartData = [
                   { label: "Receitas Semestre", value: 1316313.86, color: "#4caf50" },
                   { label: "Despesas Semestre", value: 1365394.48, color: "#e53935" }
                 ];
               } else if (relatorioSelectedTab === "dre") {
-                reportTitle = "📄 Demonstrativo de Resultado do Exercício (DRE)";
+                reportTitle = "Demonstrativo de Resultado do Exercício (DRE)";
                 chartData = [
                   { label: "Receita Líquida", value: 269697.83, color: "#4caf50" },
                   { label: "Despesas Operacionais", value: 26435.45, color: "#e53935" },
@@ -2012,7 +2014,7 @@ export default function Financial({
                   {/* TABELA DE LANÇAMENTOS CORRIDOS DETALHADOS */}
                   <div style={{ border: "1px solid var(--border)", borderRadius: "16px", padding: "20px" }}>
                     <div style={{ fontSize: "14px", fontWeight: "800", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span>📄 Relatório Corrido de Lançamentos ({reportTitle})</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><FileText size={16} /> Relatório Corrido de Lançamentos ({reportTitle})</span>
                       <span style={{ fontSize: "11px", backgroundColor: "var(--bg-main)", padding: "4px 10px", borderRadius: "12px", color: "var(--text-muted)" }}>
                         Período: {reportStartDate} até {reportEndDate}
                       </span>
@@ -2071,39 +2073,39 @@ export default function Financial({
           
           {/* Sub-tabs header for Configs */}
           <div style={{ display: "flex", gap: "8px", borderBottom: "2px solid var(--border)", paddingBottom: "10px", overflowX: "auto", marginBottom: "20px" }}>
-            <button className={`btn-tab ${configActiveTab === "contas" ? "active" : ""}`} onClick={() => setConfigActiveTab("contas")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
-              💼 Contas Bancárias
+            <button className={`btn-tab ${configActiveTab === "contas" ? "active" : ""}`} onClick={() => setConfigActiveTab("contas")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
+              <Wallet size={14} /> Contas Bancárias
             </button>
-            <button className={`btn-tab ${configActiveTab === "cartoes" ? "active" : ""}`} onClick={() => setConfigActiveTab("cartoes")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
-              💳 Cartões de Créditos
+            <button className={`btn-tab ${configActiveTab === "cartoes" ? "active" : ""}`} onClick={() => setConfigActiveTab("cartoes")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
+              <CreditCardIcon size={14} /> Cartões de Créditos
             </button>
-            <button className={`btn-tab ${configActiveTab === "categorias" ? "active" : ""}`} onClick={() => setConfigActiveTab("categorias")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
-              📋 Categorias
+            <button className={`btn-tab ${configActiveTab === "categorias" ? "active" : ""}`} onClick={() => setConfigActiveTab("categorias")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
+              <Tag size={14} /> Categorias
             </button>
-            <button className={`btn-tab ${configActiveTab === "centro_custo" ? "active" : ""}`} onClick={() => setConfigActiveTab("centro_custo")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
-              🌳 Centro de Custo
+            <button className={`btn-tab ${configActiveTab === "centro_custo" ? "active" : ""}`} onClick={() => setConfigActiveTab("centro_custo")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
+              <Layers size={14} /> Centro de Custo
             </button>
-            <button className={`btn-tab ${configActiveTab === "modo_pagamento" ? "active" : ""}`} onClick={() => setConfigActiveTab("modo_pagamento")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
-              💵 Modo de Pagamento
+            <button className={`btn-tab ${configActiveTab === "modo_pagamento" ? "active" : ""}`} onClick={() => setConfigActiveTab("modo_pagamento")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
+              <DollarSign size={14} /> Modo de Pagamento
             </button>
-            <button className={`btn-tab ${configActiveTab === "recebido_pago" ? "active" : ""}`} onClick={() => setConfigActiveTab("recebido_pago")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
-              ⇄ Recebido De/Pago De
+            <button className={`btn-tab ${configActiveTab === "recebido_pago" ? "active" : ""}`} onClick={() => setConfigActiveTab("recebido_pago")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
+              <ArrowLeftRight size={14} /> Recebido De/Pago De
             </button>
-            <button className={`btn-tab ${configActiveTab === "tags" ? "active" : ""}`} onClick={() => setConfigActiveTab("tags")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
-              🏷️ Tags
+            <button className={`btn-tab ${configActiveTab === "tags" ? "active" : ""}`} onClick={() => setConfigActiveTab("tags")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
+              <Tag size={14} /> Tags
             </button>
-            <button className={`btn-tab ${configActiveTab === "dre" ? "active" : ""}`} onClick={() => setConfigActiveTab("dre")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700" }}>
-              📊 DRE / SPED
+            <button className={`btn-tab ${configActiveTab === "dre" ? "active" : ""}`} onClick={() => setConfigActiveTab("dre")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
+              <BarChart3 size={14} /> DRE / SPED
             </button>
           </div>
 
           {/* Action Row */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-            <button className="btn-success" onClick={() => setConfigModalOpen(true)} style={{ backgroundColor: "#00c853", color: "#fff", padding: "8px 16px", borderRadius: "8px", fontWeight: "700", fontSize: "12px", border: "none" }}>
-              + Adicionar Item
+            <button className="btn-success" onClick={() => setConfigModalOpen(true)} style={{ backgroundColor: "#00c853", color: "#fff", padding: "8px 16px", borderRadius: "8px", fontWeight: "700", fontSize: "12px", border: "none", display: "flex", alignItems: "center", gap: "6px" }}>
+              <Plus size={14} /> Adicionar Item
             </button>
-            <button className="btn-secondary" onClick={() => window.print()} style={{ padding: "8px 16px", borderRadius: "8px", fontSize: "12px" }}>
-              🖨️ Imprimir
+            <button className="btn-secondary" onClick={() => window.print()} style={{ padding: "8px 16px", borderRadius: "8px", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+              <Printer size={14} /> Imprimir
             </button>
           </div>
 
@@ -2227,7 +2229,7 @@ export default function Financial({
         <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", width: "550px", overflow: "hidden", boxShadow: "0 20px 40px rgba(0,0,0,0.4)" }}>
             <div style={{ backgroundColor: "#29b6f6", color: "#fff", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", fontWeight: "800", fontSize: "16px" }}>
-              <span>⇄ Transferência</span>
+              <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><ArrowLeftRight size={18} /> Transferência</span>
               <button style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }} onClick={() => setIsTransferModalOpen(false)}>✕</button>
             </div>
 
@@ -2270,8 +2272,8 @@ export default function Financial({
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
                 <button type="button" className="btn-secondary" onClick={() => setIsTransferModalOpen(false)}>Cancelar</button>
-                <button type="submit" className="btn-success" style={{ backgroundColor: "#00c853", color: "#fff", padding: "10px 20px", border: "none", borderRadius: "8px", fontWeight: "800" }}>
-                  ⇄ Transferir
+                <button type="submit" className="btn-success" style={{ backgroundColor: "#00c853", color: "#fff", padding: "10px 20px", border: "none", borderRadius: "8px", fontWeight: "800", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <ArrowLeftRight size={14} /> Transferir
                 </button>
               </div>
             </form>
