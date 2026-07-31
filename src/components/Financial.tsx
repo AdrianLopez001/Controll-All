@@ -1189,23 +1189,23 @@ export default function Financial({
             <button 
               className={`btn-tab ${ofxSubTab === "import" ? "active" : ""}`}
               onClick={() => setOfxSubTab("import")}
-              style={{ padding: "8px 16px", borderRadius: "8px", border: "none", backgroundColor: ofxSubTab === "import" ? "#0288d1" : "var(--bg-card)", color: ofxSubTab === "import" ? "#fff" : "var(--text-primary)", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+              style={{ padding: "10px 18px", borderRadius: "10px", border: ofxSubTab === "import" ? "none" : "1px solid var(--border)", backgroundColor: ofxSubTab === "import" ? "var(--accent)" : "var(--bg-card)", color: ofxSubTab === "import" ? "#fff" : "var(--text-primary)", fontWeight: "600", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "var(--shadow-sm)" }}
             >
-              <RefreshCw size={14} /> Importar OFX
+              <RefreshCw size={16} /> Importar OFX
             </button>
             <button 
               className={`btn-tab ${ofxSubTab === "history" ? "active" : ""}`}
               onClick={() => setOfxSubTab("history")}
-              style={{ padding: "8px 16px", borderRadius: "8px", border: "none", backgroundColor: ofxSubTab === "history" ? "#0288d1" : "var(--bg-card)", color: ofxSubTab === "history" ? "#fff" : "var(--text-primary)", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+              style={{ padding: "10px 18px", borderRadius: "10px", border: ofxSubTab === "history" ? "none" : "1px solid var(--border)", backgroundColor: ofxSubTab === "history" ? "var(--accent)" : "var(--bg-card)", color: ofxSubTab === "history" ? "#fff" : "var(--text-primary)", fontWeight: "600", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "var(--shadow-sm)" }}
             >
-              <FileText size={14} /> Histórico OFX
+              <FileText size={16} /> Histórico OFX
             </button>
             <button 
               className={`btn-tab ${ofxSubTab === "nfe" ? "active" : ""}`}
               onClick={() => setOfxSubTab("nfe")}
-              style={{ padding: "8px 16px", borderRadius: "8px", border: "none", backgroundColor: ofxSubTab === "nfe" ? "#0288d1" : "var(--bg-card)", color: ofxSubTab === "nfe" ? "#fff" : "var(--text-primary)", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+              style={{ padding: "10px 18px", borderRadius: "10px", border: ofxSubTab === "nfe" ? "none" : "1px solid var(--border)", backgroundColor: ofxSubTab === "nfe" ? "var(--accent)" : "var(--bg-card)", color: ofxSubTab === "nfe" ? "#fff" : "var(--text-primary)", fontWeight: "600", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "var(--shadow-sm)" }}
             >
-              <FileSpreadsheet size={14} /> Central de Notas Fiscais
+              <FileSpreadsheet size={16} /> Central de Notas Fiscais
             </button>
           </div>
 
@@ -2072,30 +2072,30 @@ export default function Financial({
           <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Configurações Financeiras</h3>
           
           {/* Sub-tabs header for Configs */}
-          <div style={{ display: "flex", gap: "8px", borderBottom: "2px solid var(--border)", paddingBottom: "10px", overflowX: "auto", marginBottom: "20px" }}>
-            <button className={`btn-tab ${configActiveTab === "contas" ? "active" : ""}`} onClick={() => setConfigActiveTab("contas")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
-              <Wallet size={14} /> Contas Bancárias
+          <div style={{ display: "flex", gap: "10px", borderBottom: "1px solid var(--border)", paddingBottom: "14px", overflowX: "auto", marginBottom: "20px" }}>
+            <button className={`btn-tab ${configActiveTab === "contas" ? "active" : ""}`} onClick={() => setConfigActiveTab("contas")} style={{ padding: "10px 18px", borderRadius: "10px", border: configActiveTab === "contas" ? "none" : "1px solid var(--border)", backgroundColor: configActiveTab === "contas" ? "var(--accent)" : "var(--bg-card)", color: configActiveTab === "contas" ? "#fff" : "var(--text-primary)", fontWeight: "600", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "var(--shadow-sm)", whiteSpace: "nowrap" }}>
+              <Wallet size={16} /> Contas Bancárias
             </button>
-            <button className={`btn-tab ${configActiveTab === "cartoes" ? "active" : ""}`} onClick={() => setConfigActiveTab("cartoes")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
-              <CreditCardIcon size={14} /> Cartões de Créditos
+            <button className={`btn-tab ${configActiveTab === "cartoes" ? "active" : ""}`} onClick={() => setConfigActiveTab("cartoes")} style={{ padding: "10px 18px", borderRadius: "10px", border: configActiveTab === "cartoes" ? "none" : "1px solid var(--border)", backgroundColor: configActiveTab === "cartoes" ? "var(--accent)" : "var(--bg-card)", color: configActiveTab === "cartoes" ? "#fff" : "var(--text-primary)", fontWeight: "600", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "var(--shadow-sm)", whiteSpace: "nowrap" }}>
+              <CreditCardIcon size={16} /> Cartões de Créditos
             </button>
-            <button className={`btn-tab ${configActiveTab === "categorias" ? "active" : ""}`} onClick={() => setConfigActiveTab("categorias")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
-              <Tag size={14} /> Categorias
+            <button className={`btn-tab ${configActiveTab === "categorias" ? "active" : ""}`} onClick={() => setConfigActiveTab("categorias")} style={{ padding: "10px 18px", borderRadius: "10px", border: configActiveTab === "categorias" ? "none" : "1px solid var(--border)", backgroundColor: configActiveTab === "categorias" ? "var(--accent)" : "var(--bg-card)", color: configActiveTab === "categorias" ? "#fff" : "var(--text-primary)", fontWeight: "600", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "var(--shadow-sm)", whiteSpace: "nowrap" }}>
+              <Tag size={16} /> Categorias
             </button>
-            <button className={`btn-tab ${configActiveTab === "centro_custo" ? "active" : ""}`} onClick={() => setConfigActiveTab("centro_custo")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
-              <Layers size={14} /> Centro de Custo
+            <button className={`btn-tab ${configActiveTab === "centro_custo" ? "active" : ""}`} onClick={() => setConfigActiveTab("centro_custo")} style={{ padding: "10px 18px", borderRadius: "10px", border: configActiveTab === "centro_custo" ? "none" : "1px solid var(--border)", backgroundColor: configActiveTab === "centro_custo" ? "var(--accent)" : "var(--bg-card)", color: configActiveTab === "centro_custo" ? "#fff" : "var(--text-primary)", fontWeight: "600", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "var(--shadow-sm)", whiteSpace: "nowrap" }}>
+              <Layers size={16} /> Centro de Custo
             </button>
-            <button className={`btn-tab ${configActiveTab === "modo_pagamento" ? "active" : ""}`} onClick={() => setConfigActiveTab("modo_pagamento")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
-              <DollarSign size={14} /> Modo de Pagamento
+            <button className={`btn-tab ${configActiveTab === "modo_pagamento" ? "active" : ""}`} onClick={() => setConfigActiveTab("modo_pagamento")} style={{ padding: "10px 18px", borderRadius: "10px", border: configActiveTab === "modo_pagamento" ? "none" : "1px solid var(--border)", backgroundColor: configActiveTab === "modo_pagamento" ? "var(--accent)" : "var(--bg-card)", color: configActiveTab === "modo_pagamento" ? "#fff" : "var(--text-primary)", fontWeight: "600", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "var(--shadow-sm)", whiteSpace: "nowrap" }}>
+              <DollarSign size={16} /> Modo de Pagamento
             </button>
-            <button className={`btn-tab ${configActiveTab === "recebido_pago" ? "active" : ""}`} onClick={() => setConfigActiveTab("recebido_pago")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
-              <ArrowLeftRight size={14} /> Recebido De/Pago De
+            <button className={`btn-tab ${configActiveTab === "recebido_pago" ? "active" : ""}`} onClick={() => setConfigActiveTab("recebido_pago")} style={{ padding: "10px 18px", borderRadius: "10px", border: configActiveTab === "recebido_pago" ? "none" : "1px solid var(--border)", backgroundColor: configActiveTab === "recebido_pago" ? "var(--accent)" : "var(--bg-card)", color: configActiveTab === "recebido_pago" ? "#fff" : "var(--text-primary)", fontWeight: "600", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "var(--shadow-sm)", whiteSpace: "nowrap" }}>
+              <ArrowLeftRight size={16} /> Recebido De/Pago De
             </button>
-            <button className={`btn-tab ${configActiveTab === "tags" ? "active" : ""}`} onClick={() => setConfigActiveTab("tags")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
-              <Tag size={14} /> Tags
+            <button className={`btn-tab ${configActiveTab === "tags" ? "active" : ""}`} onClick={() => setConfigActiveTab("tags")} style={{ padding: "10px 18px", borderRadius: "10px", border: configActiveTab === "tags" ? "none" : "1px solid var(--border)", backgroundColor: configActiveTab === "tags" ? "var(--accent)" : "var(--bg-card)", color: configActiveTab === "tags" ? "#fff" : "var(--text-primary)", fontWeight: "600", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "var(--shadow-sm)", whiteSpace: "nowrap" }}>
+              <Tag size={16} /> Tags
             </button>
-            <button className={`btn-tab ${configActiveTab === "dre" ? "active" : ""}`} onClick={() => setConfigActiveTab("dre")} style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
-              <BarChart3 size={14} /> DRE / SPED
+            <button className={`btn-tab ${configActiveTab === "dre" ? "active" : ""}`} onClick={() => setConfigActiveTab("dre")} style={{ padding: "10px 18px", borderRadius: "10px", border: configActiveTab === "dre" ? "none" : "1px solid var(--border)", backgroundColor: configActiveTab === "dre" ? "var(--accent)" : "var(--bg-card)", color: configActiveTab === "dre" ? "#fff" : "var(--text-primary)", fontWeight: "600", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "var(--shadow-sm)", whiteSpace: "nowrap" }}>
+              <BarChart3 size={16} /> DRE / SPED
             </button>
           </div>
 
