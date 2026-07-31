@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { 
   DollarSign, TrendingUp, TrendingDown, Wallet, Calendar, Plus, Tag, 
-  X, FileText, Upload, Trash2, Link
+  X, FileText, Upload, Trash2, Link, ArrowLeftRight
 } from "lucide-react";
 import type { InvoiceLog, Project, NotaFiscal, BoletoAdministrativo } from "../types";
+import { BankReconciliationModal } from "./BankReconciliationModal";
 
 interface FinancialProps {
   invoices: InvoiceLog[];
@@ -18,9 +19,25 @@ interface FinancialProps {
 export default function Financial({ 
   invoices, events, fornecedores, onAddInvoice, onUpdateInvoice, onUpdateEvent, initialSubTab 
 }: FinancialProps) {
-  const [activeSubTab, setActiveSubTab] = useState<"fluxo" | "pagar" | "receber" | "boletos" | "nfe" | "centro_custo" | "caixinha">(
+  const [activeSubTab, setActiveSubTab] = useState<"fluxo" | "pagar" | "receber" | "veiculos" | "boletos" | "nfe" | "centro_custo" | "caixinha">(
     (initialSubTab as any) || "fluxo"
   );
+  const [isBankReconcileOpen, setIsBankReconcileOpen] = useState(false);
+
+  // Vehicle expenses state
+  const [vehicleExpenses, setVehicleExpenses] = useState([
+    { id: "v-exp-1", placa: "ABC-1234", modelo: "Fiat Fiorino Baú 1.4", categoria: "Combustível / Etanol", valor: 450.00, motorista: "Carlos Silva", date: "2026-07-28", eventoId: "evt-1", nomeEvento: "Bienal do Livro SP" },
+    { id: "v-exp-2", placa: "XYZ-9876", modelo: "Renault Master Furgão", categoria: "Manutenção & Revisão", valor: 1850.00, motorista: "Roberto Alves", date: "2026-07-25", eventoId: "evt-2", nomeEvento: "Feicon Expo 2026" },
+    { id: "v-exp-3", placa: "ABC-1234", modelo: "Fiat Fiorino Baú 1.4", categoria: "Pedágios & Sem Parar", valor: 180.50, motorista: "Carlos Silva", date: "2026-07-29", eventoId: "evt-1", nomeEvento: "Bienal do Livro SP" }
+  ]);
+  const [isAddVehExpModalOpen, setIsAddVehExpModalOpen] = useState(false);
+  const [vehPlaca, setVehPlaca] = useState("ABC-1234");
+  const [vehModelo, setVehModelo] = useState("Fiat Fiorino Baú 1.4");
+  const [vehCategoria, setVehCategoria] = useState("Combustível / Etanol");
+  const [vehValor, setVehValor] = useState(200);
+  const [vehMotorista, setVehMotorista] = useState("Carlos Silva");
+  const [vehEventoId, setVehEventoId] = useState("");
+
 
   useEffect(() => {
     if (initialSubTab) setActiveSubTab(initialSubTab as any);
@@ -527,6 +544,24 @@ export default function Financial({
           Contas a Receber
         </button>
         <button 
+          className={`tab-btn-link ${activeSubTab === "veiculos" ? "active" : ""}`}
+          onClick={() => setActiveSubTab("veiculos")}
+          style={{
+            padding: "10px 12px",
+            background: "none",
+            border: "none",
+            borderBottom: activeSubTab === "veiculos" ? "2px solid var(--accent-secondary)" : "2px solid transparent",
+            color: activeSubTab === "veiculos" ? "var(--accent)" : "var(--text-muted)",
+            fontWeight: activeSubTab === "veiculos" ? "600" : "500",
+            fontFamily: "var(--font)",
+            cursor: "pointer",
+            fontSize: "13px",
+            whiteSpace: "nowrap"
+          }}
+        >
+          🚚 Despesas com Veículos
+        </button>
+        <button 
           className={`tab-btn-link ${activeSubTab === "boletos" ? "active" : ""}`}
           onClick={() => setActiveSubTab("boletos")}
           style={{
@@ -598,7 +633,37 @@ export default function Financial({
         >
           Caixinha
         </button>
+
+        <button
+          onClick={() => setIsBankReconcileOpen(true)}
+          style={{
+            marginLeft: "auto",
+            padding: "8px 16px",
+            backgroundColor: "#293B8F",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "10px",
+            fontWeight: "600",
+            fontSize: "12px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            boxShadow: "0 2px 6px rgba(41,59,143,0.3)"
+          }}
+        >
+          <ArrowLeftRight size={16} />
+          Conciliação Bancária
+        </button>
       </div>
+
+      <BankReconciliationModal
+        isOpen={isBankReconcileOpen}
+        onClose={() => setIsBankReconcileOpen(false)}
+        invoices={invoices}
+        onAddInvoice={onAddInvoice}
+        onUpdateInvoice={onUpdateInvoice}
+      />
 
       {/* Fluxo de Caixa Tab */}
       {activeSubTab === "fluxo" && (
@@ -824,6 +889,165 @@ export default function Financial({
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Despesas com Veículos Tab */}
+      {activeSubTab === "veiculos" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>Gestão Financeira da Frota &amp; Despesas de Veículos</h4>
+              <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Rastreamento individual de combustível, pedágios, manutenção e seguro por placa e evento.</p>
+            </div>
+            <button 
+              className="btn-primary" 
+              onClick={() => setIsAddVehExpModalOpen(true)}
+              style={{ display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#144580" }}
+            >
+              <Plus size={16} /> Lançar Despesa de Veículo
+            </button>
+          </div>
+
+          {/* Vehicle Metrics Cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px" }}>
+              <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Total Gasto na Frota</span>
+              <h3 style={{ fontSize: "20px", fontWeight: "700", color: "var(--accent-text)", marginTop: "4px" }}>
+                R$ {vehicleExpenses.reduce((acc, curr) => acc + curr.valor, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </h3>
+            </div>
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px" }}>
+              <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Combustível &amp; Sem Parar</span>
+              <h3 style={{ fontSize: "20px", fontWeight: "700", color: "#065f46", marginTop: "4px" }}>
+                R$ {vehicleExpenses.filter(v => v.categoria.toLowerCase().includes("combustível") || v.categoria.toLowerCase().includes("pedágio")).reduce((acc, curr) => acc + curr.valor, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </h3>
+            </div>
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px" }}>
+              <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Manutenção &amp; Oficina</span>
+              <h3 style={{ fontSize: "20px", fontWeight: "700", color: "#991b1b", marginTop: "4px" }}>
+                R$ {vehicleExpenses.filter(v => v.categoria.toLowerCase().includes("manutenção")).reduce((acc, curr) => acc + curr.valor, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </h3>
+            </div>
+          </div>
+
+          {/* Vehicle Expenses Table */}
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "12px" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid var(--border)", backgroundColor: "var(--bg-card-hover)" }}>
+                  <th style={{ padding: "12px 16px" }}>Veículo / Placa</th>
+                  <th style={{ padding: "12px 16px" }}>Categoria da Despesa</th>
+                  <th style={{ padding: "12px 16px" }}>Motorista Responsável</th>
+                  <th style={{ padding: "12px 16px" }}>Evento / Obra Vinculada</th>
+                  <th style={{ padding: "12px 16px" }}>Data</th>
+                  <th style={{ padding: "12px 16px", textAlign: "right" }}>Valor (R$)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vehicleExpenses.map((exp) => (
+                  <tr key={exp.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                    <td style={{ padding: "12px 16px" }}>
+                      <strong style={{ color: "#144580" }}>{exp.placa}</strong>
+                      <span style={{ display: "block", fontSize: "10px", color: "var(--text-muted)" }}>{exp.modelo}</span>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <span className="badge badge-warning" style={{ fontSize: "10px" }}>{exp.categoria}</span>
+                    </td>
+                    <td style={{ padding: "12px 16px", fontWeight: "500" }}>{exp.motorista}</td>
+                    <td style={{ padding: "12px 16px", color: "var(--accent)" }}>{exp.nomeEvento || "Uso Geral Sede"}</td>
+                    <td style={{ padding: "12px 16px", color: "var(--text-muted)" }}>{exp.date}</td>
+                    <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: "700", color: "#991b1b" }}>
+                      - R$ {exp.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Adicionar Despesa de Veículo */}
+      {isAddVehExpModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsAddVehExpModalOpen(false)}>
+          <div className="modal-content" style={{ maxWidth: "500px" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Lançar Despesa de Veículo / Frota</h3>
+              <button className="modal-close" onClick={() => setIsAddVehExpModalOpen(false)}>X</button>
+            </div>
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                const newExp = {
+                  id: `v-exp-${Date.now()}`,
+                  placa: vehPlaca,
+                  modelo: vehModelo,
+                  categoria: vehCategoria,
+                  valor: vehValor,
+                  motorista: vehMotorista,
+                  date: new Date().toISOString().split("T")[0],
+                  eventoId: vehEventoId || "",
+                  nomeEvento: events.find(ev => ev.id === vehEventoId)?.name || "Uso Geral Sede"
+                };
+                setVehicleExpenses([newExp, ...vehicleExpenses]);
+                setIsAddVehExpModalOpen(false);
+                alert("Despesa de veículo lançada e vinculada ao módulo financeiro!");
+              }} 
+              className="modal-body" 
+              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+            >
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "600", display: "block", marginBottom: "4px" }}>Placa do Veículo *</label>
+                <input type="text" required value={vehPlaca} onChange={(e) => setVehPlaca(e.target.value)} placeholder="ABC-1234" style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+              </div>
+
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "600", display: "block", marginBottom: "4px" }}>Modelo do Veículo</label>
+                <input type="text" value={vehModelo} onChange={(e) => setVehModelo(e.target.value)} placeholder="Fiat Fiorino Baú 1.4" style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ fontSize: "11px", fontWeight: "600", display: "block", marginBottom: "4px" }}>Categoria da Despesa</label>
+                  <select value={vehCategoria} onChange={(e) => setVehCategoria(e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", height: "38px" }}>
+                    <option value="Combustível / Etanol">Combustível / Etanol</option>
+                    <option value="Combustível / Diesel">Combustível / Diesel</option>
+                    <option value="Pedágios & Sem Parar">Pedágios &amp; Sem Parar</option>
+                    <option value="Manutenção & Revisão">Manutenção &amp; Oficina</option>
+                    <option value="Troca de Pneus">Troca de Pneus</option>
+                    <option value="Seguro & IPVA">Seguro &amp; IPVA</option>
+                    <option value="Aluguel de Carro Reserva">Aluguel Carro Reserva</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "11px", fontWeight: "600", display: "block", marginBottom: "4px" }}>Valor (R$) *</label>
+                  <input type="number" required value={vehValor} onChange={(e) => setVehValor(parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "600", display: "block", marginBottom: "4px" }}>Motorista Responsável</label>
+                <input type="text" value={vehMotorista} onChange={(e) => setVehMotorista(e.target.value)} placeholder="Carlos Silva" style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+              </div>
+
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "600", display: "block", marginBottom: "4px" }}>Evento Vinculado (Opcional)</label>
+                <select value={vehEventoId} onChange={(e) => setVehEventoId(e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", height: "38px" }}>
+                  <option value="">Uso Geral / Sem vínculo</option>
+                  {events.map(ev => (
+                    <option key={ev.id} value={ev.id}>{ev.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
+                <button type="button" className="btn-secondary" onClick={() => setIsAddVehExpModalOpen(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary">Confirmar Lançamento</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

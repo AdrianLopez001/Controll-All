@@ -159,6 +159,8 @@ export interface Project {
     dia2Manha: boolean;
     dia2Tarde: boolean;
   };
+  // JC Eventos v2.5 Enhancements
+  clientesAtendidos?: { id: string; nomeCliente: string; cnpj: string; valorAlocado: number; areaM2?: number }[];
   devolucoesAlugados?: { [itemId: string]: "pendente" | "devolvido" | "avariado" };
 }
 
@@ -194,6 +196,8 @@ export interface Employee {
   // 3.0 Productivity Metrics
   productivity?: {
     horasTrabalhadas: number;
+    diariasTrabalhadas?: number;
+    valorDiaria?: number;
     eventosAtendidos: number;
     pontualidade: number; // 0 - 100
     tarefasConcluidas: number;
@@ -279,6 +283,9 @@ export interface WarehouseItem {
   margemLucro?: number; // em %
   estoqueMinimo?: number;
   fornecedores?: string;
+
+  // Categorização Estruturada WMS v2.5
+  categoriaWMS?: "moveis" | "insumos" | "ferramentas" | "aluminio" | "eletrica";
 }
 
 export interface InvoiceLog {
@@ -307,6 +314,10 @@ export interface InvoiceLog {
   recorrente?: boolean;
   recebimentoParcial?: number;
   inadimplente?: boolean;
+
+  // v2.5 Enhancements
+  rateioEventos?: RateioNotaFiscal[];
+  itensDetalhados?: ItemDetalhamentoCompra[];
 }
 
 export interface AuditoriaLog {
@@ -496,5 +507,61 @@ export interface UserAccount {
   cpf: string;
   dataNascimento: string;
   role: "admin" | "comercial" | "estoque" | "operador";
+  permissoesWmsCategorias?: ("moveis" | "insumos" | "ferramentas" | "aluminio" | "eletrica")[];
 }
+
+// ==========================================
+// NOVAS INTERFACES CONTROLL-ALL V2.5
+// ==========================================
+
+export interface ContaBancaria {
+  id: string;
+  nomeBanco: string;
+  agenciaConta: string;
+  tipo: "corrente" | "caixa_fisico" | "investimento";
+  saldoBanco: number;
+  saldoErp: number;
+  saldoConciliado: number;
+  corIdentificadora?: string;
+}
+
+export interface ExtratoBancarioItem {
+  id: string;
+  contaId: string;
+  date: string;
+  descricao: string;
+  valor: number; // positivo para receita, negativo para despesa
+  fitid: string;
+  status: "pendente" | "conciliado" | "ignorado";
+  transacaoErpIdVinculada?: string;
+  sugestaoMatchErpId?: string;
+}
+
+export interface RegistroReconciliacao {
+  id: string;
+  extratoId: string;
+  transacaoErpId: string;
+  date: string;
+  usuario: string;
+  metodo: "automatico" | "manual";
+}
+
+export interface RateioNotaFiscal {
+  eventoId: string;
+  nomeEvento: string;
+  percentual: number;
+  valorAlocado: number;
+}
+
+export interface ItemDetalhamentoCompra {
+  id: string;
+  descricao: string;
+  quantidade: number;
+  unidade: string;
+  valorUnitario: number;
+  valorTotal: number;
+  graficaFornecedor: string;
+  percentualParticipacao: number;
+}
+
 

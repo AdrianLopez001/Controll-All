@@ -32,6 +32,9 @@ export default function Employees({
   const [deletingEmpId, setDeletingEmpId] = useState<string | null>(null);
 
   const [activeSubTab, setActiveSubTab] = useState<"cadastro" | "produtividade">(initialSubTab || "cadastro");
+  const [rhMetricModel, setRhMetricModel] = useState<"diaria" | "hora">("diaria");
+  const [evalDiarias, setEvalDiarias] = useState(1);
+  const [evalValorDiaria, setEvalValorDiaria] = useState(250);
 
   useEffect(() => {
     if (initialSubTab) setActiveSubTab(initialSubTab);
