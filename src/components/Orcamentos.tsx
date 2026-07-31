@@ -6,6 +6,9 @@ import {
 } from "lucide-react";
 import type { Orcamento, WarehouseItem, OrcamentoItemDetalhado } from "../types";
 import logoImg from "../assets/logo.png";
+import { exportElementToPDF } from "../utils/pdfGenerator";
+import { ProposalWordEditorModal } from "./ProposalWordEditorModal";
+import { ClientProposalPortalModal } from "./ClientProposalPortalModal";
 
 interface OrcamentosProps {
   orcamentos: Orcamento[];
@@ -29,9 +32,18 @@ export default function Orcamentos({
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Orcamento["status"]>("all");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedOrc, setSelectedOrc] = useState<Orcamento | null>(null);
+  const [selectedOrc, setSelectedOrc] = useState<Orcamento | null>(orcamentos[0] || null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  
+  // Word Editor Modal States
+  const [isWordEditorOpen, setIsWordEditorOpen] = useState(false);
+  const [editingWordOrc, setEditingWordOrc] = useState<Orcamento | null>(null);
+
+  // Online Approval Modal States
+  const [isOnlineApprovalOpen, setIsOnlineApprovalOpen] = useState(false);
+  const [onlineApprovalOrc, setOnlineApprovalOrc] = useState<Orcamento | null>(null);
+
 
   // Form states
   const [clienteIndex, setClienteIndex] = useState(0);
@@ -43,6 +55,23 @@ export default function Orcamentos({
   // 3.1 Budget Model Switcher States
   const [tipo, setTipo] = useState<"simplificado" | "detalhado">("detalhado");
   const [nomeOrcamento, setNomeOrcamento] = useState("");
+
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    if (!selectedOrc) return;
+    setIsPdfLoading(true);
+    try {
+      const fileName = `Proposta_${selectedOrc.codigo}_${selectedOrc.cliente.replace(/[^a-zA-Z0-9]/g, "_")}`;
+      await exportElementToPDF("print-proposal-dossier", fileName);
+    } catch (err) {
+      console.error("Erro ao gerar PDF:", err);
+      window.print();
+    } finally {
+      setIsPdfLoading(false);
+    }
+  };
+
   const [descricaoSimplificada, setDescricaoSimplificada] = useState("");
   const [valorTotalSimplificado, setValorTotalSimplificado] = useState(0);
 
@@ -72,25 +101,6 @@ export default function Orcamentos({
   const [emailTo, setEmailTo] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
-
-  // PDF generation state
-  const [isPdfLoading, setIsPdfLoading] = useState(false);
-
-  // Real PDF generation using html2pdf.js
-  const handleDownloadPDF = async () => {
-    const element = document.getElementById("print-proposal-dossier");
-    if (!element || !selectedOrc) return;
-
-    setIsPdfLoading(true);
-    try {
-      window.print();
-    } catch (err) {
-      console.error("Erro ao gerar PDF:", err);
-      alert("Utilize a opção Salvar como PDF na janela de impressão do navegador.");
-    } finally {
-      setIsPdfLoading(false);
-    }
-  };
 
   const handleAddProduct = () => {
     const prod = warehouseItems.find(p => p.id === selectedProdId);
@@ -559,6 +569,22 @@ export default function Orcamentos({
 
               <button className="btn-secondary btn-sm" onClick={() => setIsPdfModalOpen(true)} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                 <Eye size={13} /> Ver PDF
+              </button>
+
+              <button 
+                className="btn-secondary btn-sm" 
+                onClick={() => { setEditingWordOrc(selectedOrc); setIsWordEditorOpen(true); }} 
+                style={{ display: "flex", alignItems: "center", gap: "5px", backgroundColor: "#144580", color: "#ffffff" }}
+              >
+                <FileText size={13} /> Editar no Word (Nativo)
+              </button>
+
+              <button 
+                className="btn-secondary btn-sm" 
+                onClick={() => { setOnlineApprovalOrc(selectedOrc); setIsOnlineApprovalOpen(true); }} 
+                style={{ display: "flex", alignItems: "center", gap: "5px", backgroundColor: "#16a34a", color: "#ffffff" }}
+              >
+                <Send size={13} /> Link de Aprovação Online
               </button>
 
               {(selectedOrc.status === "aprovado" || selectedOrc.status === "ganho") && (
@@ -1126,6 +1152,46 @@ export default function Orcamentos({
           </div>
         </div>
       )}
+
+      {/* Editor Nativo de Propostas Estilo Word */}
+      <ProposalWordEditorModal
+        isOpen={isWordEditorOpen}
+        onClose={() => {
+          setIsWordEditorOpen(false);
+          setEditingWordOrc(null);
+        }}
+        orcamento={editingWordOrc}
+        onSaveOrcamento={(updated) => {
+          onUpdateOrcamento(updated);
+        }}
+      />
+
+      {/* Portal de Aprovação Online de Propostas via Link Público */}
+      <ClientProposalPortalModal
+        isOpen={isOnlineApprovalOpen}
+        onClose={() => {
+          setIsOnlineApprovalOpen(false);
+          setOnlineApprovalOrc(null);
+        }}
+        orcamento={onlineApprovalOrc}
+        onApproveProposal={(orcId, auditLog) => {
+          if (!onlineApprovalOrc) return;
+          const updated: Orcamento = {
+            ...onlineApprovalOrc,
+            status: "ganho",
+            revisoes: [
+              ...(onlineApprovalOrc.revisoes || []),
+              { 
+                versao: (onlineApprovalOrc.revisoes?.length || 0) + 1, 
+                data: new Date().toISOString().split("T")[0], 
+                descricao: `Aprovado online pelo cliente (${auditLog.signatario} - IP: ${auditLog.ip})` 
+              }
+            ]
+          };
+          onUpdateOrcamento(updated);
+          setSelectedOrc(updated);
+        }}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Archive, Search, QrCode, ClipboardList, MapPin, Plus, 
-  Upload, FileText, Trash2, CheckCircle, TrendingUp, HelpCircle
+  Upload, FileText, Trash2, CheckCircle, TrendingUp, HelpCircle, Shield
 } from "lucide-react";
 import type { WarehouseItem, WmsLocacaoItem } from "../types";
 
@@ -11,15 +11,22 @@ interface WmsModuleProps {
   onUpdateWarehouseItem: (updated: WarehouseItem) => void;
   onAddWarehouseItem?: (newItem: Omit<WarehouseItem, "id">) => void;
   onDeleteWarehouseItem?: (id: string) => void;
+  initialSubTab?: "inventario" | "locacoes" | "entradas" | "ajustes";
 }
 
 export default function WmsModule({ 
-  items, onUpdateStock, onUpdateWarehouseItem, onAddWarehouseItem, onDeleteWarehouseItem 
+  items, onUpdateStock, onUpdateWarehouseItem, onAddWarehouseItem, onDeleteWarehouseItem, initialSubTab
 }: WmsModuleProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<"all" | "locacao" | "ferramenta" | "venda">("all");
+  const [wmsCategoryFilter, setWmsCategoryFilter] = useState<"all" | "moveis" | "insumos" | "ferramentas" | "aluminio" | "eletrica">("all");
+  const [simulatedProfile, setSimulatedProfile] = useState<"gerente_total" | "tecnico_eletrica" | "encarregado_logistica">("gerente_total");
   const [selectedItemId, setSelectedItemId] = useState<string>(items[0]?.id || "");
-  const [activeSubTab, setActiveSubTab] = useState<"inventario" | "locacoes" | "entradas" | "ajustes">("inventario");
+  const [activeSubTab, setActiveSubTab] = useState<"inventario" | "locacoes" | "entradas" | "ajustes">(initialSubTab || "inventario");
+
+
+  useEffect(() => {
+    if (initialSubTab) setActiveSubTab(initialSubTab);
+  }, [initialSubTab]);
   const [isLocacaoModalOpen, setIsLocacaoModalOpen] = useState(false);
 
   // Modal States
@@ -221,11 +228,20 @@ export default function WmsModule({
     return "locacao";
   };
 
+  const allowedCategoriesByProfile: Record<string, string[]> = {
+    gerente_total: ["moveis", "insumos", "ferramentas", "aluminio", "eletrica"],
+    tecnico_eletrica: ["eletrica"],
+    encarregado_logistica: ["moveis", "ferramentas"]
+  };
+
   const filteredItems = items.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || item.codigo.toLowerCase().includes(searchTerm.toLowerCase());
-    const opCat = getOperationalCategory(item);
-    const matchesCategory = categoryFilter === "all" ? true : opCat === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const itemCat = item.categoriaWMS || (item.type === "tool" ? "ferramentas" : "moveis");
+    
+    const isAllowedByProfile = allowedCategoriesByProfile[simulatedProfile]?.includes(itemCat) ?? true;
+    const matchesCategory = wmsCategoryFilter === "all" ? true : itemCat === wmsCategoryFilter;
+    
+    return matchesSearch && matchesCategory && isAllowedByProfile;
   });
 
   // Calculate stats for 3 WMS categories
@@ -437,15 +453,30 @@ export default function WmsModule({
                 </div>
 
                 <select 
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value as any)}
+                  value={wmsCategoryFilter}
+                  onChange={(e) => setWmsCategoryFilter(e.target.value as any)}
                   style={{ padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)", fontSize: "13px", color: "var(--text-primary)" }}
                 >
-                  <option value="all">Todas Categorias</option>
-                  <option value="locacao">Materiais para Locação</option>
-                  <option value="ferramenta">Ferramentas &amp; Equipamentos</option>
-                  <option value="venda">Produtos para Venda</option>
+                  <option value="all">Todas as 5 Categorias</option>
+                  <option value="moveis">🪑 Móveis para Estande</option>
+                  <option value="insumos">📦 Insumos &amp; Consumíveis</option>
+                  <option value="ferramentas">🛠️ Ferramentas &amp; Equipamentos</option>
+                  <option value="aluminio">🏗️ Alumínio &amp; Box-Truss</option>
+                  <option value="eletrica">⚡ Elétrica &amp; Iluminação</option>
                 </select>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "auto", background: "var(--bg-main)", padding: "4px 10px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                  <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)" }}>Perfil WMS:</span>
+                  <select
+                    value={simulatedProfile}
+                    onChange={(e) => setSimulatedProfile(e.target.value as any)}
+                    style={{ background: "transparent", border: "none", fontSize: "11px", fontWeight: "700", color: "var(--accent)" }}
+                  >
+                    <option value="gerente_total">👑 Gerente (Acesso Total 5/5)</option>
+                    <option value="tecnico_eletrica">⚡ Técnico Elétrica (Acesso Restrito)</option>
+                    <option value="encarregado_logistica">🚚 Encarregado Logística (Móveis/Ferramentas)</option>
+                  </select>
+                </div>
 
                 <button
                   type="button"
@@ -456,6 +487,16 @@ export default function WmsModule({
                   <Plus size={14} /> Novo Material
                 </button>
               </div>
+
+              {/* Profile Permission Active Banner */}
+              {simulatedProfile !== "gerente_total" && (
+                <div style={{ backgroundColor: "var(--accent-glow)", border: "1px solid var(--accent)", borderRadius: "10px", padding: "10px 14px", marginBottom: "16px", display: "flex", alignItems: "center", gap: "10px" }}>
+                  <Shield style={{ width: "18px", height: "18px", color: "var(--accent)" }} />
+                  <div style={{ fontSize: "12px", color: "var(--text-primary)" }}>
+                    <strong>Restrição de Perfil de Usuário Ativa:</strong> Você está visualizando o almoxarifado como <span style={{ textTransform: "capitalize", fontWeight: "700" }}>{simulatedProfile.replace("_", " ")}</span>. Apenas os materiais autorizados para sua função estão sendo exibidos.
+                  </div>
+                </div>
+              )}
 
               {/* List Table */}
               <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>

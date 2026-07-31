@@ -279,6 +279,9 @@ export interface WarehouseItem {
   margemLucro?: number; // em %
   estoqueMinimo?: number;
   fornecedores?: string;
+
+  // Categorização Estruturada WMS v2.5
+  categoriaWMS?: "moveis" | "insumos" | "ferramentas" | "aluminio" | "eletrica";
 }
 
 export interface InvoiceLog {
@@ -592,3 +595,37 @@ export interface UserAccount {
   role: "admin" | "comercial" | "estoque" | "operador";
 }
 
+// NOVAS INTERFACES CONTROLL-ALL V2.5
+// ==========================================
+
+export interface ContaBancaria {
+  id: string;
+  nomeBanco: string;
+  agenciaConta: string;
+  tipo: "corrente" | "caixa_fisico" | "investimento";
+  saldoBanco: number;
+  saldoErp: number;
+  saldoConciliado: number;
+  corIdentificadora?: string;
+}
+
+export interface ExtratoBancarioItem {
+  id: string;
+  contaId: string;
+  date: string;
+  descricao: string;
+  valor: number; // positivo para receita, negativo para despesa
+  fitid: string;
+  status: "pendente" | "conciliado" | "ignorado";
+  transacaoErpIdVinculada?: string;
+  sugestaoMatchErpId?: string;
+}
+
+export interface RegistroReconciliacao {
+  id: string;
+  extratoId: string;
+  transacaoErpId: string;
+  date: string;
+  usuario: string;
+  metodo: "automatico" | "manual";
+}

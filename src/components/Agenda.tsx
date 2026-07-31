@@ -195,7 +195,7 @@ export default function Agenda({
         titulo: `Follow-up: ${lead.empresa}`,
         data: lead.followUpDate,
         horario: "14:00",
-        cor: "#c084fc", // purple
+        cor: "#144580", // purple
         detalhe: `Entrar em contato com ${lead.contato} (${lead.cargo}) para follow-up de negociação de stand. Fone: ${lead.telefone}`
       });
     }
@@ -207,7 +207,7 @@ export default function Agenda({
         titulo: `Reunião Stand: ${lead.empresa}`,
         data: "2026-07-22", // specific date
         horario: "10:30",
-        cor: "#c084fc",
+        cor: "#144580",
         detalhe: `Reunião para fechamento do escopo técnico do stand de ${lead.empresa}.`
       });
     }
@@ -246,7 +246,7 @@ export default function Agenda({
   // 6. Integrando Eventos Independentes
   eventosIndependentes.forEach(ind => {
     const catColors = {
-      reuniao: "#c084fc", // purple
+      reuniao: "#144580", // purple
       visita_tecnica: "#38bdf8", // light blue
       lembrete: "#fca5a5", // pink
       entrega: "#fbbf24", // orange
@@ -511,7 +511,7 @@ export default function Agenda({
               checked={filters.crm} 
               onChange={() => setFilters({ ...filters, crm: !filters.crm })}
             />
-            <span style={{ display: "inline-block", width: "10px", height: "10px", borderRadius: "50%", background: "#c084fc" }}></span>
+            <span style={{ display: "inline-block", width: "10px", height: "10px", borderRadius: "50%", background: "#144580" }}></span>
             CRM: Reuniões / Visitas
           </label>
 

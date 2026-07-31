@@ -1623,16 +1623,16 @@ select option {
   border-left-color: #fbbf24 !important;
 }
 
-/* 4. CRM (Purple) */
+/* 4. CRM (Azul Institucional) */
 .event-type-crm {
-  background-color: rgba(192, 132, 252, 0.15) !important;
-  color: #7c3aed !important;
-  border-left-color: #c084fc !important;
+  background-color: rgba(20, 69, 128, 0.12) !important;
+  color: #144580 !important;
+  border-left-color: #144580 !important;
 }
 [data-theme='dark'] .event-type-crm {
-  background-color: rgba(192, 132, 252, 0.2) !important;
-  color: #d8b4fe !important;
-  border-left-color: #c084fc !important;
+  background-color: rgba(147, 197, 253, 0.15) !important;
+  color: #93c5fd !important;
+  border-left-color: #93c5fd !important;
 }
 
 /* 5. Prazo (Coral/Grey) */
@@ -1840,3 +1840,52 @@ select option {
 }
 
 /* Mobile layout overrides moved to Mobile.css — scoped under [data-mobile="true"] */
+
+/* ==========================================
+   WORD PROPOSAL A4 PAPER DOCUMENT PROTECTION
+   (Proteção de dimensões e imunização contra Dark Mode)
+   ========================================== */
+.word-modal-paper,
+[data-theme='dark'] .word-modal-paper,
+body.dark-mode .word-modal-paper {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+  box-sizing: border-box !important;
+}
+
+.word-modal-paper input,
+.word-modal-paper textarea,
+.word-modal-paper select,
+[data-theme='dark'] .word-modal-paper input,
+[data-theme='dark'] .word-modal-paper textarea,
+[data-theme='dark'] .word-modal-paper select,
+body.dark-mode .word-modal-paper input,
+body.dark-mode .word-modal-paper textarea,
+body.dark-mode .word-modal-paper select {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+  border-color: #cbd5e1 !important;
+}
+
+.word-modal-paper input::placeholder,
+.word-modal-paper textarea::placeholder {
+  color: #64748b !important;
+}
+
+.word-modal-paper table,
+.word-modal-paper th,
+.word-modal-paper td,
+[data-theme='dark'] .word-modal-paper table,
+[data-theme='dark'] .word-modal-paper th,
+[data-theme='dark'] .word-modal-paper td,
+body.dark-mode .word-modal-paper table,
+body.dark-mode .word-modal-paper th,
+body.dark-mode .word-modal-paper td {
+  background-color: transparent !important;
+  color: #1e293b !important;
+  border-color: #cbd5e1 !important;
+}
+
+.word-modal-paper tr:nth-child(even) {
+  background-color: #f8fafc !important;
+}

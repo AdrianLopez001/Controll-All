@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Building2, User, Mail, Phone, DollarSign, Search, Plus, 
   X, FileText, Upload, Trash2, Edit, Award
@@ -18,13 +18,18 @@ interface CRMProps {
   onUpdateSupplier: (index: number, updatedSupplier: any) => void;
   onAddClient: (client: { name: string; email: string; cnpj: string }) => void;
   onAddSupplier: (supplier: { name: string; email: string; servico: string }) => void;
+  initialSubTab?: "pipeline" | "clientes" | "fornecedores";
 }
 
 export default function CRM({ 
   leads, clientes, fornecedores, onAddLead, onUpdateLeadEstagio, onUpdateLead,
-  onUpdateClient, onUpdateSupplier, onAddClient, onAddSupplier
+  onUpdateClient, onUpdateSupplier, onAddClient, onAddSupplier, initialSubTab
 }: CRMProps) {
-  const [activeSubTab, setActiveSubTab] = useState<"pipeline" | "clientes" | "fornecedores">("pipeline");
+  const [activeSubTab, setActiveSubTab] = useState<"pipeline" | "clientes" | "fornecedores">(initialSubTab || "pipeline");
+
+  useEffect(() => {
+    if (initialSubTab) setActiveSubTab(initialSubTab);
+  }, [initialSubTab]);
   const [activeMobileStage, setActiveMobileStage] = useState<"briefing" | "orcamento" | "aprovado" | "perdido">("briefing");
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);

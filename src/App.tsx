@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   LayoutDashboard, Briefcase, Archive, Users, LogOut, 
   Building2, DollarSign, Truck, Shield, FileText, CheckSquare, Calendar,
@@ -1148,6 +1148,30 @@ export default function App() {
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [deepLinkOsId, setDeepLinkOsId] = useState<string>("");
 
+  const tasksPanelRef = useRef<HTMLDivElement>(null);
+  const notifPanelRef = useRef<HTMLDivElement>(null);
+  const searchPanelRef = useRef<HTMLDivElement>(null);
+
+  // Close top nav popups/panels when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showTasksPanel && tasksPanelRef.current && !tasksPanelRef.current.contains(event.target as Node)) {
+        setShowTasksPanel(false);
+      }
+      if (showNotifPanel && notifPanelRef.current && !notifPanelRef.current.contains(event.target as Node)) {
+        setShowNotifPanel(false);
+      }
+      if (isSearchOpen && searchPanelRef.current && !searchPanelRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showTasksPanel, showNotifPanel, isSearchOpen]);
+
   // Password recovery states
   const [showPasswordRecovery, setShowPasswordRecovery] = useState(false);
   const [recoveryCpf, setRecoveryCpf] = useState("");
@@ -1155,7 +1179,10 @@ export default function App() {
   const [recoveryStep, setRecoveryStep] = useState<"validate" | "reset">("validate");
   const [newPassword, setNewPassword] = useState("");
   const [loginEmail, setLoginEmail] = useState("adrian@jceventosrn.com.br");
+  const [crmSubTab, setCrmSubTab] = useState<"pipeline" | "clientes" | "fornecedores">("pipeline");
   const [financialSubTab, setFinancialSubTab] = useState<string | undefined>(undefined);
+  const [wmsSubTab, setWmsSubTab] = useState<"inventario" | "locacoes" | "entradas" | "ajustes">("inventario");
+  const [employeesSubTab, setEmployeesSubTab] = useState<"cadastro" | "produtividade">("cadastro");
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1190,7 +1217,12 @@ export default function App() {
 
   const navigateToTab = (tab: string, subTab?: string) => {
     setActiveTab(tab as any);
-    if (subTab) setFinancialSubTab(subTab);
+    if (subTab) {
+      if (tab === "crm") setCrmSubTab(subTab as any);
+      else if (tab === "financial") setFinancialSubTab(subTab);
+      else if (tab === "warehouse") setWmsSubTab(subTab as any);
+      else if (tab === "employees") setEmployeesSubTab(subTab as any);
+    }
   };
 
   if (!isLoggedIn) {
@@ -1388,7 +1420,7 @@ export default function App() {
 
             {hasAccess("os") && (
               <button
-                className={`menu-group-btn ${(activeTab === "os" || activeTab === "agenda") ? "active" : ""}`}
+                className={`menu-group-btn ${activeTab === "os" ? "active" : ""}`}
                 onClick={() => setActiveTab("os")}
                 title="Ordens de Serviço"
               >
@@ -1398,7 +1430,7 @@ export default function App() {
 
             {hasAccess("warehouse") && (
               <button
-                className={`menu-group-btn ${(activeTab === "warehouse" || activeTab === "logistics") ? "active" : ""}`}
+                className={`menu-group-btn ${activeTab === "warehouse" ? "active" : ""}`}
                 onClick={() => setActiveTab("warehouse")}
                 title="Depósito & WMS"
               >
@@ -1442,7 +1474,7 @@ export default function App() {
         <div className="top-nav-right">
           {/* Global search */}
           {/* Global search Icon button & Expandable Bar */}
-          <div style={{ position: "relative" }}>
+          <div ref={searchPanelRef} style={{ position: "relative" }}>
             <button 
               className={`top-nav-icon-btn ${isSearchOpen ? "active" : ""}`}
               onClick={() => setIsSearchOpen(!isSearchOpen)}
@@ -1477,25 +1509,47 @@ export default function App() {
                 </div>
 
                 {globalSearch.trim().length > 0 && (
-                  <div style={{ maxHeight: "260px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <div style={{ maxHeight: "280px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "4px" }}>
                     {(() => {
                       const term = globalSearch.trim().toLowerCase();
-                      const matches: { name: string; tab: string; category: string; event?: Project }[] = [
-                        ...[
-                          { name: "Dashboard Executivo", tab: "overview", category: "Módulo" },
-                          { name: "Projetos (Kanban)", tab: "kanban", category: "Módulo" },
-                          { name: "CRM & Oportunidades", tab: "crm", category: "Módulo" },
-                          { name: "Propostas Comerciais", tab: "orcamentos", category: "Módulo" },
-                          { name: "Ordens de Serviço", tab: "os", category: "Módulo" },
-                          { name: "Depósito & WMS", tab: "warehouse", category: "Módulo" },
-                          { name: "Financeiro & DRE", tab: "financial", category: "Módulo" },
-                          { name: "Equipe & RH", tab: "employees", category: "Módulo" },
-                          { name: "Logística & Frota", tab: "logistics", category: "Módulo" },
-                        ].filter(m => m.name.toLowerCase().includes(term)),
-                        ...events.filter(e => e.name.toLowerCase().includes(term) || e.client.toLowerCase().includes(term)).map(e => ({ name: e.name, tab: "kanban", event: e, category: "Projeto" })),
-                        ...leads.filter(l => l.empresa.toLowerCase().includes(term) || l.contato.toLowerCase().includes(term)).map(l => ({ name: `${l.empresa} (${l.contato})`, tab: "crm", category: "Lead CRM" })),
-                        ...warehouseItems.filter(i => i.name.toLowerCase().includes(term) || i.marca?.toLowerCase().includes(term)).map(i => ({ name: i.name, tab: "warehouse", category: "Estoque WMS" })),
-                        ...employees.filter(emp => emp.name.toLowerCase().includes(term)).map(emp => ({ name: emp.name, tab: "employees", category: "Colaborador" }))
+                      type SearchMatch = { name: string; tab: string; subTab?: string; category: string; event?: Project };
+
+                      const subTabModules: SearchMatch[] = [
+                        { name: "Dashboard Executivo", tab: "overview", category: "Módulo Principal" },
+                        { name: "Projetos (Quadro Kanban)", tab: "kanban", category: "Módulo Principal" },
+                        { name: "CRM & Oportunidades (Pipeline / Funil)", tab: "crm", subTab: "pipeline", category: "Sub-aba CRM" },
+                        { name: "Clientes Homologados (Dossiê Comercial)", tab: "crm", subTab: "clientes", category: "Sub-aba CRM" },
+                        { name: "Fornecedores Homologados (CRM)", tab: "crm", subTab: "fornecedores", category: "Sub-aba CRM" },
+                        { name: "Propostas Comerciais & Orçamentos", tab: "orcamentos", category: "Módulo Principal" },
+                        { name: "Ordens de Serviço (OS & Checklists)", tab: "os", category: "Módulo Principal" },
+                        { name: "Depósito & WMS (Inventário Físico)", tab: "warehouse", subTab: "inventario", category: "Sub-aba WMS" },
+                        { name: "Locações de Materiais (WMS)", tab: "warehouse", subTab: "locacoes", category: "Sub-aba WMS" },
+                        { name: "Entradas de Material & NF (WMS)", tab: "warehouse", subTab: "entradas", category: "Sub-aba WMS" },
+                        { name: "Ajustes de Estoque & Perdas (WMS)", tab: "warehouse", subTab: "ajustes", category: "Sub-aba WMS" },
+                        { name: "Financeiro: Fluxo de Caixa & DRE", tab: "financial", subTab: "fluxo", category: "Sub-aba Financeiro" },
+                        { name: "Financeiro: Contas a Pagar", tab: "financial", subTab: "pagar", category: "Sub-aba Financeiro" },
+                        { name: "Financeiro: Contas a Receber", tab: "financial", subTab: "receber", category: "Sub-aba Financeiro" },
+                        { name: "Financeiro: Boletos Bancários", tab: "financial", subTab: "boletos", category: "Sub-aba Financeiro" },
+                        { name: "Financeiro: Notas Fiscais (NF-e / NFS-e)", tab: "financial", subTab: "nfe", category: "Sub-aba Financeiro" },
+                        { name: "Financeiro: Centro de Custos por Projeto", tab: "financial", subTab: "centro_custo", category: "Sub-aba Financeiro" },
+                        { name: "Financeiro: Caixinha & Reembolsos", tab: "financial", subTab: "caixinha", category: "Sub-aba Financeiro" },
+                        { name: "Equipe & RH (Ficha do Colaborador)", tab: "employees", subTab: "cadastro", category: "Sub-aba RH" },
+                        { name: "Equipe & RH (Avaliação de Produtividade)", tab: "employees", subTab: "produtividade", category: "Sub-aba RH" },
+                        { name: "Logística, Frota & Viagens", tab: "logistics", category: "Módulo Principal" },
+                        { name: "Agenda & Calendário Operacional", tab: "agenda", category: "Módulo Principal" },
+                        { name: "Auditoria & Logs de Segurança", tab: "auditoria", category: "Módulo Principal" }
+                      ];
+
+                      const matches: SearchMatch[] = [
+                        ...subTabModules.filter(m => m.name.toLowerCase().includes(term)),
+                        ...clientes.filter(c => c.name.toLowerCase().includes(term) || c.cnpj.includes(term) || c.email.toLowerCase().includes(term)).map(c => ({ name: `${c.name} (${c.cnpj})`, tab: "crm", subTab: "clientes", category: "Cliente Homologado" })),
+                        ...fornecedores.filter(f => f.name.toLowerCase().includes(term) || f.servico.toLowerCase().includes(term)).map(f => ({ name: `${f.name} — ${f.servico}`, tab: "crm", subTab: "fornecedores", category: "Fornecedor Homologado" })),
+                        ...leads.filter(l => l.empresa.toLowerCase().includes(term) || l.contato.toLowerCase().includes(term)).map(l => ({ name: `Lead: ${l.empresa} (${l.contato})`, tab: "crm", subTab: "pipeline", category: "Lead CRM" })),
+                        ...events.filter(e => e.name.toLowerCase().includes(term) || e.client.toLowerCase().includes(term) || e.codigo.toLowerCase().includes(term)).map(e => ({ name: `${e.codigo} · ${e.name}`, tab: "kanban", event: e, category: "Projeto/OS" })),
+                        ...warehouseItems.filter(i => i.name.toLowerCase().includes(term) || i.codigo.toLowerCase().includes(term) || i.marca?.toLowerCase().includes(term)).map(i => ({ name: `${i.codigo} · ${i.name}`, tab: "warehouse", subTab: "inventario", category: "Item WMS" })),
+                        ...employees.filter(emp => emp.name.toLowerCase().includes(term) || emp.role.toLowerCase().includes(term)).map(emp => ({ name: `${emp.name} (${emp.role})`, tab: "employees", subTab: "cadastro", category: "Colaborador" })),
+                        ...orcamentos.filter(o => o.codigo.toLowerCase().includes(term) || o.cliente.toLowerCase().includes(term)).map(o => ({ name: `${o.codigo} — ${o.cliente}`, tab: "orcamentos", category: "Proposta Comercial" })),
+                        ...invoiceLogs.filter(inv => inv.invoiceNumber.toLowerCase().includes(term) || inv.vendor.toLowerCase().includes(term)).map(inv => ({ name: `${inv.invoiceNumber} — ${inv.vendor}`, tab: "financial", subTab: inv.tipo === "receita" ? "receber" : "pagar", category: "Financeiro" }))
                       ];
 
                       if (matches.length === 0) {
@@ -1506,12 +1560,12 @@ export default function App() {
                         );
                       }
 
-                      return matches.slice(0, 10).map((match, idx) => (
+                      return matches.slice(0, 12).map((match, idx) => (
                         <div 
                           key={idx}
                           onClick={() => {
                             if (match.event) setSelectedEvent(match.event);
-                            setActiveTab(match.tab as any);
+                            navigateToTab(match.tab, match.subTab);
                             setGlobalSearch("");
                             setIsSearchOpen(false);
                           }}
@@ -1553,7 +1607,7 @@ export default function App() {
           </button>
 
           {/* Quick task checklist access */}
-          <div className="menu-group" style={{ position: "relative" }}>
+          <div className="menu-group" ref={tasksPanelRef} style={{ position: "relative" }}>
             <button
               className="top-nav-icon-btn"
               onClick={() => { setShowTasksPanel(p => !p); setShowNotifPanel(false); }}
@@ -1646,7 +1700,7 @@ export default function App() {
           </div>
 
           {/* Notifications */}
-          <div className="menu-group" style={{ position: "relative" }}>
+          <div className="menu-group" ref={notifPanelRef} style={{ position: "relative" }}>
             <button
               className="top-nav-icon-btn"
               onClick={() => { setShowNotifPanel(p => !p); setShowTasksPanel(false); }}
@@ -1861,6 +1915,7 @@ export default function App() {
               onUpdateSupplier={updateSupplier}
               onAddClient={addClient}
               onAddSupplier={addSupplier}
+              initialSubTab={crmSubTab}
             />
           )}
 
@@ -1912,6 +1967,7 @@ export default function App() {
               onUpdateWarehouseItem={updateWarehouseItem}
               onAddWarehouseItem={addWarehouseItem}
               onDeleteWarehouseItem={deleteWarehouseItem}
+              initialSubTab={wmsSubTab}
             />
           )}
 
@@ -1923,6 +1979,7 @@ export default function App() {
               onToggleSafetyCert={toggleSafetyCert}
               onUpdateEmployee={updateEmployee}
               onDeleteEmployee={deleteEmployee}
+              initialSubTab={employeesSubTab}
             />
           )}
 

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { 
   Plus, Users, Shield, ShieldAlert, CheckCircle, AlertTriangle, UserCheck, 
   X, FileText, Upload, Calendar, DollarSign, Key, Trash2 
@@ -12,6 +12,7 @@ interface EmployeesProps {
   onToggleSafetyCert: (id: string) => void;
   onUpdateEmployee: (updated: Employee) => void;
   onDeleteEmployee?: (id: string) => void;
+  initialSubTab?: "cadastro" | "produtividade";
 }
 
 export default function Employees({
@@ -20,7 +21,8 @@ export default function Employees({
   onToggleDocStatus,
   onToggleSafetyCert,
   onUpdateEmployee,
-  onDeleteEmployee
+  onDeleteEmployee,
+  initialSubTab
 }: EmployeesProps) {
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
@@ -29,7 +31,14 @@ export default function Employees({
   const [selectedEmp, setSelectedEmp] = useState<Employee | null>(null);
   const [deletingEmpId, setDeletingEmpId] = useState<string | null>(null);
 
-  const [activeSubTab, setActiveSubTab] = useState<"cadastro" | "produtividade">("cadastro");
+  const [activeSubTab, setActiveSubTab] = useState<"cadastro" | "produtividade">(initialSubTab || "cadastro");
+  const [rhMetricModel, setRhMetricModel] = useState<"diaria" | "hora">("diaria");
+  const [evalDiarias, setEvalDiarias] = useState(1);
+  const [evalValorDiaria, setEvalValorDiaria] = useState(250);
+
+  useEffect(() => {
+    if (initialSubTab) setActiveSubTab(initialSubTab);
+  }, [initialSubTab]);
 
   // Productivity rating form states
   const [selectedEvalEmpId, setSelectedEvalEmpId] = useState(employees[0]?.id || "");
