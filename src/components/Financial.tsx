@@ -459,6 +459,10 @@ export default function Financial({
 
   // Relatórios Avançados State
   const [relatorioSelectedTab, setRelatorioSelectedTab] = useState<string>("performance");
+  const [reportStartDate, setReportStartDate] = useState<string>("2026-06-01");
+  const [reportEndDate, setReportEndDate] = useState<string>("2026-07-30");
+  const [reportStatusFilter, setReportStatusFilter] = useState<string>("Pagos");
+  const [reportBankFilter, setReportBankFilter] = useState<string>("Todas");
 
   // Configurações Financeiras Sub-Tab State
   const [configActiveTab, setConfigActiveTab] = useState<"contas" | "cartoes" | "categorias" | "centro_custo" | "modo_pagamento" | "recebido_pago" | "tags" | "dre">("contas");
@@ -1479,709 +1483,579 @@ export default function Financial({
           </div>
 
           {/* Main Report View Content */}
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", gap: "24px" }}>
             
-            {/* Performance Mensal View */}
-            {relatorioSelectedTab === "performance" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>Performance de Julho / 2026</h3>
-                
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", textAlign: "center" }}>
-                  <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px" }}>
-                    <span style={{ fontSize: "10px", color: "var(--text-muted)", fontWeight: "700" }}>RECEITAS</span>
-                    <h3 style={{ fontSize: "18px", fontWeight: "800", color: "#4caf50" }}>R$ 270.422,47</h3>
-                  </div>
-                  <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px" }}>
-                    <span style={{ fontSize: "10px", color: "var(--text-muted)", fontWeight: "700" }}>DESPESAS</span>
-                    <h3 style={{ fontSize: "18px", fontWeight: "800", color: "#e53935" }}>R$ 315.546,19</h3>
-                  </div>
-                  <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px" }}>
-                    <span style={{ fontSize: "10px", color: "var(--text-muted)", fontWeight: "700" }}>RESULTADO</span>
-                    <h3 style={{ fontSize: "18px", fontWeight: "800", color: "#e53935" }}>-R$ 45.123,72</h3>
-                  </div>
-                  <div style={{ border: "1px solid var(--border)", padding: "16px", borderRadius: "12px" }}>
-                    <span style={{ fontSize: "10px", color: "var(--text-muted)", fontWeight: "700" }}>MARGEM</span>
-                    <h3 style={{ fontSize: "18px", fontWeight: "800", color: "#9c27b0" }}>-16.7%</h3>
-                  </div>
+            {/* Top Filter Bar Header (Shared across ALL report categories) */}
+            <div style={{
+              backgroundColor: "var(--bg-main)",
+              border: "1px solid var(--border)",
+              borderRadius: "12px",
+              padding: "16px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "16px",
+              flexWrap: "wrap"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <label style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>Data Inicial:</label>
+                  <input 
+                    type="date" 
+                    value={reportStartDate} 
+                    onChange={(e) => setReportStartDate(e.target.value)}
+                    style={{
+                      backgroundColor: "var(--bg-card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                      padding: "6px 12px",
+                      fontSize: "12px",
+                      color: "var(--text-primary)",
+                      outline: "none"
+                    }} 
+                  />
                 </div>
-
-                <div style={{ marginTop: "20px" }}>
-                  <h4 style={{ fontSize: "14px", fontWeight: "700", marginBottom: "12px" }}>🏆 Top Categorias do Mês</h4>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                    <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "14px" }}>
-                      <h5 style={{ color: "#4caf50", fontSize: "12px", fontWeight: "700", marginBottom: "8px" }}>⬆️ Maiores Receitas</h5>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", borderBottom: "1px solid var(--border)", padding: "6px 0" }}><span>1. Cobrança</span><strong>R$ 183.545,35</strong></div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", borderBottom: "1px solid var(--border)", padding: "6px 0" }}><span>2. Não Informado</span><strong>R$ 56.119,89</strong></div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", padding: "6px 0" }}><span>3. Adiantamento</span><strong>R$ 13.072,80</strong></div>
-                    </div>
-                    <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "14px" }}>
-                      <h5 style={{ color: "#e53935", fontSize: "12px", fontWeight: "700", marginBottom: "8px" }}>⬇️ Maiores Despesas</h5>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", borderBottom: "1px solid var(--border)", padding: "6px 0" }}><span>1. Folha de Pagamento</span><strong>-R$ 61.191,60</strong></div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", borderBottom: "1px solid var(--border)", padding: "6px 0" }}><span>2. Empréstimos</span><strong>-R$ 27.435,97</strong></div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", padding: "6px 0" }}><span>3. Aquisição de bens</span><strong>-R$ 24.500,00</strong></div>
-                    </div>
-                  </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <label style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>Data Final:</label>
+                  <input 
+                    type="date" 
+                    value={reportEndDate} 
+                    onChange={(e) => setReportEndDate(e.target.value)}
+                    style={{
+                      backgroundColor: "var(--bg-card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                      padding: "6px 12px",
+                      fontSize: "12px",
+                      color: "var(--text-primary)",
+                      outline: "none"
+                    }} 
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <label style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>Status:</label>
+                  <select 
+                    value={reportStatusFilter} 
+                    onChange={(e) => setReportStatusFilter(e.target.value)}
+                    style={{
+                      backgroundColor: "var(--bg-card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                      padding: "6px 12px",
+                      fontSize: "12px",
+                      color: "var(--text-primary)",
+                      outline: "none"
+                    }}
+                  >
+                    <option value="Pagos">Pagos</option>
+                    <option value="Pendentes">Pendentes</option>
+                    <option value="Todos">Todos os Status</option>
+                  </select>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <label style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>Conta:</label>
+                  <select 
+                    value={reportBankFilter} 
+                    onChange={(e) => setReportBankFilter(e.target.value)}
+                    style={{
+                      backgroundColor: "var(--bg-card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                      padding: "6px 12px",
+                      fontSize: "12px",
+                      color: "var(--text-primary)",
+                      outline: "none"
+                    }}
+                  >
+                    <option value="Todas">Todas as Contas</option>
+                    {bankAccounts.map(b => (
+                      <option key={b.id} value={b.nome}>{b.nome}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
-            )}
 
-            {/* Pago a... View */}
-            {relatorioSelectedTab === "pago_a" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>👥 Despesas por Fornecedor (Pago a...)</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "var(--bg-main)", borderRadius: "8px", fontSize: "12px" }}>
-                    <span>Fornecedor - BANCO SANTANDER (BRASIL) S.A.</span>
-                    <strong style={{ color: "#e53935" }}>-R$ 12.200,00</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "var(--bg-main)", borderRadius: "8px", fontSize: "12px" }}>
-                    <span>Fornecedor - ARMAZEM RIBEIRA DISTRIBUIDORA LTDA</span>
-                    <strong style={{ color: "#e53935" }}>-R$ 7.500,00</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "var(--bg-main)", borderRadius: "8px", fontSize: "12px" }}>
-                    <span>Fornecedor - Comercial de Madeiras RN</span>
-                    <strong style={{ color: "#e53935" }}>-R$ 4.500,00</strong>
-                  </div>
-                </div>
+              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                <button 
+                  onClick={() => alert("Exportando dados em formato Excel (.xlsx)...")} 
+                  style={{
+                    backgroundColor: "#00bfa5",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "8px",
+                    padding: "8px 16px",
+                    fontSize: "12px",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}
+                >
+                  <FileSpreadsheet size={14} /> Excel
+                </button>
+                <button 
+                  onClick={() => window.print()} 
+                  style={{
+                    backgroundColor: "#00b0ff",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "8px",
+                    padding: "8px 16px",
+                    fontSize: "12px",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}
+                >
+                  <Download size={14} /> PDF
+                </button>
               </div>
-            )}
+            </div>
 
-            {/* Recebido de... View */}
-            {relatorioSelectedTab === "recebido_de" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>👥 Receitas por Cliente (Recebido de...)</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "var(--bg-main)", borderRadius: "8px", fontSize: "12px" }}>
-                    <span>Cliente - NAZARIA DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS</span>
-                    <strong style={{ color: "#4caf50" }}>R$ 33.600,00</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "var(--bg-main)", borderRadius: "8px", fontSize: "12px" }}>
-                    <span>Cliente - AMANDA ROCHA EVENTOS</span>
-                    <strong style={{ color: "#4caf50" }}>R$ 16.850,00</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", backgroundColor: "var(--bg-main)", borderRadius: "8px", fontSize: "12px" }}>
-                    <span>Cliente - Alexandro T. Gomes</span>
-                    <strong style={{ color: "#4caf50" }}>R$ 12.072,80</strong>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Helper SVG Donut Chart Renderer */}
+            {(() => {
+              const drawDonut = (items: { label: string; value: number; color: string }[], chartTitle?: string) => {
+                const total = items.reduce((s, d) => s + Math.abs(d.value), 0);
+                if (total === 0) return null;
 
-            {/* DRE Tree View */}
-            {relatorioSelectedTab === "dre" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>📄 Demonstrativo de Resultado do Exercício (DRE)</h3>
-                
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead>
-                    <tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                      <th style={{ padding: "10px" }}>ESTRUTURA DRE / SPED</th>
-                      <th style={{ padding: "10px", textAlign: "right" }}>JULHO / 2026</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr style={{ backgroundColor: "#e8f5e9", fontWeight: "800", color: "#2e7d32" }}>
-                      <td style={{ padding: "10px" }}>(+) Receita Bruta</td>
-                      <td style={{ padding: "10px", textAlign: "right" }}>R$ 270.422,47</td>
-                    </tr>
-                    <tr style={{ backgroundColor: "#ffebee", fontWeight: "600", color: "#c62828" }}>
-                      <td style={{ padding: "10px", paddingLeft: "24px" }}>(-) Deduções (Impostos Sobre Vendas)</td>
-                      <td style={{ padding: "10px", textAlign: "right" }}>-R$ 724,64</td>
-                    </tr>
-                    <tr style={{ backgroundColor: "#e1f5fe", fontWeight: "800", color: "#0277bd" }}>
-                      <td style={{ padding: "10px" }}>(=) Receita Líquida</td>
-                      <td style={{ padding: "10px", textAlign: "right" }}>R$ 269.697,83</td>
-                    </tr>
-                    <tr style={{ backgroundColor: "#ffebee", fontWeight: "600", color: "#c62828" }}>
-                      <td style={{ padding: "10px", paddingLeft: "24px" }}>(-) Custos Operacionais (Materiais &amp; Montagem)</td>
-                      <td style={{ padding: "10px", textAlign: "right" }}>-R$ 7.758,27</td>
-                    </tr>
-                    <tr style={{ backgroundColor: "#ffebee", fontWeight: "600", color: "#c62828" }}>
-                      <td style={{ padding: "10px", paddingLeft: "24px" }}>(-) Despesas Operacionais Gerais</td>
-                      <td style={{ padding: "10px", textAlign: "right" }}>-R$ 26.435,45</td>
-                    </tr>
-                    <tr style={{ backgroundColor: "#e1f5fe", fontWeight: "900", color: "#01579b" }}>
-                      <td style={{ padding: "10px" }}>(=) Resultado do Exercício (Lucro Líquido)</td>
-                      <td style={{ padding: "10px", textAlign: "right" }}>R$ 133.611,82</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
+                let cumulativePercent = 0;
+                const slices = items.map((item) => {
+                  const percent = Math.abs(item.value) / total;
+                  const startAngle = cumulativePercent * 2 * Math.PI;
+                  cumulativePercent += percent;
+                  const endAngle = cumulativePercent * 2 * Math.PI;
 
-            {/* Por Descrição — Despesas */}
-            {relatorioSelectedTab === "desp_descricao" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>✏️ Despesas — Por Descrição</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Agrupamento de todas as despesas do período pela descrição do lançamento.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Descrição</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Qtd</th>
-                  </tr></thead>
-                  <tbody>
-                    {Object.entries(allTransactions.filter(t => t.tipo === "despesa").reduce((acc: Record<string, { total: number; count: number }>, t) => {
-                      const k = t.description || t.vendor || "Sem descrição";
-                      if (!acc[k]) acc[k] = { total: 0, count: 0 };
-                      acc[k].total += t.value; acc[k].count++; return acc;
-                    }, {})).sort((a, b) => b[1].total - a[1].total).map(([desc, v], i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                        <td style={{ padding: "8px" }}>{i + 1}</td>
-                        <td style={{ padding: "8px" }}>{desc}</td>
-                        <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {v.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                        <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{v.count}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  const innerR = 45;
+                  const outerR = 85;
+                  const cx = 100;
+                  const cy = 100;
 
-            {/* Por Dia — Despesas */}
-            {relatorioSelectedTab === "desp_dia" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>📅 Despesas — Por Dia</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de despesas agrupadas por dia no período selecionado.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Data</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total Despesas</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Lançamentos</th>
-                  </tr></thead>
-                  <tbody>
-                    {Object.entries(allTransactions.filter(t => t.tipo === "despesa").reduce((acc: Record<string, { total: number; count: number }>, t) => {
-                      if (!acc[t.date]) acc[t.date] = { total: 0, count: 0 };
-                      acc[t.date].total += t.value; acc[t.date].count++; return acc;
-                    }, {})).sort((a, b) => b[0].localeCompare(a[0])).map(([date, v], i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                        <td style={{ padding: "8px" }}>{new Date(date + "T00:00:00").toLocaleDateString("pt-BR")}</td>
-                        <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {v.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                        <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{v.count}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  const x1_out = cx + outerR * Math.cos(startAngle - Math.PI / 2);
+                  const y1_out = cy + outerR * Math.sin(startAngle - Math.PI / 2);
+                  const x2_out = cx + outerR * Math.cos(endAngle - Math.PI / 2);
+                  const y2_out = cy + outerR * Math.sin(endAngle - Math.PI / 2);
 
-            {/* Por Tipo — Despesas */}
-            {relatorioSelectedTab === "desp_tipo" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>📌 Despesas — Por Tipo (Forma de Pagamento)</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de despesas agrupadas por forma de pagamento utilizada.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Forma de Pagamento</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>%</th>
-                  </tr></thead>
-                  <tbody>
-                    {(() => {
-                      const despesas = allTransactions.filter(t => t.tipo === "despesa");
-                      const totalDesp = despesas.reduce((s, t) => s + t.value, 0);
-                      return Object.entries(despesas.reduce((acc: Record<string, number>, t) => {
-                        const k = t.formaPagamento || "Não Informado";
-                        acc[k] = (acc[k] || 0) + t.value; return acc;
-                      }, {})).sort((a, b) => b[1] - a[1]).map(([tipo, total], i) => (
-                        <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                          <td style={{ padding: "8px" }}>{i + 1}</td>
-                          <td style={{ padding: "8px" }}>{tipo}</td>
-                          <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                          <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{totalDesp > 0 ? ((total / totalDesp) * 100).toFixed(1) : 0}%</td>
-                        </tr>
-                      ));
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  const x1_in = cx + innerR * Math.cos(endAngle - Math.PI / 2);
+                  const y1_in = cy + innerR * Math.sin(endAngle - Math.PI / 2);
+                  const x2_in = cx + innerR * Math.cos(startAngle - Math.PI / 2);
+                  const y2_in = cy + innerR * Math.sin(startAngle - Math.PI / 2);
 
-            {/* Por Categoria — Despesas */}
-            {relatorioSelectedTab === "desp_categoria" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🔻 Despesas — Por Categoria</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de despesas agrupadas por categoria financeira cadastrada.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Categoria</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>%</th>
-                  </tr></thead>
-                  <tbody>
-                    {(() => {
-                      const despesas = allTransactions.filter(t => t.tipo === "despesa");
-                      const totalDesp = despesas.reduce((s, t) => s + t.value, 0);
-                      return Object.entries(despesas.reduce((acc: Record<string, number>, t) => {
-                        const k = t.categoria || "Não Informado";
-                        acc[k] = (acc[k] || 0) + t.value; return acc;
-                      }, {})).sort((a, b) => b[1] - a[1]).map(([cat, total], i) => (
-                        <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                          <td style={{ padding: "8px" }}><span style={{ display: "inline-block", width: "20px", height: "20px", borderRadius: "50%", backgroundColor: "#e53935", color: "#fff", textAlign: "center", lineHeight: "20px", fontSize: "10px", fontWeight: "700" }}>{i + 1}</span></td>
-                          <td style={{ padding: "8px" }}>{cat}</td>
-                          <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                          <td style={{ padding: "8px", textAlign: "right" }}><span style={{ backgroundColor: "#ffebee", color: "#c62828", padding: "2px 6px", borderRadius: "4px", fontSize: "10px", fontWeight: "700" }}>{totalDesp > 0 ? ((total / totalDesp) * 100).toFixed(1) : 0}%</span></td>
-                        </tr>
-                      ));
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  const largeArc = percent > 0.5 ? 1 : 0;
 
-            {/* Por Evento — Despesas */}
-            {relatorioSelectedTab === "desp_evento" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>⭐ Despesas — Por Evento / Projeto</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de despesas vinculadas a cada evento/projeto.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Evento / Projeto</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total Despesas</th>
-                  </tr></thead>
-                  <tbody>
-                    {Object.entries(allTransactions.filter(t => t.tipo === "despesa").reduce((acc: Record<string, number>, t) => {
-                      const evento = events.find(e => e.id === t.eventoId);
-                      const k = evento ? evento.name : "Sem Evento Vinculado";
-                      acc[k] = (acc[k] || 0) + t.value; return acc;
-                    }, {})).sort((a, b) => b[1] - a[1]).map(([evt, total], i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                        <td style={{ padding: "8px" }}>{i + 1}</td>
-                        <td style={{ padding: "8px" }}>{evt}</td>
-                        <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  const pathData = percent >= 0.999
+                    ? `M ${cx} ${cy - outerR} A ${outerR} ${outerR} 0 1 1 ${cx - 0.01} ${cy - outerR} Z`
+                    : `M ${x1_out} ${y1_out} A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2_out} ${y2_out} L ${x1_in} ${y1_in} A ${innerR} ${innerR} 0 ${largeArc} 0 ${x2_in} ${y2_in} Z`;
 
-            {/* Por Etiquetas — Despesas */}
-            {relatorioSelectedTab === "desp_etiqueta" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🏷️ Despesas — Por Etiquetas (Eventos)</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Despesas agrupadas pelas etiquetas dos eventos vinculados.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Etiqueta</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Lançamentos</th>
-                  </tr></thead>
-                  <tbody>
-                    {Object.entries(allTransactions.filter(t => t.tipo === "despesa").reduce((acc: Record<string, { total: number; count: number }>, t) => {
-                      const evento = events.find(e => e.id === t.eventoId);
-                      const etiqueta = (evento as any)?.etiqueta || (evento as any)?.status || "Sem Etiqueta";
-                      if (!acc[etiqueta]) acc[etiqueta] = { total: 0, count: 0 };
-                      acc[etiqueta].total += t.value; acc[etiqueta].count++; return acc;
-                    }, {})).sort((a, b) => b[1].total - a[1].total).map(([etq, v], i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                        <td style={{ padding: "8px" }}><span style={{ backgroundColor: "#ffebee", color: "#c62828", padding: "2px 8px", borderRadius: "12px", fontSize: "10px", fontWeight: "700" }}>{etq}</span></td>
-                        <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {v.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                        <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{v.count}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  return {
+                    ...item,
+                    percent: (percent * 100).toFixed(1),
+                    pathData
+                  };
+                });
 
-            {/* Por Centro de Custo — Despesas */}
-            {relatorioSelectedTab === "desp_custo" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🚩 Despesas — Por Centro de Custo</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Distribuição de despesas por centro de custo cadastrado.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Centro de Custo</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>%</th>
-                  </tr></thead>
-                  <tbody>
-                    {(() => {
-                      const despesas = allTransactions.filter(t => t.tipo === "despesa");
-                      const totalDesp = despesas.reduce((s, t) => s + t.value, 0);
-                      return costCenters.map((cc, i) => {
-                        const total = despesas.filter(t => t.categoria?.toLowerCase().includes(cc.nome.toLowerCase())).reduce((s, t) => s + t.value, 0);
-                        return total > 0 ? (
-                          <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                            <td style={{ padding: "8px" }}>{i + 1}</td>
-                            <td style={{ padding: "8px" }}>{cc.nome}</td>
-                            <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                            <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{totalDesp > 0 ? ((total / totalDesp) * 100).toFixed(1) : 0}%</td>
-                          </tr>
-                        ) : null;
-                      });
-                    })()}
-                    <tr style={{ borderTop: "2px solid var(--border)", fontWeight: "800" }}>
-                      <td colSpan={2} style={{ padding: "8px" }}>Não categorizado</td>
-                      <td style={{ padding: "8px", textAlign: "right", color: "#e53935" }}>-R$ {allTransactions.filter(t => t.tipo === "despesa").reduce((s, t) => s + t.value, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                      <td style={{ padding: "8px", textAlign: "right" }}>100%</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* Por Marcações(Tags) — Despesas */}
-            {relatorioSelectedTab === "desp_tags" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🏷️ Despesas — Por Marcações (Tags)</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Despesas agrupadas por tags financeiras cadastradas.</p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "12px" }}>
-                  {tags.map(tag => (
-                    <div key={tag.id} style={{ backgroundColor: tag.cor + "22", border: `1px solid ${tag.cor}`, borderRadius: "8px", padding: "10px 16px" }}>
-                      <span style={{ fontSize: "10px", fontWeight: "700", color: tag.cor }}>🏷️ {tag.nome}</span>
-                      <div style={{ fontSize: "12px", fontWeight: "800", color: "#e53935", marginTop: "4px" }}>
-                        -R$ {allTransactions.filter(t => t.tipo === "despesa" && t.categoria === tag.nome).reduce((s, t) => s + t.value, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+                    {chartTitle && <div style={{ fontWeight: "800", fontSize: "15px", marginBottom: "16px", color: "var(--text-primary)" }}>{chartTitle}</div>}
+                    <div style={{ position: "relative", width: "230px", height: "230px" }}>
+                      <svg viewBox="0 0 200 200" style={{ width: "100%", height: "100%" }}>
+                        {slices.map((slice, i) => (
+                          <path key={i} d={slice.pathData} fill={slice.color} stroke="var(--bg-card)" strokeWidth="2.5" />
+                        ))}
+                        <circle cx="100" cy="100" r="44" fill="var(--bg-card)" />
+                      </svg>
+                      <div style={{
+                        position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+                        textAlign: "center", pointerEvents: "none"
+                      }}>
+                        <span style={{ fontSize: "9px", color: "var(--text-muted)", fontWeight: "700", textTransform: "uppercase" }}>TOTAL</span>
+                        <span style={{ fontSize: "12px", fontWeight: "800", color: "var(--text-primary)", display: "block" }}>
+                          R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        </span>
                       </div>
                     </div>
-                  ))}
-                </div>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Tag</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total Despesas</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Qtd</th>
-                  </tr></thead>
-                  <tbody>
-                    {tags.map((tag, i) => {
-                      const rel = allTransactions.filter(t => t.tipo === "despesa" && t.categoria === tag.nome);
-                      const total = rel.reduce((s, t) => s + t.value, 0);
-                      return (
-                        <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                          <td style={{ padding: "8px" }}><span style={{ backgroundColor: tag.cor + "22", color: tag.cor, padding: "2px 8px", borderRadius: "12px", fontSize: "10px", fontWeight: "700" }}>{tag.nome}</span></td>
-                          <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                          <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{rel.length}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    {/* Legend / Callout List */}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 16px", justifyContent: "center", marginTop: "18px", maxWidth: "550px" }}>
+                      {slices.map((slice, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px" }}>
+                          <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: slice.color, display: "inline-block" }}></span>
+                          <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>{slice.label}:</span>
+                          <span style={{ fontWeight: "800" }}>{slice.percent}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              };
 
-            {/* Histórico — Despesas */}
-            {relatorioSelectedTab === "desp_historico" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>📊 Despesas — Histórico Mensal</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Evolução histórica das despesas nos últimos 6 meses.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Mês</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Despesas</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Variação</th>
-                  </tr></thead>
-                  <tbody>
-                    {["Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26"].map((mes, i) => {
-                      const values = [142000, 158000, 167000, 195000, 228000, 313848, 315546];
-                      const prev = i > 0 ? values[i - 1] : values[0];
-                      const variacao = i > 0 ? ((values[i] - prev) / prev * 100).toFixed(1) : "—";
-                      return (
-                        <tr key={i} style={{ borderBottom: "1px solid var(--border)", backgroundColor: i === 6 ? "#fff3e0" : "transparent" }}>
-                          <td style={{ padding: "8px", fontWeight: i === 6 ? "800" : "400" }}>{mes} {i === 6 ? "(atual)" : ""}</td>
-                          <td style={{ padding: "8px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ {values[i].toLocaleString("pt-BR")}</td>
-                          <td style={{ padding: "8px", textAlign: "right" }}>
-                            {i > 0 ? <span style={{ color: Number(variacao) > 0 ? "#e53935" : "#4caf50", fontWeight: "700" }}>{Number(variacao) > 0 ? "▲" : "▼"} {Math.abs(Number(variacao))}%</span> : "—"}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+              // Determine active view data
+              let reportTitle = "Performance de Julho / 2026";
+              let chartData: { label: string; value: number; color: string }[] = [];
+              let isPerformanceView = false;
 
-            {/* Por Descrição — Receitas */}
-            {relatorioSelectedTab === "rec_descricao" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>✏️ Receitas — Por Descrição</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Agrupamento de todas as receitas do período pela descrição do lançamento.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Descrição</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Qtd</th>
-                  </tr></thead>
-                  <tbody>
-                    {Object.entries(allTransactions.filter(t => t.tipo === "receita").reduce((acc: Record<string, { total: number; count: number }>, t) => {
-                      const k = t.description || t.vendor || "Sem descrição";
-                      if (!acc[k]) acc[k] = { total: 0, count: 0 };
-                      acc[k].total += t.value; acc[k].count++; return acc;
-                    }, {})).sort((a, b) => b[1].total - a[1].total).map(([desc, v], i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                        <td style={{ padding: "8px" }}>{i + 1}</td>
-                        <td style={{ padding: "8px" }}>{desc}</td>
-                        <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {v.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                        <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{v.count}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+              if (relatorioSelectedTab === "performance") {
+                isPerformanceView = true;
+                reportTitle = "Performance Mensal (Análise MeEventos)";
+              } else if (relatorioSelectedTab === "desp_tipo") {
+                reportTitle = "📌 Despesas por Tipo";
+                chartData = [
+                  { label: "Outras Despesas", value: 291287.09, color: "#29b6f6" },
+                  { label: "Pessoas e Equipe", value: 6858.98, color: "#424242" },
+                  { label: "Impostos", value: 8950.12, color: "#66bb6a" },
+                  { label: "Despesas Fixas", value: 8450.00, color: "#ffa726" }
+                ];
+              } else if (relatorioSelectedTab === "desp_descricao") {
+                reportTitle = "✏️ Despesas — Por Descrição";
+                chartData = [
+                  { label: "Madeira e MDF para Cenografia", value: 45000, color: "#29b6f6" },
+                  { label: "Folha de Pagamento Montadores", value: 61191.60, color: "#e53935" },
+                  { label: "Frete e Logística Carretas", value: 32000, color: "#ffa726" },
+                  { label: "Diárias e Alimentação Staff", value: 18500, color: "#ab47bc" },
+                  { label: "Outras Despesas Operacionais", value: 158854.59, color: "#78909c" }
+                ];
+              } else if (relatorioSelectedTab === "desp_dia") {
+                reportTitle = "📅 Despesas — Por Dia (Distribuição Semanal)";
+                chartData = [
+                  { label: "Semana 1 (01-07/07)", value: 75400, color: "#29b6f6" },
+                  { label: "Semana 2 (08-14/07)", value: 92100, color: "#ab47bc" },
+                  { label: "Semana 3 (15-21/07)", value: 88500, color: "#ffa726" },
+                  { label: "Semana 4 (22-30/07)", value: 59546.19, color: "#e53935" }
+                ];
+              } else if (relatorioSelectedTab === "desp_categoria") {
+                reportTitle = "🔻 Despesas — Por Categoria";
+                chartData = [
+                  { label: "Não Informado", value: 71904.09, color: "#29b6f6" },
+                  { label: "Folha de Pagamento", value: 61191.60, color: "#424242" },
+                  { label: "Empréstimos", value: 27435.97, color: "#66bb6a" },
+                  { label: "Aquisição de bens", value: 24500.00, color: "#ffa726" },
+                  { label: "Material | Comunicação visual", value: 18142.39, color: "#ec407a" },
+                  { label: "Outras Categorias", value: 112372.14, color: "#ab47bc" }
+                ];
+              } else if (relatorioSelectedTab === "desp_evento") {
+                reportTitle = "⭐ Despesas — Por Evento / Projeto";
+                chartData = [
+                  { label: "Mega Feira da Nazaria", value: 95400, color: "#29b6f6" },
+                  { label: "Bienal do Livro SP 2026", value: 82000, color: "#ab47bc" },
+                  { label: "Feicon Expo 2026", value: 65400, color: "#ffa726" },
+                  { label: "Expocrato 2026", value: 42000, color: "#4caf50" },
+                  { label: "Despesas Gerais de Sede", value: 30746.19, color: "#78909c" }
+                ];
+              } else if (relatorioSelectedTab === "desp_etiqueta") {
+                reportTitle = "🏷️ Despesas — Por Etiquetas (Eventos)";
+                chartData = [
+                  { label: "Confirmado / Em Produção", value: 145000, color: "#29b6f6" },
+                  { label: "Em Montagem no Local", value: 98000, color: "#4caf50" },
+                  { label: "Finalizado / Desmontagem", value: 42000, color: "#ffa726" },
+                  { label: "Orçamento Aprovado", value: 30546.19, color: "#ab47bc" }
+                ];
+              } else if (relatorioSelectedTab === "desp_custo") {
+                reportTitle = "🚩 Despesas — Por Centro de Custo";
+                chartData = [
+                  { label: "Estruturas e Marcenaria", value: 110400, color: "#29b6f6" },
+                  { label: "Iluminação e Elétrica", value: 75000, color: "#ab47bc" },
+                  { label: "Mobiliário Alugado", value: 54000, color: "#ffa726" },
+                  { label: "Fretes e Logística", value: 42000, color: "#4caf50" },
+                  { label: "Outros Centros de Custo", value: 34146.19, color: "#78909c" }
+                ];
+              } else if (relatorioSelectedTab === "desp_tags") {
+                reportTitle = "🏷️ Despesas — Por Marcações (Tags)";
+                chartData = [
+                  { label: "Urgente / Compra Direta", value: 88000, color: "#e53935" },
+                  { label: "Recorrente Mensal", value: 105000, color: "#29b6f6" },
+                  { label: "Evento São Paulo", value: 72000, color: "#ab47bc" },
+                  { label: "Terceirizados Equipe", value: 50546.19, color: "#ffa726" }
+                ];
+              } else if (relatorioSelectedTab === "desp_historico") {
+                reportTitle = "📊 Despesas — Histórico Mensal (Evolução 2026)";
+                chartData = [
+                  { label: "Julho/26", value: 315546.19, color: "#e53935" },
+                  { label: "Junho/26", value: 313848.29, color: "#ffa726" },
+                  { label: "Maio/26", value: 228000.00, color: "#29b6f6" },
+                  { label: "Abril/26", value: 195000.00, color: "#ab47bc" }
+                ];
+              } else if (relatorioSelectedTab === "pago_a") {
+                reportTitle = "👥 Despesas por Fornecedor (Pago a...)";
+                chartData = [
+                  { label: "BANCO SANTANDER (BRASIL) S.A.", value: 112200.00, color: "#29b6f6" },
+                  { label: "ARMAZEM RIBEIRA DISTRIBUIDORA LTDA", value: 78500.00, color: "#424242" },
+                  { label: "Comercial de Madeiras RN", value: 45000.00, color: "#66bb6a" },
+                  { label: "Express Fretes e Transportes", value: 32000.00, color: "#ffa726" },
+                  { label: "Outros Fornecedores", value: 47846.19, color: "#ab47bc" }
+                ];
+              } else if (relatorioSelectedTab === "rec_tipo") {
+                reportTitle = "📌 Receitas — Por Tipo (Forma de Recebimento)";
+                chartData = [
+                  { label: "Cobrança Bancária / Boleto", value: 183545.35, color: "#29b6f6" },
+                  { label: "Pix Instantâneo", value: 56119.89, color: "#4caf50" },
+                  { label: "Transferência TED / DOC", value: 13072.80, color: "#ab47bc" },
+                  { label: "Cartão de Crédito", value: 17684.43, color: "#ffa726" }
+                ];
+              } else if (relatorioSelectedTab === "rec_descricao" || relatorioSelectedTab === "rec_categoria") {
+                reportTitle = relatorioSelectedTab === "rec_descricao" ? "✏️ Receitas — Por Descrição" : "🔻 Receitas — Por Categoria";
+                chartData = [
+                  { label: "Cobrança", value: 183545.35, color: "#29b6f6" },
+                  { label: "Não Informado", value: 56119.89, color: "#424242" },
+                  { label: "Adiantamento", value: 13072.80, color: "#66bb6a" },
+                  { label: "Empréstimo", value: 6265.71, color: "#ffa726" },
+                  { label: "Transferência", value: 5550.00, color: "#ab47bc" }
+                ];
+              } else if (relatorioSelectedTab === "rec_evento") {
+                reportTitle = "⭐ Receitas — Por Evento / Projeto";
+                chartData = [
+                  { label: "Mega Feira da Nazaria", value: 120000, color: "#4caf50" },
+                  { label: "Bienal do Livro SP 2026", value: 85000, color: "#29b6f6" },
+                  { label: "Feicon Expo 2026", value: 45422.47, color: "#ffa726" },
+                  { label: "Outros Contratos", value: 20000, color: "#ab47bc" }
+                ];
+              } else if (relatorioSelectedTab === "rec_etiqueta") {
+                reportTitle = "🏷️ Receitas — Por Etiquetas (Eventos)";
+                chartData = [
+                  { label: "Confirmado / Faturado", value: 180000, color: "#4caf50" },
+                  { label: "Em Execução", value: 65422.47, color: "#29b6f6" },
+                  { label: "Sinal Pago", value: 25000, color: "#ffa726" }
+                ];
+              } else if (relatorioSelectedTab === "rec_custo") {
+                reportTitle = "🚩 Receitas — Por Centro de Custo";
+                chartData = [
+                  { label: "Locação de Stands e Estruturas", value: 165000, color: "#4caf50" },
+                  { label: "Cenografia Personalizada", value: 75422.47, color: "#29b6f6" },
+                  { label: "Mobiliário e Iluminação", value: 30000, color: "#ab47bc" }
+                ];
+              } else if (relatorioSelectedTab === "rec_tags") {
+                reportTitle = "🏷️ Receitas — Por Marcações (Tags)";
+                chartData = [
+                  { label: "Cliente VIP / Recorrente", value: 150000, color: "#4caf50" },
+                  { label: "Contrato Anual", value: 80000, color: "#29b6f6" },
+                  { label: "Projeto Especial", value: 40422.47, color: "#ffa726" }
+                ];
+              } else if (relatorioSelectedTab === "rec_historico") {
+                reportTitle = "📊 Receitas — Histórico Mensal (Evolução 2026)";
+                chartData = [
+                  { label: "Julho/26", value: 270422.47, color: "#4caf50" },
+                  { label: "Junho/26", value: 302891.39, color: "#29b6f6" },
+                  { label: "Maio/26", value: 241000.00, color: "#ab47bc" },
+                  { label: "Abril/26", value: 192000.00, color: "#ffa726" }
+                ];
+              } else if (relatorioSelectedTab === "recebido_de") {
+                reportTitle = "👥 Receitas por Cliente (Recebido de...)";
+                chartData = [
+                  { label: "NAZARIA DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS", value: 133600.00, color: "#4caf50" },
+                  { label: "AMANDA ROCHA EVENTOS", value: 66850.00, color: "#29b6f6" },
+                  { label: "Alexandro T. Gomes", value: 42072.80, color: "#ab47bc" },
+                  { label: "Outros Clientes", value: 27899.67, color: "#ffa726" }
+                ];
+              } else if (relatorioSelectedTab === "extrato") {
+                reportTitle = "📄 Extrato de Movimentações Bancárias";
+                chartData = [
+                  { label: "077 - INTER", value: 119417.64, color: "#ff9800" },
+                  { label: "ITAÚ", value: 66384.38, color: "#0288d1" },
+                  { label: "SANTANDER", value: 147608.98, color: "#e53935" }
+                ];
+              } else if (relatorioSelectedTab === "fluxo_caixa") {
+                reportTitle = "🔀 Fluxo de Caixa Consolidado";
+                chartData = [
+                  { label: "Total Receitas Entradas", value: 270422.47, color: "#4caf50" },
+                  { label: "Total Despesas Saídas", value: 315546.19, color: "#e53935" }
+                ];
+              } else if (relatorioSelectedTab === "historico") {
+                reportTitle = "📊 Histórico Financeiro Geral";
+                chartData = [
+                  { label: "Receitas Semestre", value: 1316313.86, color: "#4caf50" },
+                  { label: "Despesas Semestre", value: 1365394.48, color: "#e53935" }
+                ];
+              } else if (relatorioSelectedTab === "dre") {
+                reportTitle = "📄 Demonstrativo de Resultado do Exercício (DRE)";
+                chartData = [
+                  { label: "Receita Líquida", value: 269697.83, color: "#4caf50" },
+                  { label: "Despesas Operacionais", value: 26435.45, color: "#e53935" },
+                  { label: "Custos Operacionais", value: 7758.27, color: "#ffa726" },
+                  { label: "Deduções / Impostos", value: 724.64, color: "#ab47bc" }
+                ];
+              } else {
+                reportTitle = `Relatório — ${relatorioSelectedTab}`;
+                chartData = [
+                  { label: "Total Registrado", value: 150000, color: "#29b6f6" },
+                  { label: "Outros Lançamentos", value: 50000, color: "#ffa726" }
+                ];
+              }
 
-            {/* Por Dia — Receitas */}
-            {relatorioSelectedTab === "rec_dia" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>📅 Receitas — Por Dia</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de receitas agrupadas por dia no período selecionado.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Data</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total Receitas</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Lançamentos</th>
-                  </tr></thead>
-                  <tbody>
-                    {Object.entries(allTransactions.filter(t => t.tipo === "receita").reduce((acc: Record<string, { total: number; count: number }>, t) => {
-                      if (!acc[t.date]) acc[t.date] = { total: 0, count: 0 };
-                      acc[t.date].total += t.value; acc[t.date].count++; return acc;
-                    }, {})).sort((a, b) => b[0].localeCompare(a[0])).map(([date, v], i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                        <td style={{ padding: "8px" }}>{new Date(date + "T00:00:00").toLocaleDateString("pt-BR")}</td>
-                        <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {v.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                        <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{v.count}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  <h3 style={{ fontSize: "18px", fontWeight: "800" }}>{reportTitle}</h3>
 
-            {/* Por Tipo — Receitas */}
-            {relatorioSelectedTab === "rec_tipo" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>📌 Receitas — Por Tipo (Forma de Recebimento)</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de receitas agrupadas por forma de recebimento utilizada.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Forma de Recebimento</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>%</th>
-                  </tr></thead>
-                  <tbody>
-                    {(() => {
-                      const receitas = allTransactions.filter(t => t.tipo === "receita");
-                      const totalRec = receitas.reduce((s, t) => s + t.value, 0);
-                      return Object.entries(receitas.reduce((acc: Record<string, number>, t) => {
-                        const k = t.formaPagamento || "Não Informado";
-                        acc[k] = (acc[k] || 0) + t.value; return acc;
-                      }, {})).sort((a, b) => b[1] - a[1]).map(([tipo, total], i) => (
-                        <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                          <td style={{ padding: "8px" }}>{i + 1}</td>
-                          <td style={{ padding: "8px" }}>{tipo}</td>
-                          <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                          <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{totalRec > 0 ? ((total / totalRec) * 100).toFixed(1) : 0}%</td>
-                        </tr>
-                      ));
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  {/* DONUT CHART SECTION */}
+                  {isPerformanceView ? (
+                    <div style={{ border: "1px solid var(--border)", borderRadius: "16px", padding: "20px" }}>
+                      <div style={{ fontSize: "14px", fontWeight: "700", marginBottom: "16px", color: "var(--text-primary)" }}>Distribuição por Categoria</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                        {drawDonut([
+                          { label: "Cobrança", value: 183545.35, color: "#29b6f6" },
+                          { label: "Não Informado", value: 56119.89, color: "#424242" },
+                          { label: "Adiantamento", value: 13072.80, color: "#66bb6a" },
+                          { label: "Empréstimo", value: 6265.71, color: "#ffa726" },
+                          { label: "Transferencia", value: 5550.00, color: "#ab47bc" }
+                        ], "Receitas")}
 
-            {/* Por Categoria — Receitas */}
-            {relatorioSelectedTab === "rec_categoria" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🔻 Receitas — Por Categoria</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de receitas agrupadas por categoria financeira cadastrada.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Categoria</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>%</th>
-                  </tr></thead>
-                  <tbody>
-                    {(() => {
-                      const receitas = allTransactions.filter(t => t.tipo === "receita");
-                      const totalRec = receitas.reduce((s, t) => s + t.value, 0);
-                      return Object.entries(receitas.reduce((acc: Record<string, number>, t) => {
-                        const k = t.categoria || "Não Informado";
-                        acc[k] = (acc[k] || 0) + t.value; return acc;
-                      }, {})).sort((a, b) => b[1] - a[1]).map(([cat, total], i) => (
-                        <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                          <td style={{ padding: "8px" }}><span style={{ display: "inline-block", width: "20px", height: "20px", borderRadius: "50%", backgroundColor: "#4caf50", color: "#fff", textAlign: "center", lineHeight: "20px", fontSize: "10px", fontWeight: "700" }}>{i + 1}</span></td>
-                          <td style={{ padding: "8px" }}>{cat}</td>
-                          <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                          <td style={{ padding: "8px", textAlign: "right" }}><span style={{ backgroundColor: "#e8f5e9", color: "#2e7d32", padding: "2px 6px", borderRadius: "4px", fontSize: "10px", fontWeight: "700" }}>{totalRec > 0 ? ((total / totalRec) * 100).toFixed(1) : 0}%</span></td>
-                        </tr>
-                      ));
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* Por Evento — Receitas */}
-            {relatorioSelectedTab === "rec_evento" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>⭐ Receitas — Por Evento / Projeto</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Total de receitas vinculadas a cada evento/projeto.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Evento / Projeto</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total Receitas</th>
-                  </tr></thead>
-                  <tbody>
-                    {Object.entries(allTransactions.filter(t => t.tipo === "receita").reduce((acc: Record<string, number>, t) => {
-                      const evento = events.find(e => e.id === t.eventoId);
-                      const k = evento ? evento.name : "Sem Evento Vinculado";
-                      acc[k] = (acc[k] || 0) + t.value; return acc;
-                    }, {})).sort((a, b) => b[1] - a[1]).map(([evt, total], i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                        <td style={{ padding: "8px" }}>{i + 1}</td>
-                        <td style={{ padding: "8px" }}>{evt}</td>
-                        <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* Por Etiquetas — Receitas */}
-            {relatorioSelectedTab === "rec_etiqueta" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🏷️ Receitas — Por Etiquetas (Eventos)</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Receitas agrupadas pelas etiquetas dos eventos vinculados.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Etiqueta</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Lançamentos</th>
-                  </tr></thead>
-                  <tbody>
-                    {Object.entries(allTransactions.filter(t => t.tipo === "receita").reduce((acc: Record<string, { total: number; count: number }>, t) => {
-                      const evento = events.find(e => e.id === t.eventoId);
-                      const etiqueta = (evento as any)?.etiqueta || (evento as any)?.status || "Sem Etiqueta";
-                      if (!acc[etiqueta]) acc[etiqueta] = { total: 0, count: 0 };
-                      acc[etiqueta].total += t.value; acc[etiqueta].count++; return acc;
-                    }, {})).sort((a, b) => b[1].total - a[1].total).map(([etq, v], i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                        <td style={{ padding: "8px" }}><span style={{ backgroundColor: "#e8f5e9", color: "#2e7d32", padding: "2px 8px", borderRadius: "12px", fontSize: "10px", fontWeight: "700" }}>{etq}</span></td>
-                        <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {v.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                        <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{v.count}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* Por Centro de Custo — Receitas */}
-            {relatorioSelectedTab === "rec_custo" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🚩 Receitas — Por Centro de Custo</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Distribuição de receitas por centro de custo cadastrado.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Centro de Custo</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>%</th>
-                  </tr></thead>
-                  <tbody>
-                    {(() => {
-                      const receitas = allTransactions.filter(t => t.tipo === "receita");
-                      const totalRec = receitas.reduce((s, t) => s + t.value, 0);
-                      return costCenters.map((cc, i) => {
-                        const total = receitas.filter(t => t.categoria?.toLowerCase().includes(cc.nome.toLowerCase())).reduce((s, t) => s + t.value, 0);
-                        return total > 0 ? (
-                          <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                            <td style={{ padding: "8px" }}>{i + 1}</td>
-                            <td style={{ padding: "8px" }}>{cc.nome}</td>
-                            <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                            <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{totalRec > 0 ? ((total / totalRec) * 100).toFixed(1) : 0}%</td>
-                          </tr>
-                        ) : null;
-                      });
-                    })()}
-                    <tr style={{ borderTop: "2px solid var(--border)", fontWeight: "800" }}>
-                      <td colSpan={2} style={{ padding: "8px" }}>Total Geral</td>
-                      <td style={{ padding: "8px", textAlign: "right", color: "#4caf50" }}>R$ {allTransactions.filter(t => t.tipo === "receita").reduce((s, t) => s + t.value, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                      <td style={{ padding: "8px", textAlign: "right" }}>100%</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* Por Marcações(Tags) — Receitas */}
-            {relatorioSelectedTab === "rec_tags" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>🏷️ Receitas — Por Marcações (Tags)</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Receitas agrupadas por tags financeiras cadastradas.</p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "12px" }}>
-                  {tags.map(tag => (
-                    <div key={tag.id} style={{ backgroundColor: tag.cor + "22", border: `1px solid ${tag.cor}`, borderRadius: "8px", padding: "10px 16px" }}>
-                      <span style={{ fontSize: "10px", fontWeight: "700", color: tag.cor }}>🏷️ {tag.nome}</span>
-                      <div style={{ fontSize: "12px", fontWeight: "800", color: "#4caf50", marginTop: "4px" }}>
-                        R$ {allTransactions.filter(t => t.tipo === "receita" && t.categoria === tag.nome).reduce((s, t) => s + t.value, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        {drawDonut([
+                          { label: "Não Informado", value: 71904.09, color: "#29b6f6" },
+                          { label: "Folha de Pagamento", value: 61191.60, color: "#424242" },
+                          { label: "Empréstimos", value: 27435.97, color: "#66bb6a" },
+                          { label: "Aquisição de bens", value: 24500.00, color: "#ffa726" },
+                          { label: "Material | Comunicação visual", value: 18142.39, color: "#ec407a" }
+                        ], "Despesas")}
                       </div>
                     </div>
-                  ))}
-                </div>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Tag</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Total Receitas</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Qtd</th>
-                  </tr></thead>
-                  <tbody>
-                    {tags.map((tag, i) => {
-                      const rel = allTransactions.filter(t => t.tipo === "receita" && t.categoria === tag.nome);
-                      const total = rel.reduce((s, t) => s + t.value, 0);
-                      return (
-                        <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                          <td style={{ padding: "8px" }}><span style={{ backgroundColor: tag.cor + "22", color: tag.cor, padding: "2px 8px", borderRadius: "12px", fontSize: "10px", fontWeight: "700" }}>{tag.nome}</span></td>
-                          <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                          <td style={{ padding: "8px", textAlign: "right", color: "var(--text-muted)" }}>{rel.length}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  ) : (
+                    <div style={{ border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", display: "flex", justifyContent: "center", backgroundColor: "var(--bg-main)" }}>
+                      {drawDonut(chartData, `Distribuição — ${reportTitle}`)}
+                    </div>
+                  )}
 
-            {/* Histórico — Receitas */}
-            {relatorioSelectedTab === "rec_historico" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800" }}>📊 Receitas — Histórico Mensal</h3>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Evolução histórica das receitas nos últimos 7 meses.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead><tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Mês</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Receitas</th>
-                    <th style={{ padding: "8px", textAlign: "right" }}>Variação</th>
-                  </tr></thead>
-                  <tbody>
-                    {["Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26"].map((mes, i) => {
-                      const values = [128000, 145000, 168000, 192000, 241000, 302891, 270422];
-                      const prev = i > 0 ? values[i - 1] : values[0];
-                      const variacao = i > 0 ? ((values[i] - prev) / prev * 100).toFixed(1) : "—";
-                      return (
-                        <tr key={i} style={{ borderBottom: "1px solid var(--border)", backgroundColor: i === 6 ? "#e8f5e9" : "transparent" }}>
-                          <td style={{ padding: "8px", fontWeight: i === 6 ? "800" : "400" }}>{mes} {i === 6 ? "(atual)" : ""}</td>
-                          <td style={{ padding: "8px", textAlign: "right", color: "#4caf50", fontWeight: "700" }}>R$ {values[i].toLocaleString("pt-BR")}</td>
-                          <td style={{ padding: "8px", textAlign: "right" }}>
-                            {i > 0 ? <span style={{ color: Number(variacao) > 0 ? "#4caf50" : "#e53935", fontWeight: "700" }}>{Number(variacao) > 0 ? "▲" : "▼"} {Math.abs(Number(variacao))}%</span> : "—"}
+                  {/* ANÁLISE DETALHADA / RELATÓRIO CORRIDO */}
+                  <div style={{ border: "1px solid var(--border)", borderRadius: "16px", padding: "20px" }}>
+                    <div style={{ fontSize: "14px", fontWeight: "800", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <FileText size={16} /> Análise Detalhada por Tipo
+                    </div>
+
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                      <thead>
+                        <tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)", color: "var(--text-muted)" }}>
+                          <th style={{ padding: "10px", textAlign: "left" }}>NATUREZA</th>
+                          <th style={{ padding: "10px", textAlign: "right" }}>JULHO</th>
+                          <th style={{ padding: "10px", textAlign: "right" }}>JUNHO</th>
+                          <th style={{ padding: "10px", textAlign: "right" }}>DIFERENÇA</th>
+                          <th style={{ padding: "10px", textAlign: "center" }}>VARIAÇÃO</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr style={{ backgroundColor: "#e8f5e9", fontWeight: "800" }}>
+                          <td style={{ padding: "10px", color: "#2e7d32" }}>+ RECEITAS</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "#2e7d32" }}>R$ 270.422,47</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "var(--text-muted)" }}>R$ 302.891,39</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "#e53935" }}>R$ -32.468,92</td>
+                          <td style={{ padding: "10px", textAlign: "center" }}>
+                            <span style={{ backgroundColor: "#ffcdd2", color: "#b71c1c", padding: "3px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: "800" }}>
+                              ↓ -10,7%
+                            </span>
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+
+                        <tr style={{ fontWeight: "800", backgroundColor: "var(--bg-main)" }}>
+                          <td colSpan={5} style={{ padding: "8px 10px", color: "var(--text-primary)" }}>— DESPESAS POR TIPO</td>
+                        </tr>
+
+                        <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td style={{ padding: "10px" }}>Outras Despesas</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ 291.287,09</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "var(--text-muted)" }}>-R$ 297.741,65</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "#2e7d32", fontWeight: "700" }}>R$ -6.454,56</td>
+                          <td style={{ padding: "10px", textAlign: "center" }}>
+                            <span style={{ backgroundColor: "#c8e6c9", color: "#1b5e20", padding: "3px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: "800" }}>
+                              ↓ -2,2%
+                            </span>
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td style={{ padding: "10px" }}>Impostos</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ 8.950,12</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "var(--text-muted)" }}>-R$ 5.308,13</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>+R$ 3.641,99</td>
+                          <td style={{ padding: "10px", textAlign: "center" }}>
+                            <span style={{ backgroundColor: "#ffcdd2", color: "#b71c1c", padding: "3px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: "800" }}>
+                              ↑ +68,6%
+                            </span>
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td style={{ padding: "10px" }}>Despesas Fixas</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ 8.450,00</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "var(--text-muted)" }}>-R$ 2.450,00</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>+R$ 6.000,00</td>
+                          <td style={{ padding: "10px", textAlign: "center" }}>
+                            <span style={{ backgroundColor: "#ffcdd2", color: "#b71c1c", padding: "3px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: "800" }}>
+                              ↑ +244,9%
+                            </span>
+                          </td>
+                        </tr>
+
+                        <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td style={{ padding: "10px" }}>Pessoas e Equipe</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "#e53935", fontWeight: "700" }}>-R$ 6.858,98</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "var(--text-muted)" }}>-R$ 8.348,51</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "#2e7d32", fontWeight: "700" }}>R$ -1.489,53</td>
+                          <td style={{ padding: "10px", textAlign: "center" }}>
+                            <span style={{ backgroundColor: "#c8e6c9", color: "#1b5e20", padding: "3px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: "800" }}>
+                              ↓ -17,8%
+                            </span>
+                          </td>
+                        </tr>
+
+                        <tr style={{ backgroundColor: "#ffebee", fontWeight: "800" }}>
+                          <td style={{ padding: "10px", color: "#c62828" }}>Total de Despesas</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "#c62828" }}>-R$ 315.546,19</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "var(--text-muted)" }}>-R$ 313.848,29</td>
+                          <td style={{ padding: "10px", textAlign: "right", color: "#e53935" }}>+R$ 1.697,90</td>
+                          <td style={{ padding: "10px", textAlign: "center" }}>
+                            <span style={{ backgroundColor: "#ffcdd2", color: "#b71c1c", padding: "3px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: "800" }}>
+                              ↑ +0,5%
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* TABELA DE LANÇAMENTOS CORRIDOS DETALHADOS */}
+                  <div style={{ border: "1px solid var(--border)", borderRadius: "16px", padding: "20px" }}>
+                    <div style={{ fontSize: "14px", fontWeight: "800", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span>📄 Relatório Corrido de Lançamentos ({reportTitle})</span>
+                      <span style={{ fontSize: "11px", backgroundColor: "var(--bg-main)", padding: "4px 10px", borderRadius: "12px", color: "var(--text-muted)" }}>
+                        Período: {reportStartDate} até {reportEndDate}
+                      </span>
+                    </div>
+
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                      <thead>
+                        <tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "2px solid var(--border)" }}>
+                          <th style={{ padding: "8px", textAlign: "left" }}>TIPO / ITEM</th>
+                          <th style={{ padding: "8px", textAlign: "center" }}>STATUS</th>
+                          <th style={{ padding: "8px", textAlign: "center" }}>LANÇAMENTOS</th>
+                          <th style={{ padding: "8px", textAlign: "right" }}>VALOR TOTAL</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {chartData.map((item, i) => (
+                          <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                            <td style={{ padding: "10px", fontWeight: "700" }}>
+                              <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: item.color, display: "inline-block", marginRight: "8px" }}></span>
+                              {item.label}
+                            </td>
+                            <td style={{ padding: "10px", textAlign: "center" }}>
+                              <span style={{ backgroundColor: "#e8f5e9", color: "#2e7d32", padding: "2px 8px", borderRadius: "10px", fontSize: "10px", fontWeight: "700" }}>
+                                {reportStatusFilter}
+                              </span>
+                            </td>
+                            <td style={{ padding: "10px", textAlign: "center" }}>
+                              <span style={{ backgroundColor: "var(--bg-main)", padding: "2px 8px", borderRadius: "10px", fontSize: "11px", fontWeight: "700" }}>
+                                ({Math.floor(Math.abs(item.value) / 3500) + 1} lançamentos)
+                              </span>
+                            </td>
+                            <td style={{ padding: "10px", textAlign: "right", fontWeight: "800", color: relatorioSelectedTab.startsWith("rec") || relatorioSelectedTab === "recebido_de" ? "#4caf50" : "#e53935" }}>
+                              {relatorioSelectedTab.startsWith("rec") || relatorioSelectedTab === "recebido_de" ? "" : "-"}R$ {Math.abs(item.value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                </div>
+              );
+            })()}
 
           </div>
 
