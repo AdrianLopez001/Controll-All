@@ -838,20 +838,20 @@ export default function App() {
   };
 
   // Add Event
-  const addEvent = (name: string, client: string, startDate: string) => {
+  const addEvent = (name: string, client: string, startDate: string, extra?: Partial<Project>): Project => {
     const newEvent: Project = {
       id: `evt-${Date.now()}`,
       codigo: `EST-2026-${Date.now().toString().substring(10)}`,
       name,
       client,
-      responsavel: "Ricardo Mendes Alves",
-      phase: "no_event",
+      responsavel: extra?.responsavel || "Ricardo Mendes Alves",
+      phase: extra?.phase || "no_event",
       startDate,
-      endDate: new Date(new Date(startDate).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      dataMontagem: new Date(new Date(startDate).getTime() - 2 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      dataDesmontagem: new Date(new Date(startDate).getTime() + 8 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      endDate: extra?.endDate || new Date(new Date(startDate).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      dataMontagem: extra?.dataMontagem || new Date(new Date(startDate).getTime() - 2 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      dataDesmontagem: extra?.dataDesmontagem || new Date(new Date(startDate).getTime() + 8 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       completionRate: 0,
-      checklist: [
+      checklist: extra?.checklist || [
         { id: "c1", text: "Avaliar plantas e projeto técnico do estande", done: false },
         { id: "c2", text: "Subir contrato comercial assinado", done: false },
         { id: "c3", text: "Alinhar e conferir logomarcas da marca", done: false },
@@ -861,22 +861,24 @@ export default function App() {
         { id: "c7", text: "Organizar passagens aéreas e hotel da equipe", done: false },
         { id: "c8", text: "Conseguir termo de liberação assinado da organização", done: false }
       ],
-      assignedEmployees: [],
-      assignedTools: [],
-      hotelName: "",
-      hotelCheckin: "",
-      flightDetails: "",
-      docs: [
+      assignedEmployees: extra?.assignedEmployees || [],
+      assignedTools: extra?.assignedTools || [],
+      hotelName: extra?.hotelName || "",
+      hotelCheckin: extra?.hotelCheckin || "",
+      flightDetails: extra?.flightDetails || "",
+      docs: extra?.docs || [
         { id: "d1", name: "Contrato de Prestação de Serviços", status: "pending" },
         { id: "d2", name: "ART/RRT de Responsabilidade Técnica", status: "pending" },
         { id: "d3", name: "Termo de Liberação Oficial do Pavilhão", status: "pending" }
       ],
-      valorContratado: 150000.00,
+      valorContratado: extra?.valorContratado || 150000.00,
       valorRecebido: 0,
-      valorPendente: 150000.00,
-      custoPrevisto: 60000.00,
+      valorPendente: extra?.valorContratado || 150000.00,
+      custoPrevisto: (extra?.valorContratado || 150000.00) * 0.4,
       custoRealizado: 0,
-      centroCusto: {
+      nomeFeira: extra?.nomeFeira || name,
+      cidadeEvento: extra?.cidadeEvento || "São Paulo - SP",
+      centroCusto: extra?.centroCusto || {
         madeiraMdf: 0,
         vidrosVidraçaria: 0,
         iluminacaoEletrica: 0,
@@ -888,17 +890,19 @@ export default function App() {
         terceirizados: 0,
         taxasOrganizador: 0
       },
-      mapsRoute: {
-        endereco: "Pavilhão de Exposições Anhembi, São Paulo - SP",
+      mapsRoute: extra?.mapsRoute || {
+        endereco: extra?.cidadeEvento || "Pavilhão de Exposições Anhembi, São Paulo - SP",
         latitude: -23.514,
         longitude: -46.643,
         linkMaps: "https://maps.google.com",
         distanciaKm: 12.0,
         tempoEstimado: "20 min"
-      }
+      },
+      ...extra
     };
     setEvents((prev) => [newEvent, ...prev]);
     registerAudit("Criação de Evento", `Adicionado estande "${name}" para o cliente "${client}"`);
+    return newEvent;
   };
 
   // Update Event Phase directly in Kanban
@@ -1924,6 +1928,8 @@ export default function App() {
               orcamentos={orcamentos}
               warehouseItems={warehouseItems}
               clientes={clientes}
+              events={events}
+              onAddEvent={addEvent}
               onAddOrcamento={handleAddOrcamento}
               onUpdateOrcamento={handleUpdateOrcamento}
               onConvertToOS={handleConvertToOS}
@@ -2020,6 +2026,7 @@ export default function App() {
           allEmployees={employees}
           allWarehouseItems={warehouseItems}
           allEvents={events}
+          allOrcamentos={orcamentos}
           onClose={() => setSelectedEvent(null)}
           onUpdateEvent={updateEventDetails}
           onDeleteEvent={deleteEvent}

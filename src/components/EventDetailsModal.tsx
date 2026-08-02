@@ -3,7 +3,7 @@ import {
   X, FileText, Shield, AlertCircle, DollarSign, MapPin, Navigation, Tag, Calendar, Truck,
   Plus, Trash2, Edit2, Save, UserPlus, CheckCircle2
 } from "lucide-react";
-import type { Project, Employee, WarehouseItem, ProductionSectors, ConventionCenterRules, ChecklistItem, AssignedEmployee } from "../types";
+import type { Project, Employee, WarehouseItem, ProductionSectors, ConventionCenterRules, ChecklistItem, AssignedEmployee, Orcamento } from "../types";
 
 export const CONVENTION_CENTERS: ConventionCenterRules[] = [
   {
@@ -57,6 +57,7 @@ interface EventDetailsModalProps {
   allEmployees: Employee[];
   allWarehouseItems: WarehouseItem[];
   allEvents: Project[];
+  allOrcamentos?: Orcamento[];
   onClose: () => void;
   onUpdateEvent: (updatedEvent: Project) => void;
   onDeleteEvent?: (id: string) => void;
@@ -67,13 +68,21 @@ export default function EventDetailsModal({
   allEmployees,
   allWarehouseItems,
   allEvents,
+  allOrcamentos = [],
   onClose,
   onUpdateEvent,
   onDeleteEvent
 }: EventDetailsModalProps) {
   const [activeTab, setActiveTab] = useState<
-    "checklist" | "tools" | "staff" | "travel" | "docs" | "costs" | "route" | "producao" | "regras"
+    "checklist" | "tools" | "staff" | "travel" | "docs" | "costs" | "route" | "producao" | "regras" | "propostas"
   >("checklist");
+
+  // Linked Orcamentos for this event
+  const linkedOrcamentos = allOrcamentos.filter(o => 
+    o.eventId === event.id || 
+    (o.eventoNome && o.eventoNome.toLowerCase() === event.name.toLowerCase()) ||
+    (o.cliente && o.cliente.toLowerCase() === event.client.toLowerCase())
+  );
   
   // Local modifications state
   const [localEvent, setLocalEvent] = useState<Project>({ ...event });
@@ -531,6 +540,7 @@ export default function EventDetailsModal({
         {/* Modal Navigation Tabs */}
         <div className="modal-tabs" style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "4px" }}>
           <button className={`modal-tab ${activeTab === "checklist" ? "active" : ""}`} onClick={() => setActiveTab("checklist")}>Checklist</button>
+          <button className={`modal-tab ${activeTab === "propostas" ? "active" : ""}`} onClick={() => setActiveTab("propostas")}>Propostas ({linkedOrcamentos.length})</button>
           <button className={`modal-tab ${activeTab === "producao" ? "active" : ""}`} onClick={() => setActiveTab("producao")}>Grupos Produção</button>
           <button className={`modal-tab ${activeTab === "regras" ? "active" : ""}`} onClick={() => setActiveTab("regras")}>Centro Convenções</button>
           <button className={`modal-tab ${activeTab === "tools" ? "active" : ""}`} onClick={() => setActiveTab("tools")}>Ferramentas &amp; WMS</button>
@@ -543,6 +553,63 @@ export default function EventDetailsModal({
 
         {/* Modal Body */}
         <div className="modal-body" style={{ minHeight: "400px" }}>
+          
+          {/* TAB PROPOSTAS COMERCIAIS */}
+          {activeTab === "propostas" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "var(--accent)" }}>
+                  Propostas Comerciais & Orçamentos Vinculados
+                </h4>
+                <span className="badge badge-info" style={{ fontSize: "11px" }}>
+                  {linkedOrcamentos.length} Proposta(s) Encontrada(s)
+                </span>
+              </div>
+
+              {linkedOrcamentos.length === 0 ? (
+                <div style={{ padding: "40px 20px", textAlign: "center", border: "1px dashed var(--border)", borderRadius: "12px", color: "var(--text-muted)", fontSize: "12px" }}>
+                  <FileText size={36} style={{ opacity: 0.3, marginBottom: "8px", display: "block", margin: "0 auto 8px" }} />
+                  <div>Nenhuma proposta comercial vinculada a este evento até o momento.</div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {linkedOrcamentos.map((orc) => (
+                    <div 
+                      key={orc.id} 
+                      style={{ 
+                        background: "var(--bg-card)", 
+                        border: "1px solid var(--border)", 
+                        borderRadius: "10px", 
+                        padding: "14px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center"
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <strong style={{ fontSize: "12px", fontFamily: "monospace", color: "var(--accent)" }}>{orc.codigo}</strong>
+                          <span className="badge badge-secondary" style={{ fontSize: "10px" }}>{orc.status.toUpperCase()}</span>
+                        </div>
+                        <h5 style={{ margin: "4px 0 2px 0", fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" }}>
+                          {orc.nomeOrcamento || orc.codigo}
+                        </h5>
+                        <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                          Cliente: {orc.cliente} · Válido até: {orc.validoAte}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--accent)" }}>
+                          R$ {orc.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </div>
+                        <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>{orc.tipo === "simplificado" ? "Valor Fechado" : "Itens Detalhados"}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           
           {/* TAB 1: CHECKLIST (Full CRUD) */}
           {activeTab === "checklist" && (

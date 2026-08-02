@@ -499,6 +499,12 @@ export interface Orcamento {
   nomeOrcamento?: string;
   descricaoSimplificada?: string;
   itensDetalhados?: OrcamentoItemDetalhado[];
+
+  // Event Linkage Additions
+  eventId?: string;
+  eventoNome?: string;
+  localEvento?: string;
+  dataEvento?: string;
 }
 
 export interface NotaFiscal {

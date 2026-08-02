@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { 
   FileText, Plus, Trash2, Mail, Eye, Check, X, 
-  Send, Printer, FileDown, History, RefreshCw, Loader 
+  Send, Printer, FileDown, History, RefreshCw, Loader, Calendar, MapPin, ExternalLink
 } from "lucide-react";
-import type { Orcamento, WarehouseItem, OrcamentoItemDetalhado } from "../types";
+import type { Orcamento, WarehouseItem, OrcamentoItemDetalhado, Project } from "../types";
 import logoImg from "../assets/logo.png";
 import { exportElementToPDF } from "../utils/pdfGenerator";
 import { ProposalWordEditorModal } from "./ProposalWordEditorModal";
@@ -14,6 +14,8 @@ interface OrcamentosProps {
   orcamentos: Orcamento[];
   warehouseItems: WarehouseItem[];
   clientes: { name: string; email: string; cnpj: string }[];
+  events?: Project[];
+  onAddEvent?: (name: string, client: string, startDate: string, extra?: Partial<Project>) => Project;
   onAddOrcamento: (orc: Omit<Orcamento, "id" | "codigo" | "dataCriacao" | "revisoes" | "emailEnviado">) => void;
   onUpdateOrcamento: (updated: Orcamento) => void;
   onConvertToOS: (orc: Orcamento) => void;
@@ -23,6 +25,8 @@ export default function Orcamentos({
   orcamentos,
   warehouseItems,
   clientes,
+  events = [],
+  onAddEvent,
   onAddOrcamento,
   onUpdateOrcamento,
   onConvertToOS
@@ -43,6 +47,14 @@ export default function Orcamentos({
   // Online Approval Modal States
   const [isOnlineApprovalOpen, setIsOnlineApprovalOpen] = useState(false);
   const [onlineApprovalOrc, setOnlineApprovalOrc] = useState<Orcamento | null>(null);
+
+  // Event Linkage States for Proposal Creation Modal
+  const [eventLinkOption, setEventLinkOption] = useState<"existing" | "new" | "none">("existing");
+  const [selectedEventId, setSelectedEventId] = useState<string>("");
+  const [newEventName, setNewEventName] = useState("");
+  const [newEventLocation, setNewEventLocation] = useState("");
+  const [newEventStartDate, setNewEventStartDate] = useState("");
+  const [newEventEndDate, setNewEventEndDate] = useState("");
 
 
   // Form states
@@ -190,6 +202,36 @@ export default function Orcamentos({
 
     const calculatedTotal = calculateTotal(formProducts, formServices, formItensDetalhados, desconto, impostos);
 
+    let linkedEventId: string | undefined = undefined;
+    let linkedEventName: string | undefined = undefined;
+    let linkedEventLocation: string | undefined = undefined;
+    let linkedEventDate: string | undefined = undefined;
+
+    if (tipo === "detalhado") {
+      if (eventLinkOption === "existing" && selectedEventId) {
+        const evt = events.find(e => e.id === selectedEventId);
+        if (evt) {
+          linkedEventId = evt.id;
+          linkedEventName = evt.name;
+          linkedEventLocation = evt.mapsRoute?.endereco || evt.cidadeEvento || "São Paulo - SP";
+          linkedEventDate = evt.startDate;
+        }
+      } else if (eventLinkOption === "new" && newEventName && newEventStartDate) {
+        if (onAddEvent) {
+          const createdEvt = onAddEvent(newEventName, cli.name, newEventStartDate, {
+            nomeFeira: newEventName,
+            cidadeEvento: newEventLocation || "São Paulo - SP",
+            endDate: newEventEndDate || newEventStartDate,
+            valorContratado: calculatedTotal
+          });
+          linkedEventId = createdEvt.id;
+          linkedEventName = createdEvt.name;
+          linkedEventLocation = newEventLocation || "São Paulo - SP";
+          linkedEventDate = newEventStartDate;
+        }
+      }
+    }
+
     onAddOrcamento({
       cliente: cli.name,
       emailCliente: cli.email,
@@ -202,9 +244,13 @@ export default function Orcamentos({
       impostos,
       total: calculatedTotal,
       tipo,
-      nomeOrcamento,
+      nomeOrcamento: nomeOrcamento || (linkedEventName ? `Proposta Comercial - ${linkedEventName}` : undefined),
       descricaoSimplificada,
-      itensDetalhados: formItensDetalhados
+      itensDetalhados: formItensDetalhados,
+      eventId: linkedEventId,
+      eventoNome: linkedEventName,
+      localEvento: linkedEventLocation,
+      dataEvento: linkedEventDate
     });
 
     // Reset Form
@@ -217,6 +263,12 @@ export default function Orcamentos({
     setNomeOrcamento("");
     setDescricaoSimplificada("");
     setValorTotalSimplificado(0);
+    setEventLinkOption("existing");
+    setSelectedEventId("");
+    setNewEventName("");
+    setNewEventLocation("");
+    setNewEventStartDate("");
+    setNewEventEndDate("");
     setIsCreateModalOpen(false);
   };
 
@@ -407,6 +459,11 @@ export default function Orcamentos({
                     </div>
                     <div style={{ fontSize: "11px", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {orc.cliente} &bull; {orc.codigo}
+                      {orc.eventoNome && (
+                        <span style={{ color: "var(--accent)", fontWeight: "600", marginLeft: "6px", display: "inline-flex", alignItems: "center", gap: "2px" }}>
+                          📍 {orc.eventoNome}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
@@ -460,7 +517,7 @@ export default function Orcamentos({
             </div>
 
             {/* Quick info row */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "20px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "16px" }}>
               {[
                 { label: "Válido até", value: selectedOrc.validoAte },
                 { label: "E-mail enviado", value: selectedOrc.emailEnviado ? "Sim ✓" : "Não" },
@@ -472,6 +529,30 @@ export default function Orcamentos({
                 </div>
               ))}
             </div>
+
+            {/* Linked Event Card */}
+            {selectedOrc.eventoNome && (
+              <div style={{ background: "var(--accent-glow)", border: "1px solid var(--accent)", borderRadius: "10px", padding: "12px 14px", marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <Calendar size={14} style={{ color: "var(--accent)" }} />
+                    <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      Evento / Feira Linkado
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)", marginTop: "4px" }}>
+                    {selectedOrc.eventoNome}
+                  </div>
+                  {(selectedOrc.localEvento || selectedOrc.dataEvento) && (
+                    <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "2px", display: "flex", gap: "12px" }}>
+                      {selectedOrc.localEvento && <span>📍 {selectedOrc.localEvento}</span>}
+                      {selectedOrc.dataEvento && <span>📅 Início: {selectedOrc.dataEvento}</span>}
+                    </div>
+                  )}
+                </div>
+                <span className="badge badge-info" style={{ fontSize: "10px" }}>Vínculo Global</span>
+              </div>
+            )}
 
             {/* Content */}
             {selectedOrc.tipo === "simplificado" ? (
@@ -685,6 +766,114 @@ export default function Orcamentos({
               {/* DETALHADO FIELDS */}
               {tipo === "detalhado" && (
                 <>
+                  {/* EVENT LINKAGE BOX (EXCLUSIVE FOR DETAILED PROPOSALS) */}
+                  <div style={{ border: "1px solid var(--accent)", borderRadius: "10px", padding: "14px", marginTop: "12px", background: "var(--accent-glow)" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <Calendar size={16} style={{ color: "var(--accent)" }} />
+                        <h4 style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: "var(--accent)" }}>
+                          Vincular Evento / Feira ao Projeto
+                        </h4>
+                      </div>
+                      <span className="badge badge-info" style={{ fontSize: "9px" }}>Vínculo Global</span>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "16px", marginBottom: "12px", flexWrap: "wrap" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>
+                        <input 
+                          type="radio" 
+                          name="event-link-opt" 
+                          checked={eventLinkOption === "existing"} 
+                          onChange={() => setEventLinkOption("existing")} 
+                        />
+                        <span>Vincular a Evento Existente</span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>
+                        <input 
+                          type="radio" 
+                          name="event-link-opt" 
+                          checked={eventLinkOption === "new"} 
+                          onChange={() => setEventLinkOption("new")} 
+                        />
+                        <span>➕ Criar Novo Evento a partir da Proposta</span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", color: "var(--text-muted)" }}>
+                        <input 
+                          type="radio" 
+                          name="event-link-opt" 
+                          checked={eventLinkOption === "none"} 
+                          onChange={() => setEventLinkOption("none")} 
+                        />
+                        <span>Sem Vínculo</span>
+                      </label>
+                    </div>
+
+                    {eventLinkOption === "existing" && (
+                      <div className="field">
+                        <label className="text-xs text-muted">Selecione o Evento / Feira do Sistema</label>
+                        <select 
+                          value={selectedEventId} 
+                          onChange={(e) => setSelectedEventId(e.target.value)}
+                          style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "6px", background: "var(--bg-card)", color: "var(--text-primary)" }}
+                        >
+                          <option value="">-- Selecione um evento existente --</option>
+                          {events.map((evt) => (
+                            <option key={evt.id} value={evt.id}>
+                              {evt.name} — Cliente: {evt.client} ({evt.startDate})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {eventLinkOption === "new" && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        <div className="field">
+                          <label className="text-xs text-muted">Nome do Evento / Feira / Estande *</label>
+                          <input 
+                            type="text" 
+                            placeholder="Ex: Estande Natura - Congresso Médico RN 2026" 
+                            value={newEventName} 
+                            onChange={(e) => setNewEventName(e.target.value)}
+                            required={tipo === "detalhado" && eventLinkOption === "new"}
+                            style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-primary)" }}
+                          />
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                          <div className="field">
+                            <label className="text-xs text-muted">Local / Pavilhão</label>
+                            <input 
+                              type="text" 
+                              placeholder="Ex: São Paulo Expo - SP" 
+                              value={newEventLocation} 
+                              onChange={(e) => setNewEventLocation(e.target.value)}
+                              style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-primary)" }}
+                            />
+                          </div>
+                          <div className="field">
+                            <label className="text-xs text-muted">Data de Início *</label>
+                            <input 
+                              type="date" 
+                              value={newEventStartDate} 
+                              onChange={(e) => setNewEventStartDate(e.target.value)}
+                              required={tipo === "detalhado" && eventLinkOption === "new"}
+                              style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-primary)" }}
+                            />
+                          </div>
+                          <div className="field">
+                            <label className="text-xs text-muted">Data de Fim</label>
+                            <input 
+                              type="date" 
+                              value={newEventEndDate} 
+                              onChange={(e) => setNewEventEndDate(e.target.value)}
+                              style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-primary)" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Products Section */}
                   <div style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "12px", marginTop: "12px" }}>
                     <h4 className="text-xs font-semibold" style={{ marginBottom: "8px" }}>Adicionar Produtos do Almoxarifado (Opcional)</h4>
