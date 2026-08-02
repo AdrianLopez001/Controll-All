@@ -1474,9 +1474,9 @@ export default function App() {
               <button
                 className={`menu-group-btn ${activeTab === "kanban" ? "active" : ""}`}
                 onClick={() => setActiveTab("kanban")}
-                title="Projetos / Kanban de Stands"
+                title="Gestão de Eventos / Quadro Kanban"
               >
-                <Briefcase size={14} /> Projetos
+                <Calendar size={14} /> Eventos
               </button>
             )}
 
