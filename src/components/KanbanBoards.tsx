@@ -23,11 +23,11 @@ export default function KanbanBoards({
   onDeleteEvent,
   onReorderEvents
 }: KanbanBoardsProps) {
-  const [selectedFeiraFilter, setSelectedFeiraFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchDate, setSearchDate] = useState("");
   const [expandedCardIds, setExpandedCardIds] = useState<string[]>([]);
   
-  // Modal States
+  // Modal State
   const [showAddForm, setShowAddForm] = useState(false);
   const [name, setName] = useState("");
   const [client, setClient] = useState("");
@@ -54,11 +54,6 @@ export default function KanbanBoards({
     onSelectEvent(event);
   };
 
-  // Extract unique Feiras / Eventos Principais for top pills filter
-  const uniqueFeiras = Array.from(
-    new Set(events.map(e => e.nomeFeira || e.name).filter(Boolean))
-  );
-
   const handleAddSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!name || !client || !startDate) return;
@@ -74,17 +69,18 @@ export default function KanbanBoards({
     setShowAddForm(false);
   };
 
-  // Filter events by selected Feira filter and search query
+  // Filter events strictly by Name search and Date search
   let displayedEvents = events.filter(e => {
-    const feiraName = e.nomeFeira || e.name;
-    const matchesFeira = selectedFeiraFilter === "all" ? true : feiraName === selectedFeiraFilter;
     const matchesSearch = searchTerm === "" ? true : 
       e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (e.nomeFeira && e.nomeFeira.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    return matchesFeira && matchesSearch;
+    const matchesDate = searchDate === "" ? true :
+      (e.startDate && e.startDate.includes(searchDate)) || (e.endDate && e.endDate.includes(searchDate));
+
+    return matchesSearch && matchesDate;
   });
 
   // Group events into 3 Kanban Columns according to operational phase
@@ -282,84 +278,55 @@ export default function KanbanBoards({
 
   return (
     <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: "20px" }}>
-      {/* Header & Feira Filter Pills */}
+      {/* Header & Search by Name/Date Controls */}
       <div style={{ display: "flex", flexDirection: "column", gap: "14px", background: "var(--bg-card)", padding: "18px 20px", borderRadius: "16px", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <h3 style={{ fontSize: "16px", fontWeight: "800", margin: 0, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px" }}>
-              <Calendar size={20} style={{ color: "var(--accent)" }} /> Quadro Kanban de Eventos por Feira
+              <Calendar size={20} style={{ color: "var(--accent)" }} /> Quadro Kanban de Eventos
             </h3>
             <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "4px 0 0 0" }}>
-              Acompanhamento visual de todas as etapas dos eventos e estandes (Planejamento, Execução e Desmontagem).
+              Acompanhamento visual de todas as etapas dos eventos (Planejamento, Execução e Desmontagem).
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+            {/* Search by Name */}
             <div style={{ position: "relative", width: "220px" }}>
               <Search size={14} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
               <input 
                 type="text" 
-                placeholder="Buscar evento ou cliente..." 
+                placeholder="Buscar por Nome do Evento ou Cliente..." 
                 value={searchTerm} 
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ width: "100%", padding: "6px 10px 6px 30px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "12px", backgroundColor: "var(--bg-main)", color: "var(--text-primary)" }}
+                style={{ width: "100%", padding: "8px 10px 8px 30px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "12px", backgroundColor: "var(--bg-main)", color: "var(--text-primary)" }}
               />
             </div>
 
-            <button className="btn-primary" onClick={() => setShowAddForm(true)} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", padding: "8px 14px" }}>
-              <Plus size={16} /> Novo Estande / Evento
+            {/* Filter by Date */}
+            <div style={{ position: "relative" }}>
+              <input 
+                type="date"
+                title="Filtrar por Data do Evento"
+                value={searchDate}
+                onChange={(e) => setSearchDate(e.target.value)}
+                style={{ padding: "7px 10px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "12px", backgroundColor: "var(--bg-main)", color: "var(--text-primary)", cursor: "pointer" }}
+              />
+              {searchDate && (
+                <button
+                  onClick={() => setSearchDate("")}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: "11px", color: "var(--danger)", marginLeft: "4px" }}
+                  title="Limpar filtro de data"
+                >
+                  ✕ Limpar
+                </button>
+              )}
+            </div>
+
+            <button className="btn-primary" onClick={() => setShowAddForm(true)} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", padding: "8px 16px", fontWeight: "700" }}>
+              <Plus size={16} /> Criar Novo Evento
             </button>
           </div>
-        </div>
-
-        {/* Feiras Selector Pills Tabs */}
-        <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "4px", borderTop: "1px solid var(--border)", paddingTop: "14px" }}>
-          <button
-            onClick={() => setSelectedFeiraFilter("all")}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "20px",
-              border: selectedFeiraFilter === "all" ? "none" : "1px solid var(--border)",
-              backgroundColor: selectedFeiraFilter === "all" ? "var(--accent)" : "var(--bg-main)",
-              color: selectedFeiraFilter === "all" ? "#fff" : "var(--text-primary)",
-              fontWeight: "700",
-              fontSize: "12px",
-              cursor: "pointer",
-              whiteSpace: "nowrap"
-            }}
-          >
-            🎪 Todos os Eventos ({events.length})
-          </button>
-
-          {uniqueFeiras.map((feira, idx) => {
-            const count = events.filter(e => (e.nomeFeira || e.name) === feira).length;
-            const isSelected = selectedFeiraFilter === feira;
-            return (
-              <button
-                key={idx}
-                onClick={() => setSelectedFeiraFilter(feira)}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "20px",
-                  border: isSelected ? "none" : "1px solid var(--border)",
-                  backgroundColor: isSelected ? "var(--accent)" : "var(--bg-main)",
-                  color: isSelected ? "#fff" : "var(--text-primary)",
-                  fontWeight: "700",
-                  fontSize: "12px",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px"
-                }}
-              >
-                <span>📍 {feira}</span>
-                <span style={{ fontSize: "10px", padding: "1px 6px", borderRadius: "10px", backgroundColor: isSelected ? "rgba(255,255,255,0.25)" : "var(--accent-glow)", color: isSelected ? "#fff" : "var(--accent)" }}>
-                  {count} estande(s)
-                </span>
-              </button>
-            );
-          })}
         </div>
       </div>
 
