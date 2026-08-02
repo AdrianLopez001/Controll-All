@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { 
-  Truck, Plane, Hotel, Plus
+  Truck, Plane, Hotel, Plus, Upload, FileText, Trash2, 
+  Eye, Paperclip, CheckCircle, Download
 } from "lucide-react";
-import type { Project, VeiculoLogistica } from "../types";
+import type { Project, VeiculoLogistica, ComprovanteLogistica } from "../types";
 
 interface LogisticsProps {
   vehicles: VeiculoLogistica[];
@@ -37,10 +38,62 @@ export default function Logistics({
   const [editDriver, setEditDriver] = useState("");
   const [editStatus, setEditStatus] = useState<VeiculoLogistica["status"]>("disponivel");
 
-  // Edit Travel states
+  // Travel / Hospedagem Form States
   const [editHotelName, setEditHotelName] = useState("");
   const [editHotelCheckin, setEditHotelCheckin] = useState("");
   const [editFlightDetails, setEditFlightDetails] = useState("");
+  const [editComprovantes, setEditComprovantes] = useState<ComprovanteLogistica[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Helper to convert file to ComprovanteLogistica object (Base64)
+  const processFileToComprovante = (file: File): Promise<ComprovanteLogistica> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        let tipo = 'outro';
+        if (['pdf'].includes(ext)) tipo = 'pdf';
+        else if (['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext)) tipo = 'imagem';
+        else if (['xls', 'xlsx', 'csv'].includes(ext)) tipo = 'excel';
+        else if (['doc', 'docx'].includes(ext)) tipo = 'word';
+
+        resolve({
+          id: `comp-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          nome: file.name,
+          tipo,
+          sizeBytes: file.size,
+          url: reader.result as string,
+          dataEnvio: new Date().toISOString().split('T')[0]
+        });
+      };
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileUploadInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setIsUploading(true);
+
+    try {
+      const newComps: ComprovanteLogistica[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const comp = await processFileToComprovante(files[i]);
+        newComps.push(comp);
+      }
+      setEditComprovantes(prev => [...prev, ...newComps]);
+    } catch (err) {
+      alert("Erro ao processar o arquivo anexado.");
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleRemoveComprovante = (id: string) => {
+    setEditComprovantes(prev => prev.filter(c => c.id !== id));
+  };
 
   const handleOpenVehicleEdit = (v: VeiculoLogistica) => {
     setSelectedVehicle(v);
@@ -89,6 +142,7 @@ export default function Logistics({
     setEditHotelName(evt.hotelName || "");
     setEditHotelCheckin(evt.hotelCheckin || "");
     setEditFlightDetails(evt.flightDetails || "");
+    setEditComprovantes(evt.comprovantesLogistica || []);
   };
 
   const handleSaveTravel = () => {
@@ -97,15 +151,27 @@ export default function Logistics({
       ...selectedEventTravel,
       hotelName: editHotelName,
       hotelCheckin: editHotelCheckin,
-      flightDetails: editFlightDetails
+      flightDetails: editFlightDetails,
+      comprovantesLogistica: editComprovantes
     };
     onUpdateEvent(updated);
     setSelectedEventTravel(null);
-    alert("Informações logísticas de viagem atualizadas com sucesso!");
+    alert("Informações logísticas e comprovantes salvos com sucesso!");
   };
 
-  // Filter events with travel details
-  const travelEvents = events.filter(e => e.hotelName || e.flightDetails || e.phase !== "post");
+  const openDocumentView = (comp: ComprovanteLogistica) => {
+    const win = window.open();
+    if (win) {
+      if (comp.tipo === 'imagem') {
+        win.document.write(`<img src="${comp.url}" style="max-width:100%;" alt="${comp.nome}" />`);
+      } else {
+        win.document.write(`<iframe src="${comp.url}" style="width:100%; height:100vh; border:none;"></iframe>`);
+      }
+    }
+  };
+
+  // Filter events with travel details or files
+  const travelEvents = events.filter(e => e.hotelName || e.flightDetails || (e.comprovantesLogistica && e.comprovantesLogistica.length > 0) || e.phase !== "post");
 
   return (
     <div className="logistics-container" style={{ padding: "10px", display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -134,8 +200,8 @@ export default function Logistics({
 
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
           <div>
-            <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Vôos Cadastrados</span>
-            <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--warning)", marginTop: "4px" }}>{events.filter(e => e.flightDetails).length}</h3>
+            <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Vôos &amp; Comprovantes</span>
+            <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--warning)", marginTop: "4px" }}>{events.filter(e => e.flightDetails || (e.comprovantesLogistica && e.comprovantesLogistica.length > 0)).length}</h3>
           </div>
           <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--warning-glow)", color: "var(--warning)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Plane size={20} />
@@ -204,10 +270,10 @@ export default function Logistics({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>
             <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>Passagens &amp; Hospedagens da Equipe</h4>
             <div style={{ display: "flex", gap: "6px" }}>
-              <button className="btn-primary text-xs" style={{ padding: "4px 8px", display: "inline-flex", alignItems: "center", gap: "4px" }} onClick={() => setIsAddHospedagemOpen(true)}>
+              <button className="btn-primary text-xs" style={{ padding: "4px 8px", display: "inline-flex", alignItems: "center", gap: "4px" }} onClick={() => { setEditHotelName(""); setEditHotelCheckin(""); setEditComprovantes([]); setIsAddHospedagemOpen(true); }}>
                 <Hotel size={12} /> + Nova Hospedagem
               </button>
-              <button className="btn-secondary text-xs" style={{ padding: "4px 8px", display: "inline-flex", alignItems: "center", gap: "4px" }} onClick={() => setIsAddViagemOpen(true)}>
+              <button className="btn-secondary text-xs" style={{ padding: "4px 8px", display: "inline-flex", alignItems: "center", gap: "4px" }} onClick={() => { setEditFlightDetails(""); setEditComprovantes([]); setIsAddViagemOpen(true); }}>
                 <Plane size={12} /> + Nova Viagem
               </button>
             </div>
@@ -250,6 +316,39 @@ export default function Logistics({
                     </div>
                   </div>
                 </div>
+
+                {/* Render Uploaded Documents/Comprovantes Badge Section */}
+                {evt.comprovantesLogistica && evt.comprovantesLogistica.length > 0 && (
+                  <div style={{ borderTop: "1px dashed var(--border)", paddingTop: "10px", marginTop: "2px" }}>
+                    <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--accent)", display: "flex", alignItems: "center", gap: "4px", marginBottom: "6px" }}>
+                      <Paperclip size={12} /> Comprovantes &amp; Arquivos Anexados ({evt.comprovantesLogistica.length})
+                    </span>
+                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                      {evt.comprovantesLogistica.map(comp => (
+                        <div 
+                          key={comp.id}
+                          onClick={(e) => { e.stopPropagation(); openDocumentView(comp); }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            padding: "4px 8px",
+                            borderRadius: "6px",
+                            border: "1px solid var(--border)",
+                            backgroundColor: "var(--bg-main)",
+                            fontSize: "11px",
+                            color: "var(--text-primary)",
+                            cursor: "pointer"
+                          }}
+                        >
+                          <FileText size={12} style={{ color: "var(--accent)" }} />
+                          <span style={{ maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: "600" }}>{comp.nome}</span>
+                          <Eye size={12} style={{ color: "var(--text-muted)" }} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -342,14 +441,14 @@ export default function Logistics({
         </div>
       )}
 
-      {/* Modal Edit Travel Card */}
+      {/* Modal Edit Travel Card with Upload Support */}
       {selectedEventTravel && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setSelectedEventTravel(null)}>
           <div 
-            style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "500px", boxShadow: "var(--shadow-lg)" }}
+            style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "520px", boxShadow: "var(--shadow-lg)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>Editar Viagem: {selectedEventTravel.name}</h3>
+            <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>Editar Viagem &amp; Comprovantes: {selectedEventTravel.name}</h3>
             
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "12px" }}>
               <div>
@@ -362,35 +461,91 @@ export default function Logistics({
               </div>
               <div>
                 <label style={{ display: "block", fontWeight: "600", marginBottom: "4px" }}>Passagens &amp; Localizadores (Voo / Cia)</label>
-                <textarea rows={4} value={editFlightDetails} onChange={(e) => setEditFlightDetails(e.target.value)} placeholder="Ex: GOL G3-2281 - Conf: ABC123..." style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)" }} />
+                <textarea rows={3} value={editFlightDetails} onChange={(e) => setEditFlightDetails(e.target.value)} placeholder="Ex: GOL G3-2281 - Conf: ABC123..." style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)" }} />
               </div>
+
+              {/* Upload Comprovantes Section */}
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px", marginTop: "4px" }}>
+                <label style={{ display: "block", fontWeight: "700", marginBottom: "6px", color: "var(--accent)" }}>
+                  📎 Anexar Comprovante ou Documento (PDF, Imagem, Excel, Word)
+                </label>
+
+                <div style={{ border: "2px dashed var(--border)", borderRadius: "10px", padding: "14px", textAlign: "center", backgroundColor: "var(--bg-main)", marginBottom: "10px" }}>
+                  <Upload size={20} style={{ color: "var(--accent)", marginBottom: "6px" }} />
+                  <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "0 0 8px 0" }}>
+                    Arraste ou selecione comprovantes de hospedagem, vauchers de passagem, notas ou planilhas.
+                  </p>
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*,.pdf,.xls,.xlsx,.doc,.docx"
+                    onChange={handleFileUploadInput} 
+                    style={{ fontSize: "11px" }}
+                  />
+                  {isUploading && <span style={{ display: "block", fontSize: "11px", color: "var(--accent)", marginTop: "4px" }}>Processando arquivo...</span>}
+                </div>
+
+                {/* List of uploaded files */}
+                {editComprovantes.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)" }}>Comprovantes Anexados:</span>
+                    {editComprovantes.map(comp => (
+                      <div key={comp.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "var(--bg-main)", padding: "6px 10px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "11px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", overflow: "hidden" }}>
+                          <FileText size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />
+                          <span style={{ fontWeight: "600", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "240px" }}>{comp.nome}</span>
+                          <span style={{ fontSize: "9px", color: "var(--text-muted)" }}>({comp.tipo.toUpperCase()})</span>
+                        </div>
+
+                        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                          <button type="button" onClick={() => openDocumentView(comp)} className="btn-secondary text-xs" style={{ padding: "2px 6px" }} title="Visualizar documento">
+                            <Eye size={12} /> Ver
+                          </button>
+                          <button type="button" onClick={() => handleRemoveComprovante(comp.id)} className="btn-danger text-xs" style={{ padding: "2px 6px" }} title="Remover comprovante">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
                 <button type="button" className="btn-secondary" onClick={() => setSelectedEventTravel(null)}>Cancelar</button>
-                <button type="button" className="btn-primary" onClick={handleSaveTravel}>Salvar Detalhes</button>
+                <button type="button" className="btn-primary" onClick={handleSaveTravel}>Salvar Detalhes &amp; Anexos</button>
               </div>
             </div>
           </div>
         </div>
       )}
+
       {/* Modal Nova Hospedagem */}
       {isAddHospedagemOpen && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setIsAddHospedagemOpen(false)}>
-          <div style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "450px", boxShadow: "var(--shadow-lg)" }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "480px", boxShadow: "var(--shadow-lg)" }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>+ Cadastrar Nova Hospedagem</h3>
             <form onSubmit={(e) => {
               e.preventDefault();
               if (!targetEventId || !editHotelName) return;
               const evt = events.find(x => x.id === targetEventId);
               if (evt) {
-                onUpdateEvent({ ...evt, hotelName: editHotelName, hotelCheckin: editHotelCheckin });
-                alert("Hospedagem adicionada com sucesso!");
+                const existing = evt.comprovantesLogistica || [];
+                onUpdateEvent({ 
+                  ...evt, 
+                  hotelName: editHotelName, 
+                  hotelCheckin: editHotelCheckin,
+                  comprovantesLogistica: [...existing, ...editComprovantes]
+                });
+                alert("Hospedagem e comprovantes salvos com sucesso!");
               }
               setIsAddHospedagemOpen(false);
               setEditHotelName("");
               setEditHotelCheckin("");
+              setEditComprovantes([]);
             }} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Evento / Estande Relacionado</label>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Evento / Estande Relacionado *</label>
                 <select value={targetEventId} onChange={(e) => setTargetEventId(e.target.value)} required style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }}>
                   <option value="">Selecione o Projeto...</option>
                   {events.map(e => (
@@ -398,14 +553,42 @@ export default function Logistics({
                   ))}
                 </select>
               </div>
+
               <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Nome do Hotel / Acomodação</label>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Nome do Hotel / Acomodação *</label>
                 <input type="text" value={editHotelName} onChange={(e) => setEditHotelName(e.target.value)} placeholder="Ex: Hotel Windsor Copacabana" required style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }} />
               </div>
+
               <div>
                 <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Data Check-in</label>
                 <input type="date" value={editHotelCheckin} onChange={(e) => setEditHotelCheckin(e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }} />
               </div>
+
+              {/* Upload Comprovantes Input */}
+              <div style={{ borderTop: "1px dashed var(--border)", paddingTop: "10px" }}>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px", color: "var(--accent)" }}>
+                  Anexar Comprovante / Voucher de Hospedagem (PDF, Imagem, Excel, Word)
+                </label>
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/*,.pdf,.xls,.xlsx,.doc,.docx"
+                  onChange={handleFileUploadInput}
+                  style={{ fontSize: "11px", width: "100%" }} 
+                />
+
+                {editComprovantes.length > 0 && (
+                  <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {editComprovantes.map(c => (
+                      <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "11px", backgroundColor: "var(--bg-main)", padding: "4px 8px", borderRadius: "6px" }}>
+                        <span>📎 {c.nome}</span>
+                        <button type="button" onClick={() => handleRemoveComprovante(c.id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer" }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
                 <button type="button" className="btn-secondary" onClick={() => setIsAddHospedagemOpen(false)}>Cancelar</button>
                 <button type="submit" className="btn-primary">Salvar Hospedagem</button>
@@ -418,21 +601,27 @@ export default function Logistics({
       {/* Modal Nova Viagem / Voo */}
       {isAddViagemOpen && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setIsAddViagemOpen(false)}>
-          <div style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "450px", boxShadow: "var(--shadow-lg)" }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "480px", boxShadow: "var(--shadow-lg)" }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>+ Cadastrar Nova Viagem / Voo</h3>
             <form onSubmit={(e) => {
               e.preventDefault();
               if (!targetEventId || !editFlightDetails) return;
               const evt = events.find(x => x.id === targetEventId);
               if (evt) {
-                onUpdateEvent({ ...evt, flightDetails: editFlightDetails });
-                alert("Detalhes de viagem cadastrados com sucesso!");
+                const existing = evt.comprovantesLogistica || [];
+                onUpdateEvent({ 
+                  ...evt, 
+                  flightDetails: editFlightDetails,
+                  comprovantesLogistica: [...existing, ...editComprovantes]
+                });
+                alert("Detalhes da viagem e comprovantes anexados salvos com sucesso!");
               }
               setIsAddViagemOpen(false);
               setEditFlightDetails("");
+              setEditComprovantes([]);
             }} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Evento / Estande Relacionado</label>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Evento / Estande Relacionado *</label>
                 <select value={targetEventId} onChange={(e) => setTargetEventId(e.target.value)} required style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }}>
                   <option value="">Selecione o Projeto...</option>
                   {events.map(e => (
@@ -440,10 +629,37 @@ export default function Logistics({
                   ))}
                 </select>
               </div>
+
               <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Detalhes de Voos &amp; Passagens</label>
-                <textarea rows={4} value={editFlightDetails} onChange={(e) => setEditFlightDetails(e.target.value)} placeholder="Ex: LATAM LA-3810 NAT-GRU | Localizador: XYZ123..." required style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)" }} />
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Detalhes de Voos &amp; Passagens *</label>
+                <textarea rows={3} value={editFlightDetails} onChange={(e) => setEditFlightDetails(e.target.value)} placeholder="Ex: LATAM LA-3810 NAT-GRU | Localizador: XYZ123..." required style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)" }} />
               </div>
+
+              {/* Upload Comprovantes Input */}
+              <div style={{ borderTop: "1px dashed var(--border)", paddingTop: "10px" }}>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px", color: "var(--accent)" }}>
+                  Anexar Comprovantes ou Bilhetes (PDF, Imagem, Excel, Word)
+                </label>
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/*,.pdf,.xls,.xlsx,.doc,.docx"
+                  onChange={handleFileUploadInput}
+                  style={{ fontSize: "11px", width: "100%" }} 
+                />
+
+                {editComprovantes.length > 0 && (
+                  <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {editComprovantes.map(c => (
+                      <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "11px", backgroundColor: "var(--bg-main)", padding: "4px 8px", borderRadius: "6px" }}>
+                        <span>📎 {c.nome}</span>
+                        <button type="button" onClick={() => handleRemoveComprovante(c.id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer" }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
                 <button type="button" className="btn-secondary" onClick={() => setIsAddViagemOpen(false)}>Cancelar</button>
                 <button type="submit" className="btn-primary">Salvar Viagem</button>

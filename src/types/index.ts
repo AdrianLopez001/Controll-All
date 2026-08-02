@@ -101,6 +101,15 @@ export interface ProductionSectors {
   limpeza: "pendente" | "em_andamento" | "concluido";
 }
 
+export interface ComprovanteLogistica {
+  id: string;
+  nome: string;
+  tipo: string; // "pdf" | "imagem" | "excel" | "outro"
+  sizeBytes?: number;
+  url: string;  // Data URL or Blob URL
+  dataEnvio: string;
+}
+
 export interface Project {
   id: string;
   codigo: string;
@@ -119,6 +128,7 @@ export interface Project {
   hotelName: string;
   hotelCheckin: string;
   flightDetails: string;
+  comprovantesLogistica?: ComprovanteLogistica[];
   docs: ProjectDoc[];
 
   // JC Eventos — Campos específicos de montagem de estandes
