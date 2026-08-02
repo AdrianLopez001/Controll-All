@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useRef, type FormEvent } from "react";
 import { Plus, Calendar, CheckSquare, ArrowRight, ArrowLeft, Move, Filter } from "lucide-react";
 import type { Project } from "../types";
 
@@ -22,12 +22,26 @@ export default function KanbanBoards({
   const [name, setName] = useState("");
   const [client, setClient] = useState("");
   const [startDate, setStartDate] = useState("");
+  const [selectedFeiraFilter, setSelectedFeiraFilter] = useState<string>("all");
   const [selectedEventIdFilter, setSelectedEventIdFilter] = useState<string>("all");
   const [activeMobileColumn, setActiveMobileColumn] = useState<"no_event" | "during" | "post">("no_event");
 
   // Drag and Drop state
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const cardDragTimestampRef = useRef<number>(0);
+
+  const handleCardClick = (e: React.MouseEvent, event: Project) => {
+    if (Date.now() - cardDragTimestampRef.current < 800) {
+      return; // Ignore synthetic click after drag and drop
+    }
+    onSelectEvent(event);
+  };
+
+  // Extract unique Feiras / Eventos Principais
+  const uniqueFeiras = Array.from(
+    new Set(events.map(e => e.nomeFeira || e.name).filter(Boolean))
+  );
 
   const handleAddSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -39,9 +53,17 @@ export default function KanbanBoards({
     setShowAddForm(false);
   };
 
-  const displayedEvents = selectedEventIdFilter === "all" 
-    ? events 
-    : events.filter(e => e.id === selectedEventIdFilter);
+  // Filter events by selected Feira/Evento AND selected individual stand
+  let displayedEvents = events;
+  if (selectedFeiraFilter !== "all") {
+    displayedEvents = displayedEvents.filter(e => (e.nomeFeira || e.name) === selectedFeiraFilter);
+  }
+  if (selectedEventIdFilter !== "all") {
+    displayedEvents = displayedEvents.filter(e => e.id === selectedEventIdFilter);
+  }
+
+  // Active selected Feira statistics
+  const currentFeiraObj = events.find(e => (e.nomeFeira || e.name) === selectedFeiraFilter);
 
   // Filter events by phase accurately
   const noEventPhases = ["no_event", "Briefing", "Orçamento", "Pré-Evento"];
@@ -53,17 +75,26 @@ export default function KanbanBoards({
   const postList = displayedEvents.filter((e) => postPhases.includes(e.phase) || (!noEventPhases.includes(e.phase) && !duringPhases.includes(e.phase)));
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
+    cardDragTimestampRef.current = Date.now();
     e.dataTransfer.setData("text/plain", id);
     setDraggedCardId(id);
   };
 
+  const handleDragEnd = () => {
+    cardDragTimestampRef.current = Date.now();
+    setDraggedCardId(null);
+    setDragOverColumn(null);
+  };
+
   const handleDragOver = (e: React.DragEvent, colName: string) => {
     e.preventDefault();
+    cardDragTimestampRef.current = Date.now();
     if (dragOverColumn !== colName) setDragOverColumn(colName);
   };
 
   const handleDrop = (e: React.DragEvent, targetPhase: string) => {
     e.preventDefault();
+    cardDragTimestampRef.current = Date.now();
     const id = e.dataTransfer.getData("text/plain") || draggedCardId;
     if (!id) return;
 
@@ -160,6 +191,7 @@ export default function KanbanBoards({
         className="kanban-card"
         draggable
         onDragStart={(e) => handleDragStart(e, event.id)}
+        onDragEnd={handleDragEnd}
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={(e) => handleCardDrop(e, event, columnPhase)}
         style={{
@@ -199,7 +231,7 @@ export default function KanbanBoards({
           </div>
         </div>
 
-        <div onClick={() => onSelectEvent(event)} style={{ flexGrow: 1, cursor: "pointer" }}>
+        <div onClick={(e) => handleCardClick(e, event)} style={{ flexGrow: 1, cursor: "pointer" }}>
           <h4 className="kanban-card-title" style={{ fontSize: "13px", fontWeight: "700" }}>{event.name}</h4>
           <span className="text-xs text-muted" style={{ display: "block", marginTop: "4px" }}>
             Cliente: <strong>{event.client}</strong>
@@ -252,26 +284,94 @@ export default function KanbanBoards({
 
   return (
     <div style={{ position: "relative" }}>
-      {/* Event Filter & Top Actions */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px", background: "var(--bg-card)", padding: "14px 18px", borderRadius: "12px", border: "1px solid var(--border)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <Filter size={16} style={{ color: "var(--accent)" }} />
-          <span style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)" }}>Kanban por Evento:</span>
-          <select 
-            value={selectedEventIdFilter} 
-            onChange={(e) => setSelectedEventIdFilter(e.target.value)}
-            style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-main)", color: "var(--text-primary)", fontSize: "13px", fontWeight: "600" }}
-          >
-            <option value="all">Ver Todos os Eventos ({events.length})</option>
-            {events.map(evt => (
-              <option key={evt.id} value={evt.id}>{evt.name} — {evt.client}</option>
-            ))}
-          </select>
+      {/* Event/Feira Filter Tabs & Header */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "20px", background: "var(--bg-card)", padding: "18px 20px", borderRadius: "16px", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+          <div>
+            <h3 style={{ fontSize: "16px", fontWeight: "800", margin: 0, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px" }}>
+              <Calendar size={20} style={{ color: "var(--accent)" }} /> Quadro Kanban por Evento &amp; Feira
+            </h3>
+            <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "4px 0 0 0" }}>
+              Selecione o evento principal para gerenciar todos os estandes e etapas vinculadas àquela feira específica.
+            </p>
+          </div>
+
+          <button className="btn-primary" onClick={() => setShowAddForm(true)} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <Plus size={16} /> Novo Estande / Projeto
+          </button>
         </div>
 
-        <button className="btn-primary" onClick={() => setShowAddForm(true)} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <Plus size={16} /> Novo Evento / Estande
-        </button>
+        {/* Feiras Selector Tabs */}
+        <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "4px", borderTop: "1px solid var(--border)", paddingTop: "14px" }}>
+          <button
+            onClick={() => { setSelectedFeiraFilter("all"); setSelectedEventIdFilter("all"); }}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "20px",
+              border: selectedFeiraFilter === "all" ? "none" : "1px solid var(--border)",
+              backgroundColor: selectedFeiraFilter === "all" ? "var(--accent)" : "var(--bg-main)",
+              color: selectedFeiraFilter === "all" ? "#fff" : "var(--text-primary)",
+              fontWeight: "700",
+              fontSize: "12px",
+              cursor: "pointer",
+              whiteSpace: "nowrap"
+            }}
+          >
+            🎪 Todos os Eventos ({events.length})
+          </button>
+
+          {uniqueFeiras.map((feira, idx) => {
+            const count = events.filter(e => (e.nomeFeira || e.name) === feira).length;
+            const isSelected = selectedFeiraFilter === feira;
+            return (
+              <button
+                key={idx}
+                onClick={() => { setSelectedFeiraFilter(feira); setSelectedEventIdFilter("all"); }}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "20px",
+                  border: isSelected ? "none" : "1px solid var(--border)",
+                  backgroundColor: isSelected ? "var(--accent)" : "var(--bg-main)",
+                  color: isSelected ? "#fff" : "var(--text-primary)",
+                  fontWeight: "700",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px"
+                }}
+              >
+                <span>📍 {feira}</span>
+                <span style={{ fontSize: "10px", padding: "1px 6px", borderRadius: "10px", backgroundColor: isSelected ? "rgba(255,255,255,0.25)" : "var(--accent-glow)", color: isSelected ? "#fff" : "var(--accent)" }}>
+                  {count} estande(s)
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Selected Feira Details Banner */}
+        {selectedFeiraFilter !== "all" && currentFeiraObj && (
+          <div style={{ backgroundColor: "var(--accent-glow)", border: "1px solid var(--accent)", borderRadius: "12px", padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", fontSize: "12px" }}>
+            <div>
+              <strong style={{ fontSize: "14px", color: "var(--accent)", display: "block" }}>{selectedFeiraFilter}</strong>
+              <span style={{ color: "var(--text-secondary)" }}>
+                Local: <strong>{currentFeiraObj.cidadeEvento || currentFeiraObj.centroConvencoes || "Pavilhão Principal"}</strong> | Montagem: <strong>{currentFeiraObj.dataMontagem}</strong> | Evento: <strong>{currentFeiraObj.startDate} a {currentFeiraObj.endDate}</strong>
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span style={{ fontWeight: "700", color: "var(--text-primary)" }}>{displayedEvents.length} Estande(s) neste Evento</span>
+              <button 
+                className="btn-secondary text-xs" 
+                onClick={() => setSelectedFeiraFilter("all")}
+                style={{ padding: "4px 10px" }}
+              >
+                Ver Todos
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Seletor Mobile de Colunas do Kanban */}

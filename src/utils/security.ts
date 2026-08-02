@@ -1,6 +1,7 @@
 /**
  * Controll-All - Security & Data Protection Utilities
- * Provides input sanitization, safe URL handling, secure storage, and RBAC validation.
+ * Provides input sanitization, safe URL handling, secure storage, RBAC validation,
+ * and audit logging for Hostinger production deployment.
  */
 
 // 1. XSS & HTML Input Sanitization
@@ -76,4 +77,26 @@ export function canUserAccessTab(role: UserRole, tab: string, activeModules: Rec
   if (!activeModules[tab]) return false;
   const allowedTabs = ROLE_PERMISSIONS[role] || [];
   return allowedTabs.includes(tab);
+}
+
+// 5. Hostinger Production Audit Logger
+export interface SecurityAuditLog {
+  timestamp: string;
+  user: string;
+  action: string;
+  details: string;
+}
+
+export function logSecurityEvent(user: string, action: string, details: string): void {
+  const existingLogs = safeStorage.getItem<SecurityAuditLog[]>("security_audit_logs", []);
+  const newLog: SecurityAuditLog = {
+    timestamp: new Date().toISOString(),
+    user: sanitizeInput(user),
+    action: sanitizeInput(action),
+    details: sanitizeInput(details)
+  };
+  
+  // Keep latest 100 security logs
+  const updated = [newLog, ...existingLogs].slice(0, 100);
+  safeStorage.setItem("security_audit_logs", updated);
 }

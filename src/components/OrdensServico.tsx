@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { 
   FileText, CheckSquare, Plus, Trash2, Camera, ShieldAlert, 
   User, MapPin, PenTool, CheckCircle, ChevronRight, X, Clock, HelpCircle, Printer, FileDown,
-  Calendar, ArrowLeft, ArrowRight
+  Calendar, ArrowLeft, ArrowRight, Move
 } from "lucide-react";
 import type { Project, Employee, WarehouseItem, OSComentario, OSFoto, OSAssinaturas, AssignedEmployee } from "../types";
 import logoImg from "../assets/logo.png";
@@ -14,6 +14,7 @@ interface OrdensServicoProps {
   allEmployees: Employee[];
   allWarehouseItems: WarehouseItem[];
   onUpdateEvent: (updated: Project) => void;
+  onSelectEvent?: (event: Project) => void;
   onAddOS?: (name: string, client: string, startDate: string) => Project;
   initialOsId?: string;
 }
@@ -23,6 +24,7 @@ export default function OrdensServico({
   allEmployees,
   allWarehouseItems,
   onUpdateEvent,
+  onSelectEvent,
   onAddOS,
   initialOsId = ""
 }: OrdensServicoProps) {
@@ -42,6 +44,60 @@ export default function OrdensServico({
   const [sortByPriority, setSortByPriority] = useState(false);
   const [activeMobileColumn, setActiveMobileColumn] = useState<"muito_alta" | "alta" | "media" | "baixa">("muito_alta");
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+
+  // Drag and Drop state for OS Kanban
+  const [draggedOsId, setDraggedOsId] = useState<string | null>(null);
+  const [dragOverOsCol, setDragOverOsCol] = useState<string | null>(null);
+  const osDragTimestampRef = useRef<number>(0);
+
+  const handleOSCardClick = (e: React.MouseEvent, osItem: Project) => {
+    if (Date.now() - osDragTimestampRef.current < 800) {
+      return; // Ignore synthetic click after drag and drop
+    }
+    if (onSelectEvent) {
+      onSelectEvent(osItem);
+    }
+  };
+
+  const handleDragStartOS = (e: React.DragEvent, id: string) => {
+    osDragTimestampRef.current = Date.now();
+    e.dataTransfer.setData("text/plain", id);
+    setDraggedOsId(id);
+  };
+
+  const handleDragEndOS = () => {
+    osDragTimestampRef.current = Date.now();
+    setDraggedOsId(null);
+    setDragOverOsCol(null);
+  };
+
+  const handleDragOverOS = (e: React.DragEvent, colName: string) => {
+    e.preventDefault();
+    osDragTimestampRef.current = Date.now();
+    if (dragOverOsCol !== colName) setDragOverOsCol(colName);
+  };
+
+  const handleDropOS = (e: React.DragEvent, targetPriority: "muito_alta" | "alta" | "media" | "baixa") => {
+    e.preventDefault();
+    osDragTimestampRef.current = Date.now();
+    const id = e.dataTransfer.getData("text/plain") || draggedOsId;
+    if (!id) return;
+
+    const os = events.find(x => x.id === id);
+    if (!os) return;
+
+    if (getOSPriority(os) !== targetPriority) {
+      onUpdateEvent({
+        ...os,
+        prioridadeModo: "manual",
+        prioridade: targetPriority
+      });
+    }
+
+    setSelectedOsId(""); // Clear persistent selection on drop
+    setDraggedOsId(null);
+    setDragOverOsCol(null);
+  };
 
   const [activeTab, setActiveTab] = useState<"checklist" | "items" | "team" | "photos" | "signatures" | "logs">("checklist");
   const selectedOS = events.find(o => o.id === selectedOsId);
@@ -426,25 +482,33 @@ export default function OrdensServico({
     return (
       <div 
         key={os.id} 
-        className={`kanban-card ${isSelected ? "selected" : ""}`}
-        onClick={() => setSelectedOsId(isSelected ? "" : os.id)}
+        className="kanban-card"
+        draggable
+        onDragStart={(e) => handleDragStartOS(e, os.id)}
+        onDragEnd={handleDragEndOS}
+        onClick={(e) => handleOSCardClick(e, os)}
         style={{
-          cursor: "pointer",
+          cursor: "grab",
+          userSelect: "none",
           borderTop: `4px solid ${prioColor}`,
-          borderColor: isSelected ? "var(--accent)" : "var(--border)",
-          background: isSelected ? "var(--accent-glow)" : "var(--bg-card)",
-          boxShadow: isSelected ? "0 0 0 2px var(--accent)" : "var(--shadow-sm)",
+          borderColor: "var(--border)",
+          background: "var(--bg-card)",
+          boxShadow: "var(--shadow-sm)",
           transition: "all 0.15s ease",
           display: "flex",
           flexDirection: "column",
-          gap: "10px"
+          gap: "10px",
+          opacity: draggedOsId === os.id ? 0.4 : 1
         }}
       >
         {/* Top row: código + priority selector */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <strong style={{ fontSize: "12px", fontFamily: "monospace", letterSpacing: "0.5px", color: "var(--accent)" }}>{os.codigo}</strong>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <Move size={12} style={{ color: "var(--text-muted)", cursor: "grab" }} />
+            <strong style={{ fontSize: "12px", fontFamily: "monospace", letterSpacing: "0.5px", color: "var(--accent)" }}>{os.codigo}</strong>
+          </div>
           <select
-            value={os.prioridadeModo === "manual" ? (os.prioridade || prio) : "auto"}
+            value={os.prioridadeModo === "manual" ? (os.prioridade || prio) : (os.prioridade || prio)}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => {
               e.stopPropagation();
@@ -457,20 +521,21 @@ export default function OrdensServico({
             }}
             style={{
               fontSize: "10px",
-              padding: "2px 6px",
+              fontWeight: "700",
+              padding: "2px 8px",
               borderRadius: "6px",
-              border: "1px solid var(--border)",
+              border: `1px solid ${prioColor}`,
               background: "var(--bg-card)",
-              color: "var(--text-primary)",
+              color: prioColor,
               cursor: "pointer"
             }}
-            title="Alterar prioridade da OS"
+            title="Tag de Prioridade — Alterar atualiza o card e sua coluna"
           >
-            <option value="auto">🤖 Auto</option>
             <option value="muito_alta">🔴 Muito Alta</option>
             <option value="alta">🟧 Alta</option>
             <option value="media">🟡 Média</option>
             <option value="baixa">🔵 Baixa</option>
+            <option value="auto">🤖 Auto (Calculado)</option>
           </select>
         </div>
 
@@ -504,17 +569,39 @@ export default function OrdensServico({
           <span style={{ fontSize: "10px", fontWeight: "600", color: "var(--text-muted)" }}>{os.completionRate || 0}%</span>
         </div>
 
-        {/* Bottom row: Phase badge + Abrir Dossiê button */}
+        {/* Bottom row: Interactive Phase Tag badge + Abrir Dossiê button */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border)", paddingTop: "8px", marginTop: "2px" }}>
-          <span className="badge badge-secondary" style={{ fontSize: "10px", padding: "2px 8px" }}>
-            {os.phase}
-          </span>
+          <select
+            value={os.phase || "no_event"}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              e.stopPropagation();
+              const newPhase = e.target.value;
+              onUpdateEvent({ ...os, phase: newPhase as any });
+            }}
+            style={{
+              fontSize: "10px",
+              fontWeight: "700",
+              padding: "2px 8px",
+              borderRadius: "10px",
+              border: "1px solid var(--border)",
+              backgroundColor: os.phase === "during" || os.phase === "Montagem" ? "#ecfdf5" : os.phase === "post" || os.phase === "Desmontagem" ? "#fef2f2" : "#e0f2fe",
+              color: os.phase === "during" || os.phase === "Montagem" ? "#047857" : os.phase === "post" || os.phase === "Desmontagem" ? "#dc2626" : "#0284c7",
+              cursor: "pointer"
+            }}
+            title="Tag de Estágio do Evento — Alterar atualiza a tag automaticamente"
+          >
+            <option value="no_event">📦 PRÉ-EVENTO / DEPÓSITO</option>
+            <option value="during">🏗️ EM MONTAGEM / EVENTO</option>
+            <option value="post">🏁 DESMONTAGEM / CONCLUÍDO</option>
+          </select>
           <button 
             className={`btn-${isSelected ? "primary" : "secondary"} text-xs`}
             style={{ padding: "3px 8px", fontSize: "10px", display: "flex", alignItems: "center", gap: "3px" }}
             onClick={(e) => {
               e.stopPropagation();
               setSelectedOsId(isSelected ? "" : os.id);
+              if (onSelectEvent) onSelectEvent(os);
             }}
           >
             {isSelected ? "Ocultar Dossiê" : "Abrir Dossiê"} <ChevronRight size={11} />
@@ -614,7 +701,12 @@ export default function OrdensServico({
         {/* Grid de 4 Colunas por Prioridade */}
         <div className="kanban-grid-4">
           {/* Column 1 - Muito Alta */}
-          <div className={`kanban-column mobile-kanban-col ${activeMobileColumn === "muito_alta" ? "mobile-show" : ""}`}>
+          <div 
+            className={`kanban-column mobile-kanban-col ${activeMobileColumn === "muito_alta" ? "mobile-show" : ""}`}
+            onDragOver={(e) => handleDragOverOS(e, "muito_alta")}
+            onDrop={(e) => handleDropOS(e, "muito_alta")}
+            style={{ outline: dragOverOsCol === "muito_alta" ? "2px dashed #ef4444" : "none", transition: "outline 0.15s ease" }}
+          >
             <div className="kanban-column-header">
               <div className="kanban-column-title-box">
                 <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444", display: "inline-block" }}></span>
@@ -625,7 +717,7 @@ export default function OrdensServico({
             <div className="kanban-cards-container">
               {muitoAltaList.length === 0 ? (
                 <div style={{ padding: "20px 10px", textAlign: "center", fontSize: "11px", color: "var(--text-muted)", fontStyle: "italic" }}>
-                  Nenhuma OS urgente nesta coluna
+                  Arraste uma OS para cá
                 </div>
               ) : (
                 muitoAltaList.map(renderOSCard)
@@ -634,7 +726,12 @@ export default function OrdensServico({
           </div>
 
           {/* Column 2 - Alta */}
-          <div className={`kanban-column mobile-kanban-col ${activeMobileColumn === "alta" ? "mobile-show" : ""}`}>
+          <div 
+            className={`kanban-column mobile-kanban-col ${activeMobileColumn === "alta" ? "mobile-show" : ""}`}
+            onDragOver={(e) => handleDragOverOS(e, "alta")}
+            onDrop={(e) => handleDropOS(e, "alta")}
+            style={{ outline: dragOverOsCol === "alta" ? "2px dashed #f97316" : "none", transition: "outline 0.15s ease" }}
+          >
             <div className="kanban-column-header">
               <div className="kanban-column-title-box">
                 <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#f97316", display: "inline-block" }}></span>
@@ -645,7 +742,7 @@ export default function OrdensServico({
             <div className="kanban-cards-container">
               {altaList.length === 0 ? (
                 <div style={{ padding: "20px 10px", textAlign: "center", fontSize: "11px", color: "var(--text-muted)", fontStyle: "italic" }}>
-                  Nenhuma OS de prioridade alta
+                  Arraste uma OS para cá
                 </div>
               ) : (
                 altaList.map(renderOSCard)
@@ -654,7 +751,12 @@ export default function OrdensServico({
           </div>
 
           {/* Column 3 - Média */}
-          <div className={`kanban-column mobile-kanban-col ${activeMobileColumn === "media" ? "mobile-show" : ""}`}>
+          <div 
+            className={`kanban-column mobile-kanban-col ${activeMobileColumn === "media" ? "mobile-show" : ""}`}
+            onDragOver={(e) => handleDragOverOS(e, "media")}
+            onDrop={(e) => handleDropOS(e, "media")}
+            style={{ outline: dragOverOsCol === "media" ? "2px dashed #eab308" : "none", transition: "outline 0.15s ease" }}
+          >
             <div className="kanban-column-header">
               <div className="kanban-column-title-box">
                 <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#eab308", display: "inline-block" }}></span>
@@ -665,7 +767,7 @@ export default function OrdensServico({
             <div className="kanban-cards-container">
               {mediaList.length === 0 ? (
                 <div style={{ padding: "20px 10px", textAlign: "center", fontSize: "11px", color: "var(--text-muted)", fontStyle: "italic" }}>
-                  Nenhuma OS de prioridade média
+                  Arraste uma OS para cá
                 </div>
               ) : (
                 mediaList.map(renderOSCard)
@@ -674,7 +776,12 @@ export default function OrdensServico({
           </div>
 
           {/* Column 4 - Baixa */}
-          <div className={`kanban-column mobile-kanban-col ${activeMobileColumn === "baixa" ? "mobile-show" : ""}`}>
+          <div 
+            className={`kanban-column mobile-kanban-col ${activeMobileColumn === "baixa" ? "mobile-show" : ""}`}
+            onDragOver={(e) => handleDragOverOS(e, "baixa")}
+            onDrop={(e) => handleDropOS(e, "baixa")}
+            style={{ outline: dragOverOsCol === "baixa" ? "2px dashed #3b82f6" : "none", transition: "outline 0.15s ease" }}
+          >
             <div className="kanban-column-header">
               <div className="kanban-column-title-box">
                 <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#3b82f6", display: "inline-block" }}></span>
@@ -685,7 +792,7 @@ export default function OrdensServico({
             <div className="kanban-cards-container">
               {baixaList.length === 0 ? (
                 <div style={{ padding: "20px 10px", textAlign: "center", fontSize: "11px", color: "var(--text-muted)", fontStyle: "italic" }}>
-                  Nenhuma OS de prioridade baixa
+                  Arraste uma OS para cá
                 </div>
               ) : (
                 baixaList.map(renderOSCard)

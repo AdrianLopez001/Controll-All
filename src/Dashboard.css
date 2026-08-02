@@ -167,7 +167,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  z-index: 1000;
+  z-index: 20000;
   box-shadow: 0 4px 16px rgba(20, 69, 128, 0.3);
   transition: var(--transition);
 }

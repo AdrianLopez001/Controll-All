@@ -2019,6 +2019,7 @@ export default function App() {
               allEmployees={employees}
               allWarehouseItems={warehouseItems}
               onUpdateEvent={updateEventDetails}
+              onSelectEvent={(evt) => setSelectedEvent(evt)}
               onAddOS={handleAddEvent}
               initialOsId={deepLinkOsId}
             />

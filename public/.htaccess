@@ -1,0 +1,51 @@
+# ==============================================================================
+# CONTROLL-ALL - HOSTINGER PRODUCTION APACHE CONFIGURATION (.htaccess)
+# ==============================================================================
+
+# 1. ENFORCE SINGLE PAGE APPLICATION (SPA) ROUTING
+# Prevents 404 Not Found errors on page refresh in Vite / React SPA apps
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# 2. SECURITY HEADERS & DEFENSIVE CONTROLS
+<IfModule mod_headers.c>
+  # Protect against Clickjacking attacks
+  Header set X-Frame-Options "SAMEORIGIN"
+  
+  # Prevent MIME-type sniffing vulnerabilities
+  Header set X-Content-Type-Options "nosniff"
+  
+  # Protect against Cross-Site Scripting (XSS) in older browsers
+  Header set X-XSS-Protection "1; mode=block"
+  
+  # Enforce HTTPS connections (Strict Transport Security - HSTS)
+  Header set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+  
+  # Restrict referrer header information
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  
+  # Restrict browser features and APIs
+  Header set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
+</IfModule>
+
+# 3. DISABLE DIRECTORY BROWSING
+Options -Indexes
+
+# 4. OPTIMIZE COMPRESSION & CACHING FOR HOSTINGER PERFORMANCE
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault "access plus 1 month"
+  ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType application/json "access plus 0 seconds"
+</IfModule>
