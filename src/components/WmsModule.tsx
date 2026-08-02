@@ -15,14 +15,55 @@ interface WmsModuleProps {
   initialSelectedItemId?: string;
 }
 
+export interface EstoquistaEspaco {
+  id: string;
+  nome: string;
+  galpaoEspaco: string;
+  categoriasAutorizadas: string[];
+  responsavel: string;
+  corBadge: string;
+}
+
+export const ESTOQUISTAS_ESPACOS: EstoquistaEspaco[] = [
+  {
+    id: "est-1",
+    nome: "Estoquista 1 — Marcos Andrade",
+    galpaoEspaco: "Galpão A — Móveis & Alumínio",
+    categoriasAutorizadas: ["moveis", "aluminio"],
+    responsavel: "Marcos Andrade (Estoquista Lead)",
+    corBadge: "#144580"
+  },
+  {
+    id: "est-2",
+    nome: "Estoquista 2 — Carlos Eduardo",
+    galpaoEspaco: "Galpão B — Ferramentas & Elétrica",
+    categoriasAutorizadas: ["ferramentas", "eletrica"],
+    responsavel: "Carlos Eduardo (Técnico WMS)",
+    corBadge: "#0284c7"
+  },
+  {
+    id: "est-3",
+    nome: "Estoquista 3 — Rafael Souza",
+    galpaoEspaco: "Galpão C — Insumos & Consumíveis",
+    categoriasAutorizadas: ["insumos"],
+    responsavel: "Rafael Souza (Auxiliar de Depósito)",
+    corBadge: "#d97706"
+  }
+];
+
 export default function WmsModule({ 
   items, onUpdateStock, onUpdateWarehouseItem, onAddWarehouseItem, onDeleteWarehouseItem, initialSubTab, initialSelectedItemId
 }: WmsModuleProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [wmsCategoryFilter, setWmsCategoryFilter] = useState<"all" | "moveis" | "insumos" | "ferramentas" | "aluminio" | "eletrica">("all");
-  const [simulatedProfile, setSimulatedProfile] = useState<"gerente_total" | "tecnico_eletrica" | "encarregado_logistica">("gerente_total");
+  const [selectedEstoquistaId, setSelectedEstoquistaId] = useState<string>("all");
+  const [stockStatusFilter, setStockStatusFilter] = useState<"all" | "alerta" | "critico">(
+    initialSubTab === ("critico" as any) ? "critico" : "all"
+  );
   const [selectedItemId, setSelectedItemId] = useState<string>(initialSelectedItemId || items[0]?.id || "");
-  const [activeSubTab, setActiveSubTab] = useState<"inventario" | "locacoes" | "entradas" | "ajustes">(initialSubTab || "inventario");
+  const [activeSubTab, setActiveSubTab] = useState<"inventario" | "locacoes" | "entradas" | "ajustes">(
+    initialSubTab === ("critico" as any) ? "inventario" : (initialSubTab || "inventario")
+  );
 
   useEffect(() => {
     if (initialSubTab) setActiveSubTab(initialSubTab);
@@ -225,6 +266,8 @@ export default function WmsModule({
   const [rentValor, setRentValor] = useState(0);
   const [rentContratoName, setRentContratoName] = useState("");
 
+
+
   const selectedItem = items.find(i => i.id === selectedItemId);
 
   const getOperationalCategory = (item: WarehouseItem): "locacao" | "ferramenta" | "venda" => {
@@ -233,20 +276,34 @@ export default function WmsModule({
     return "locacao";
   };
 
-  const allowedCategoriesByProfile: Record<string, string[]> = {
-    gerente_total: ["moveis", "insumos", "ferramentas", "aluminio", "eletrica"],
-    tecnico_eletrica: ["eletrica"],
-    encarregado_logistica: ["moveis", "ferramentas"]
-  };
-
   const filteredItems = items.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || item.codigo.toLowerCase().includes(searchTerm.toLowerCase());
     const itemCat = item.categoriaWMS || (item.type === "tool" ? "ferramentas" : "moveis");
     
-    const isAllowedByProfile = allowedCategoriesByProfile[simulatedProfile]?.includes(itemCat) ?? true;
+    // Category filter
     const matchesCategory = wmsCategoryFilter === "all" ? true : itemCat === wmsCategoryFilter;
-    
-    return matchesSearch && matchesCategory && isAllowedByProfile;
+
+    // Estoquista Space Delegation filter
+    let matchesEstoquista = true;
+    if (selectedEstoquistaId !== "all") {
+      const estoquista = ESTOQUISTAS_ESPACOS.find(e => e.id === selectedEstoquistaId);
+      if (estoquista) {
+        matchesEstoquista = estoquista.categoriasAutorizadas.includes(itemCat);
+      }
+    }
+
+    // Stock Level Status filter (Alerta vs Crítico)
+    let matchesStockStatus = true;
+    const isCritico = item.stock <= item.stockMinimo;
+    const isAlerta = item.stock > item.stockMinimo && item.stock <= Math.ceil(item.stockMinimo * 1.5);
+
+    if (stockStatusFilter === "critico") {
+      matchesStockStatus = isCritico;
+    } else if (stockStatusFilter === "alerta") {
+      matchesStockStatus = isAlerta;
+    }
+
+    return matchesSearch && matchesCategory && matchesEstoquista && matchesStockStatus;
   });
 
   // Calculate stats for 3 WMS categories
@@ -462,7 +519,7 @@ export default function WmsModule({
                   onChange={(e) => setWmsCategoryFilter(e.target.value as any)}
                   style={{ padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)", fontSize: "13px", color: "var(--text-primary)" }}
                 >
-                  <option value="all">Todas as 5 Categorias</option>
+                  <option value="all">Todas as Categorias</option>
                   <option value="moveis">🪑 Móveis para Estande</option>
                   <option value="insumos">📦 Insumos &amp; Consumíveis</option>
                   <option value="ferramentas">🛠️ Ferramentas &amp; Equipamentos</option>
@@ -470,18 +527,25 @@ export default function WmsModule({
                   <option value="eletrica">⚡ Elétrica &amp; Iluminação</option>
                 </select>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "auto", background: "var(--bg-main)", padding: "4px 10px", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                  <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-secondary)" }}>Perfil WMS:</span>
-                  <select
-                    value={simulatedProfile}
-                    onChange={(e) => setSimulatedProfile(e.target.value as any)}
-                    style={{ background: "transparent", border: "none", fontSize: "11px", fontWeight: "700", color: "var(--accent)" }}
-                  >
-                    <option value="gerente_total">👑 Gerente (Acesso Total 5/5)</option>
-                    <option value="tecnico_eletrica">⚡ Técnico Elétrica (Acesso Restrito)</option>
-                    <option value="encarregado_logistica">🚚 Encarregado Logística (Móveis/Ferramentas)</option>
-                  </select>
-                </div>
+                {/* Filtro por Nível de Estoque (Alerta / Crítico) */}
+                <select
+                  value={stockStatusFilter}
+                  onChange={(e) => setStockStatusFilter(e.target.value as any)}
+                  style={{ 
+                    padding: "8px 12px", 
+                    border: stockStatusFilter === "critico" ? "1px solid var(--danger)" : stockStatusFilter === "alerta" ? "1px solid var(--warning)" : "1px solid var(--border)", 
+                    borderRadius: "8px", 
+                    fontFamily: "var(--font)", 
+                    fontSize: "13px", 
+                    fontWeight: "600",
+                    backgroundColor: stockStatusFilter === "critico" ? "var(--danger-glow)" : stockStatusFilter === "alerta" ? "var(--warning-glow)" : "var(--bg-card)",
+                    color: stockStatusFilter === "critico" ? "var(--danger-text)" : stockStatusFilter === "alerta" ? "var(--warning-text)" : "var(--text-primary)" 
+                  }}
+                >
+                  <option value="all">🟢 Todos os Níveis</option>
+                  <option value="alerta">⚠️ Em Estado de Alerta (Próximo do Mínimo)</option>
+                  <option value="critico">🔴 Nível Crítico (No Limite / Esgotado)</option>
+                </select>
 
                 <button
                   type="button"
@@ -493,15 +557,86 @@ export default function WmsModule({
                 </button>
               </div>
 
-              {/* Profile Permission Active Banner */}
-              {simulatedProfile !== "gerente_total" && (
-                <div style={{ backgroundColor: "var(--accent-glow)", border: "1px solid var(--accent)", borderRadius: "10px", padding: "10px 14px", marginBottom: "16px", display: "flex", alignItems: "center", gap: "10px" }}>
-                  <Shield style={{ width: "18px", height: "18px", color: "var(--accent)" }} />
-                  <div style={{ fontSize: "12px", color: "var(--text-primary)" }}>
-                    <strong>Restrição de Perfil de Usuário Ativa:</strong> Você está visualizando o almoxarifado como <span style={{ textTransform: "capitalize", fontWeight: "700" }}>{simulatedProfile.replace("_", " ")}</span>. Apenas os materiais autorizados para sua função estão sendo exibidos.
+              {/* Área de Delegação de Acesso aos Espaços de Depósito (3 Estoquistas) */}
+              <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "14px", padding: "14px 16px", marginBottom: "4px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Shield size={16} style={{ color: "var(--accent)" }} />
+                    <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--text-primary)" }}>
+                      Delegação de Acesso aos Espaços de Depósito (3 Estoquistas)
+                    </span>
                   </div>
+                  {selectedEstoquistaId !== "all" && (
+                    <span className="badge badge-info" style={{ fontSize: "10px" }}>
+                      Filtro de Espaço Ativo
+                    </span>
+                  )}
                 </div>
-              )}
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedEstoquistaId("all")}
+                    style={{
+                      padding: "10px",
+                      borderRadius: "10px",
+                      border: selectedEstoquistaId === "all" ? "2px solid var(--accent)" : "1px solid var(--border)",
+                      backgroundColor: selectedEstoquistaId === "all" ? "var(--accent-glow)" : "var(--bg-main)",
+                      color: selectedEstoquistaId === "all" ? "var(--accent)" : "var(--text-primary)",
+                      fontWeight: selectedEstoquistaId === "all" ? "700" : "500",
+                      fontSize: "12px",
+                      cursor: "pointer",
+                      textAlign: "center",
+                      transition: "all 0.15s"
+                    }}
+                  >
+                    Visão Geral (Todos os Espaços)
+                  </button>
+
+                  {ESTOQUISTAS_ESPACOS.map(est => {
+                    const isSelected = selectedEstoquistaId === est.id;
+                    return (
+                      <button
+                        key={est.id}
+                        type="button"
+                        onClick={() => setSelectedEstoquistaId(est.id)}
+                        style={{
+                          padding: "10px",
+                          borderRadius: "10px",
+                          border: isSelected ? `2px solid ${est.corBadge}` : "1px solid var(--border)",
+                          backgroundColor: isSelected ? "var(--accent-glow)" : "var(--bg-main)",
+                          color: "var(--text-primary)",
+                          fontWeight: isSelected ? "700" : "500",
+                          fontSize: "11px",
+                          cursor: "pointer",
+                          textAlign: "left",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "2px",
+                          transition: "all 0.15s"
+                        }}
+                      >
+                        <strong style={{ color: est.corBadge, fontSize: "12px" }}>{est.nome.split("—")[0].trim()}</strong>
+                        <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>{est.galpaoEspaco}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Informative Banner when Estoquista space filter is selected */}
+              {selectedEstoquistaId !== "all" && (() => {
+                const est = ESTOQUISTAS_ESPACOS.find(e => e.id === selectedEstoquistaId);
+                if (!est) return null;
+                return (
+                  <div style={{ backgroundColor: "var(--accent-glow)", border: "1px solid var(--accent)", borderRadius: "10px", padding: "10px 14px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}>
+                    <Shield style={{ width: "18px", height: "18px", color: "var(--accent)", flexShrink: 0 }} />
+                    <div style={{ fontSize: "12px", color: "var(--text-primary)" }}>
+                      <strong>Gestão Restrita por Espaço:</strong> Exibindo exclusivamente os materiais do <strong>{est.galpaoEspaco}</strong> gerenciados por <strong>{est.nome}</strong>.
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* List Table */}
               <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
