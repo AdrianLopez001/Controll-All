@@ -906,11 +906,34 @@ body {
   height: calc(100vh - 170px);
 }
 
+.kanban-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  min-height: 520px;
+}
+
+@media (max-width: 1200px) and (min-width: 901px) {
+  .kanban-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+    height: auto;
+  }
+}
+
 @media (max-width: 900px) {
-  .kanban-grid {
+  .kanban-grid, .kanban-grid-4 {
     grid-template-columns: 1fr;
     height: auto;
     overflow-y: visible;
+  }
+  .mobile-kanban-tabs {
+    display: flex !important;
+  }
+  .mobile-kanban-col {
+    display: none !important;
+  }
+  .mobile-kanban-col.mobile-show {
+    display: flex !important;
   }
 }
 

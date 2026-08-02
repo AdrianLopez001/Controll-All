@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { 
   FileText, CheckSquare, Plus, Trash2, Camera, ShieldAlert, 
-  User, MapPin, PenTool, CheckCircle, ChevronRight, X, Clock, HelpCircle, Printer, FileDown
+  User, MapPin, PenTool, CheckCircle, ChevronRight, X, Clock, HelpCircle, Printer, FileDown,
+  Calendar, ArrowLeft, ArrowRight
 } from "lucide-react";
 import type { Project, Employee, WarehouseItem, OSComentario, OSFoto, OSAssinaturas, AssignedEmployee } from "../types";
 import logoImg from "../assets/logo.png";
@@ -32,6 +33,7 @@ export default function OrdensServico({
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<"all" | "muito_alta" | "alta" | "media" | "baixa">("all");
   const [sortByPriority, setSortByPriority] = useState(false);
+  const [activeMobileColumn, setActiveMobileColumn] = useState<"muito_alta" | "alta" | "media" | "baixa">("muito_alta");
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState<"checklist" | "items" | "team" | "photos" | "signatures" | "logs">("checklist");
@@ -400,18 +402,135 @@ export default function OrdensServico({
     filteredOSs = [...filteredOSs].sort((a, b) => priorityWeight[getOSPriority(b)] - priorityWeight[getOSPriority(a)]);
   }
 
+  // Filter OS list into priority columns for the Kanban board
+  const muitoAltaList = filteredOSs.filter(os => getOSPriority(os) === "muito_alta");
+  const altaList = filteredOSs.filter(os => getOSPriority(os) === "alta");
+  const mediaList = filteredOSs.filter(os => getOSPriority(os) === "media");
+  const baixaList = filteredOSs.filter(os => getOSPriority(os) === "baixa");
+
+  const renderOSCard = (os: Project) => {
+    const prio = getOSPriority(os);
+    const isSelected = selectedOsId === os.id;
+    const totalTasks = os.checklist?.length || 0;
+    const completedTasks = os.checklist?.filter((c) => c.done).length || 0;
+    const prioColor = prio === "muito_alta" ? "#ef4444" : prio === "alta" ? "#f97316" : prio === "media" ? "#eab308" : "#3b82f6";
+    const prioBadge = prio === "muito_alta" ? "badge-danger" : prio === "alta" ? "badge-warning" : prio === "media" ? "badge-info" : "badge-muted";
+
+    return (
+      <div 
+        key={os.id} 
+        className={`kanban-card ${isSelected ? "selected" : ""}`}
+        onClick={() => setSelectedOsId(isSelected ? "" : os.id)}
+        style={{
+          cursor: "pointer",
+          borderTop: `4px solid ${prioColor}`,
+          borderColor: isSelected ? "var(--accent)" : "var(--border)",
+          background: isSelected ? "var(--accent-glow)" : "var(--bg-card)",
+          boxShadow: isSelected ? "0 0 0 2px var(--accent)" : "var(--shadow-sm)",
+          transition: "all 0.15s ease",
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px"
+        }}
+      >
+        {/* Top row: código + priority selector */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <strong style={{ fontSize: "12px", fontFamily: "monospace", letterSpacing: "0.5px", color: "var(--accent)" }}>{os.codigo}</strong>
+          <select
+            value={os.prioridadeModo === "manual" ? (os.prioridade || prio) : "auto"}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              e.stopPropagation();
+              const val = e.target.value;
+              if (val === "auto") {
+                onUpdateEvent({ ...os, prioridadeModo: "auto", prioridade: calcAutoPriority(os.dataMontagem) });
+              } else {
+                onUpdateEvent({ ...os, prioridadeModo: "manual", prioridade: val as any });
+              }
+            }}
+            style={{
+              fontSize: "10px",
+              padding: "2px 6px",
+              borderRadius: "6px",
+              border: "1px solid var(--border)",
+              background: "var(--bg-card)",
+              color: "var(--text-primary)",
+              cursor: "pointer"
+            }}
+            title="Alterar prioridade da OS"
+          >
+            <option value="auto">🤖 Auto</option>
+            <option value="muito_alta">🔴 Muito Alta</option>
+            <option value="alta">🟧 Alta</option>
+            <option value="media">🟡 Média</option>
+            <option value="baixa">🔵 Baixa</option>
+          </select>
+        </div>
+
+        {/* Title + Client */}
+        <div>
+          <h4 className="kanban-card-title" style={{ margin: 0, fontSize: "14px", fontWeight: "700", lineHeight: "1.35", color: "var(--text-primary)" }}>
+            {os.name}
+          </h4>
+          <span className="text-xs text-muted" style={{ display: "block", marginTop: "4px", fontSize: "11px" }}>
+            Cliente: {os.client}
+          </span>
+        </div>
+
+        {/* Dates & Checklist metadata */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "11px", color: "var(--text-secondary)", marginTop: "2px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <Calendar size={12} />
+            <span>{os.startDate || os.dataMontagem || "Sem data"}</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <CheckSquare size={12} />
+            <span>{completedTasks}/{totalTasks}</span>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ flexGrow: 1, height: "4px", background: "var(--border)", borderRadius: "2px", overflow: "hidden" }}>
+            <div style={{ width: `${os.completionRate || 0}%`, height: "100%", background: prioColor, transition: "width 0.3s" }}></div>
+          </div>
+          <span style={{ fontSize: "10px", fontWeight: "600", color: "var(--text-muted)" }}>{os.completionRate || 0}%</span>
+        </div>
+
+        {/* Bottom row: Phase badge + Abrir Dossiê button */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border)", paddingTop: "8px", marginTop: "2px" }}>
+          <span className="badge badge-secondary" style={{ fontSize: "10px", padding: "2px 8px" }}>
+            {os.phase}
+          </span>
+          <button 
+            className={`btn-${isSelected ? "primary" : "secondary"} text-xs`}
+            style={{ padding: "3px 8px", fontSize: "10px", display: "flex", alignItems: "center", gap: "3px" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedOsId(isSelected ? "" : os.id);
+            }}
+          >
+            {isSelected ? "Ocultar Dossiê" : "Abrir Dossiê"} <ChevronRight size={11} />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px", padding: "10px" }}>
 
-      {/* OS List — full width, cards in horizontal row */}
+      {/* Quadro Kanban de OS por Prioridade */}
       <div className="section-box no-print" style={{ height: "auto" }}>
-        <div className="section-box-header" style={{ marginBottom: "14px" }}>
+        <div className="section-box-header" style={{ marginBottom: "16px" }}>
           <div>
-            <h3 className="section-box-title" style={{ fontSize: "15px", fontWeight: "700" }}>
-              <FileText size={16} style={{ color: "var(--accent)", marginRight: "6px" }} />
-              Ordens de Serviço (OS) Operacionais
+            <h3 className="section-box-title" style={{ fontSize: "16px", fontWeight: "700" }}>
+              <FileText size={18} style={{ color: "var(--accent)", marginRight: "6px" }} />
+              Quadro Operacional de Ordens de Serviço (OS)
             </h3>
-            <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>{filteredOSs.length} OS encontrada(s)</p>
+            <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>
+              {filteredOSs.length} OS encontrada(s) — Organizadas por colunas de prioridade
+            </p>
           </div>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
             <input 
@@ -419,7 +538,7 @@ export default function OrdensServico({
               placeholder="Buscar OS, evento ou cliente..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "var(--bg-card)", color: "var(--text-primary)", width: "200px" }}
+              style={{ padding: "6px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", background: "var(--bg-card)", color: "var(--text-primary)", width: "220px" }}
             />
             <select 
               value={priorityFilter}
@@ -445,74 +564,119 @@ export default function OrdensServico({
           </div>
         </div>
 
-        {/* Horizontal scrollable row of OS cards */}
-        <div style={{ display: "flex", gap: "14px", overflowX: "auto", paddingBottom: "8px" }}>
-          {filteredOSs.map((os) => {
-            const prio = getOSPriority(os);
-            const prioBadge = prio === "muito_alta" ? "badge-danger" : prio === "alta" ? "badge-warning" : prio === "media" ? "badge-info" : "badge-muted";
-            const isSelected = selectedOsId === os.id;
-            return (
-              <div 
-                key={os.id} 
-                onClick={() => setSelectedOsId(isSelected ? "" : os.id)}
-                style={{
-                  cursor: "pointer",
-                  minWidth: "280px",
-                  maxWidth: "320px",
-                  flexShrink: 0,
-                  padding: "14px 16px",
-                  borderRadius: "12px",
-                  border: `1px solid ${isSelected ? "var(--accent)" : "var(--border)"}`,
-                  borderTop: `4px solid ${isSelected ? "var(--accent)" : prio === "muito_alta" ? "#ef4444" : prio === "alta" ? "#f97316" : prio === "media" ? "#eab308" : "#6b7280"}`,
-                  background: isSelected ? "var(--accent-glow)" : "var(--bg-card)",
-                  color: "var(--text-primary)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "10px",
-                  boxShadow: isSelected ? "0 0 0 2px var(--accent)" : "var(--shadow-sm)",
-                  transition: "all 0.15s ease"
-                }}
-              >
-                {/* Top row: código + badges */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <strong style={{ fontSize: "12px", fontFamily: "monospace", letterSpacing: "0.5px", color: "var(--accent)" }}>{os.codigo}</strong>
-                  <span className={`badge ${prioBadge}`} style={{ fontSize: "9px", padding: "2px 8px" }}>
-                    {priorityLabel[prio] || prio.toUpperCase()}
-                  </span>
-                </div>
+        {/* Seletor Mobile de Colunas do Kanban */}
+        <div className="mobile-kanban-tabs" style={{ display: "none", marginBottom: "16px", gap: "6px" }}>
+          <button 
+            className={`btn-secondary text-xs ${activeMobileColumn === "muito_alta" ? "active" : ""}`} 
+            style={{ flex: 1, padding: "8px 4px", borderBottom: activeMobileColumn === "muito_alta" ? "3px solid #ef4444" : "none", borderRadius: "8px", fontWeight: "600" }}
+            onClick={() => setActiveMobileColumn("muito_alta")}
+          >
+            🔴 Muito Alta ({muitoAltaList.length})
+          </button>
+          <button 
+            className={`btn-secondary text-xs ${activeMobileColumn === "alta" ? "active" : ""}`} 
+            style={{ flex: 1, padding: "8px 4px", borderBottom: activeMobileColumn === "alta" ? "3px solid #f97316" : "none", borderRadius: "8px", fontWeight: "600" }}
+            onClick={() => setActiveMobileColumn("alta")}
+          >
+            🟧 Alta ({altaList.length})
+          </button>
+          <button 
+            className={`btn-secondary text-xs ${activeMobileColumn === "media" ? "active" : ""}`} 
+            style={{ flex: 1, padding: "8px 4px", borderBottom: activeMobileColumn === "media" ? "3px solid #eab308" : "none", borderRadius: "8px", fontWeight: "600" }}
+            onClick={() => setActiveMobileColumn("media")}
+          >
+            🟡 Média ({mediaList.length})
+          </button>
+          <button 
+            className={`btn-secondary text-xs ${activeMobileColumn === "baixa" ? "active" : ""}`} 
+            style={{ flex: 1, padding: "8px 4px", borderBottom: activeMobileColumn === "baixa" ? "3px solid #3b82f6" : "none", borderRadius: "8px", fontWeight: "600" }}
+            onClick={() => setActiveMobileColumn("baixa")}
+          >
+            🔵 Baixa ({baixaList.length})
+          </button>
+        </div>
 
-                {/* Event name */}
-                <h4 style={{ fontSize: "13px", fontWeight: "700", margin: 0, lineHeight: "1.35", color: "var(--text-primary)" }}>
-                  {os.name}
-                </h4>
-
-                {/* Client + Dates — left to right inline */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                  <div style={{ fontSize: "11px", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span style={{ fontWeight: 600, color: "var(--text-secondary)" }}>Cliente:</span>
-                    <span>{os.client}</span>
-                  </div>
-                  <div style={{ fontSize: "11px", color: "var(--text-muted)", display: "flex", gap: "14px" }}>
-                    <span><span style={{ fontWeight: 600 }}>Início:</span> {os.startDate}</span>
-                    {os.dataMontagem && <span><span style={{ fontWeight: 600 }}>Mont.:</span> {os.dataMontagem}</span>}
-                  </div>
-                </div>
-
-                {/* Status badge */}
-                <span className="badge badge-secondary" style={{ fontSize: "10px", alignSelf: "flex-start", padding: "3px 10px" }}>
-                  {os.phase}
-                </span>
-
-                {/* Progress bar */}
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div style={{ flexGrow: 1, height: "5px", background: "var(--border)", borderRadius: "3px", overflow: "hidden" }}>
-                    <div style={{ width: `${os.completionRate}%`, height: "100%", background: "var(--accent)", transition: "width 0.3s" }}></div>
-                  </div>
-                  <span style={{ fontSize: "10px", fontWeight: "600", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{os.completionRate}%</span>
-                </div>
+        {/* Grid de 4 Colunas por Prioridade */}
+        <div className="kanban-grid-4">
+          {/* Column 1 - Muito Alta */}
+          <div className={`kanban-column mobile-kanban-col ${activeMobileColumn === "muito_alta" ? "mobile-show" : ""}`}>
+            <div className="kanban-column-header">
+              <div className="kanban-column-title-box">
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444", display: "inline-block" }}></span>
+                <h3 className="kanban-column-title">Muito Alta (Urgente)</h3>
               </div>
-            );
-          })}
+              <span className="kanban-column-count" style={{ color: "#ef4444", backgroundColor: "rgba(239, 68, 68, 0.15)" }}>{muitoAltaList.length}</span>
+            </div>
+            <div className="kanban-cards-container">
+              {muitoAltaList.length === 0 ? (
+                <div style={{ padding: "20px 10px", textAlign: "center", fontSize: "11px", color: "var(--text-muted)", fontStyle: "italic" }}>
+                  Nenhuma OS urgente nesta coluna
+                </div>
+              ) : (
+                muitoAltaList.map(renderOSCard)
+              )}
+            </div>
+          </div>
+
+          {/* Column 2 - Alta */}
+          <div className={`kanban-column mobile-kanban-col ${activeMobileColumn === "alta" ? "mobile-show" : ""}`}>
+            <div className="kanban-column-header">
+              <div className="kanban-column-title-box">
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#f97316", display: "inline-block" }}></span>
+                <h3 className="kanban-column-title">Alta</h3>
+              </div>
+              <span className="kanban-column-count" style={{ color: "#f97316", backgroundColor: "rgba(249, 115, 22, 0.15)" }}>{altaList.length}</span>
+            </div>
+            <div className="kanban-cards-container">
+              {altaList.length === 0 ? (
+                <div style={{ padding: "20px 10px", textAlign: "center", fontSize: "11px", color: "var(--text-muted)", fontStyle: "italic" }}>
+                  Nenhuma OS de prioridade alta
+                </div>
+              ) : (
+                altaList.map(renderOSCard)
+              )}
+            </div>
+          </div>
+
+          {/* Column 3 - Média */}
+          <div className={`kanban-column mobile-kanban-col ${activeMobileColumn === "media" ? "mobile-show" : ""}`}>
+            <div className="kanban-column-header">
+              <div className="kanban-column-title-box">
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#eab308", display: "inline-block" }}></span>
+                <h3 className="kanban-column-title">Média</h3>
+              </div>
+              <span className="kanban-column-count" style={{ color: "#eab308", backgroundColor: "rgba(234, 179, 8, 0.15)" }}>{mediaList.length}</span>
+            </div>
+            <div className="kanban-cards-container">
+              {mediaList.length === 0 ? (
+                <div style={{ padding: "20px 10px", textAlign: "center", fontSize: "11px", color: "var(--text-muted)", fontStyle: "italic" }}>
+                  Nenhuma OS de prioridade média
+                </div>
+              ) : (
+                mediaList.map(renderOSCard)
+              )}
+            </div>
+          </div>
+
+          {/* Column 4 - Baixa */}
+          <div className={`kanban-column mobile-kanban-col ${activeMobileColumn === "baixa" ? "mobile-show" : ""}`}>
+            <div className="kanban-column-header">
+              <div className="kanban-column-title-box">
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#3b82f6", display: "inline-block" }}></span>
+                <h3 className="kanban-column-title">Baixa</h3>
+              </div>
+              <span className="kanban-column-count" style={{ color: "#3b82f6", backgroundColor: "rgba(59, 130, 246, 0.15)" }}>{baixaList.length}</span>
+            </div>
+            <div className="kanban-cards-container">
+              {baixaList.length === 0 ? (
+                <div style={{ padding: "20px 10px", textAlign: "center", fontSize: "11px", color: "var(--text-muted)", fontStyle: "italic" }}>
+                  Nenhuma OS de prioridade baixa
+                </div>
+              ) : (
+                baixaList.map(renderOSCard)
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
