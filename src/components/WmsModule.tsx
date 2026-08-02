@@ -12,21 +12,26 @@ interface WmsModuleProps {
   onAddWarehouseItem?: (newItem: Omit<WarehouseItem, "id">) => void;
   onDeleteWarehouseItem?: (id: string) => void;
   initialSubTab?: "inventario" | "locacoes" | "entradas" | "ajustes";
+  initialSelectedItemId?: string;
 }
 
 export default function WmsModule({ 
-  items, onUpdateStock, onUpdateWarehouseItem, onAddWarehouseItem, onDeleteWarehouseItem, initialSubTab
+  items, onUpdateStock, onUpdateWarehouseItem, onAddWarehouseItem, onDeleteWarehouseItem, initialSubTab, initialSelectedItemId
 }: WmsModuleProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [wmsCategoryFilter, setWmsCategoryFilter] = useState<"all" | "moveis" | "insumos" | "ferramentas" | "aluminio" | "eletrica">("all");
   const [simulatedProfile, setSimulatedProfile] = useState<"gerente_total" | "tecnico_eletrica" | "encarregado_logistica">("gerente_total");
-  const [selectedItemId, setSelectedItemId] = useState<string>(items[0]?.id || "");
+  const [selectedItemId, setSelectedItemId] = useState<string>(initialSelectedItemId || items[0]?.id || "");
   const [activeSubTab, setActiveSubTab] = useState<"inventario" | "locacoes" | "entradas" | "ajustes">(initialSubTab || "inventario");
-
 
   useEffect(() => {
     if (initialSubTab) setActiveSubTab(initialSubTab);
-  }, [initialSubTab]);
+    if (initialSelectedItemId) {
+      setSelectedItemId(initialSelectedItemId);
+      const item = items.find(i => i.id === initialSelectedItemId);
+      if (item) setSearchTerm(item.name);
+    }
+  }, [initialSubTab, initialSelectedItemId, items]);
   const [isLocacaoModalOpen, setIsLocacaoModalOpen] = useState(false);
 
   // Modal States

@@ -14,6 +14,7 @@ interface OrdensServicoProps {
   allEmployees: Employee[];
   allWarehouseItems: WarehouseItem[];
   onUpdateEvent: (updated: Project) => void;
+  onAddOS?: (name: string, client: string, startDate: string) => Project;
   initialOsId?: string;
 }
 
@@ -22,9 +23,15 @@ export default function OrdensServico({
   allEmployees,
   allWarehouseItems,
   onUpdateEvent,
+  onAddOS,
   initialOsId = ""
 }: OrdensServicoProps) {
   const [selectedOsId, setSelectedOsId] = useState<string>(initialOsId);
+  const [isCreateOSOpen, setIsCreateOSOpen] = useState(false);
+  const [createdOSPrompt, setCreatedOSPrompt] = useState<Project | null>(null);
+  const [newOsName, setNewOsName] = useState("");
+  const [newOsClient, setNewOsClient] = useState("");
+  const [newOsDate, setNewOsDate] = useState("");
 
   // Deep-link: when parent sets initialOsId (from notifications/tasks panel), open that OS
   useEffect(() => {
@@ -533,6 +540,14 @@ export default function OrdensServico({
             </p>
           </div>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => setIsCreateOSOpen(true)}
+              style={{ padding: "6px 14px", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}
+            >
+              <Plus size={14} /> Nova OS
+            </button>
             <input 
               type="text" 
               placeholder="Buscar OS, evento ou cliente..." 
@@ -1508,6 +1523,87 @@ export default function OrdensServico({
           </div>
         </div>,
         document.body
+      )}
+      {/* CREATE OS MODAL */}
+      {isCreateOSOpen && (
+        <div className="modal-overlay" onClick={() => setIsCreateOSOpen(false)}>
+          <div className="modal-content" style={{ maxWidth: "500px", padding: "24px" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header" style={{ marginBottom: "16px" }}>
+              <h3 className="modal-title">Nova Ordem de Serviço (OS)</h3>
+              <button className="modal-close" onClick={() => setIsCreateOSOpen(false)}>X</button>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (!newOsName || !newOsClient || !newOsDate) return;
+              if (onAddOS) {
+                const created = onAddOS(newOsName, newOsClient, newOsDate);
+                setCreatedOSPrompt(created);
+              }
+              setNewOsName("");
+              setNewOsClient("");
+              setNewOsDate("");
+              setIsCreateOSOpen(false);
+            }} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: "600", display: "block", marginBottom: "4px" }}>Nome do Estande / Evento *</label>
+                <input type="text" placeholder="Ex: Stand Coca-Cola Feicon 2026" value={newOsName} onChange={(e) => setNewOsName(e.target.value)} required style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "6px" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: "600", display: "block", marginBottom: "4px" }}>Cliente *</label>
+                <input type="text" placeholder="Ex: Ambev S.A." value={newOsClient} onChange={(e) => setNewOsClient(e.target.value)} required style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "6px" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: "600", display: "block", marginBottom: "4px" }}>Data de Montagem *</label>
+                <input type="date" value={newOsDate} onChange={(e) => setNewOsDate(e.target.value)} required style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "6px" }} />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
+                <button type="button" className="btn-secondary" onClick={() => setIsCreateOSOpen(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary">Criar Ordem de Serviço</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* POST-CREATION CHOICE MODAL */}
+      {createdOSPrompt && (
+        <div className="modal-overlay" onClick={() => setCreatedOSPrompt(null)}>
+          <div className="modal-content" style={{ maxWidth: "480px", padding: "24px", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#F0FDF4", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px auto" }}>
+              <CheckCircle size={28} />
+            </div>
+            <h3 style={{ fontSize: "17px", fontWeight: "700", marginBottom: "8px" }}>Ordem de Serviço Criada com Sucesso!</h3>
+            <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "20px" }}>
+              A OS <strong>{createdOSPrompt.codigo} ({createdOSPrompt.name})</strong> foi cadastrada no sistema. O que você gostaria de fazer agora?
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <button 
+                type="button" 
+                className="btn-primary" 
+                onClick={() => {
+                  setSelectedOsId(createdOSPrompt.id);
+                  setCreatedOSPrompt(null);
+                }}
+                style={{ padding: "10px", width: "100%", justifyContent: "center", fontSize: "13px" }}
+              >
+                Ver OS Criada Agora
+              </button>
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                onClick={() => {
+                  setCreatedOSPrompt(null);
+                  setIsCreateOSOpen(true);
+                }}
+                style={{ padding: "10px", width: "100%", justifyContent: "center", fontSize: "13px" }}
+              >
+                Confirmar e Seguir Criando Demais OS
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

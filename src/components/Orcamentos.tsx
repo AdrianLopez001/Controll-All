@@ -36,6 +36,8 @@ export default function Orcamentos({
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Orcamento["status"]>("all");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingOrcId, setEditingOrcId] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [selectedOrc, setSelectedOrc] = useState<Orcamento | null>(orcamentos[0] || null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
@@ -50,13 +52,10 @@ export default function Orcamentos({
 
   // Event Linkage States for Proposal Creation Modal
   const [eventLinkOption, setEventLinkOption] = useState<"existing" | "new" | "none">("existing");
-  const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [newEventName, setNewEventName] = useState("");
   const [newEventLocation, setNewEventLocation] = useState("");
   const [newEventStartDate, setNewEventStartDate] = useState("");
   const [newEventEndDate, setNewEventEndDate] = useState("");
-
-
   // Form states
   const [clienteIndex, setClienteIndex] = useState(0);
   const [validoAte, setValidoAte] = useState("");
@@ -190,22 +189,41 @@ export default function Orcamentos({
     return Math.max(0, subtotal - descValue + taxValue);
   };
 
+  const handleStartEditOrcamento = (orc: Orcamento) => {
+    setEditingOrcId(orc.id);
+    const cliIdx = clientes.findIndex(c => c.name === orc.cliente);
+    if (cliIdx >= 0) setClienteIndex(cliIdx);
+    setValidoAte(orc.validoAte);
+    setStatus(orc.status as any);
+    setDesconto(orc.desconto || 0);
+    setImpostos(orc.impostos || 5);
+    setTipo(orc.tipo || "detalhado");
+    setNomeOrcamento(orc.nomeOrcamento || "");
+    setDescricaoSimplificada(orc.descricaoSimplificada || "");
+    setValorTotalSimplificado(orc.total || 0);
+    setFormItensDetalhados(orc.itensDetalhados || []);
+    setFormServices(orc.servicos || []);
+    setSelectedEventId(orc.eventId || "");
+    setIsCreateModalOpen(true);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const cli = clientes[clienteIndex];
     if (!cli) return;
 
     const prodsMapped = formProducts.map(p => {
-      const dbItem = warehouseItems.find(w => w.id === p.id)!;
-      return { id: p.id, name: dbItem.name, qty: p.qty, precoVenda: dbItem.valorVenda };
+      const dbItem = warehouseItems.find(w => w.id === p.id);
+      return { id: p.id, name: dbItem?.name || "Produto", qty: p.qty, precoVenda: dbItem?.valorVenda || 0 };
     });
 
     const calculatedTotal = calculateTotal(formProducts, formServices, formItensDetalhados, desconto, impostos);
+    const evtObj = events.find(ev => ev.id === selectedEventId);
 
-    let linkedEventId: string | undefined = undefined;
-    let linkedEventName: string | undefined = undefined;
-    let linkedEventLocation: string | undefined = undefined;
-    let linkedEventDate: string | undefined = undefined;
+    let linkedEventId: string | undefined = selectedEventId || undefined;
+    let linkedEventName: string | undefined = evtObj?.name || undefined;
+    let linkedEventLocation: string | undefined = evtObj?.mapsRoute?.endereco || evtObj?.cidadeEvento || undefined;
+    let linkedEventDate: string | undefined = evtObj?.startDate || undefined;
 
     if (tipo === "detalhado") {
       if (eventLinkOption === "existing" && selectedEventId) {
@@ -232,26 +250,61 @@ export default function Orcamentos({
       }
     }
 
-    onAddOrcamento({
-      cliente: cli.name,
-      emailCliente: cli.email,
-      cnpjCliente: cli.cnpj,
-      validoAte: validoAte || new Date(Date.now() + 15*24*60*60*1000).toISOString().split("T")[0],
-      status,
-      produtos: prodsMapped,
-      servicos: formServices,
-      desconto,
-      impostos,
-      total: calculatedTotal,
-      tipo,
-      nomeOrcamento: nomeOrcamento || (linkedEventName ? `Proposta Comercial - ${linkedEventName}` : undefined),
-      descricaoSimplificada,
-      itensDetalhados: formItensDetalhados,
-      eventId: linkedEventId,
-      eventoNome: linkedEventName,
-      localEvento: linkedEventLocation,
-      dataEvento: linkedEventDate
-    });
+    if (editingOrcId) {
+      const existing = orcamentos.find(o => o.id === editingOrcId);
+      if (existing) {
+        const updated: Orcamento = {
+          ...existing,
+          cliente: cli.name,
+          emailCliente: cli.email,
+          cnpjCliente: cli.cnpj,
+          validoAte: validoAte || existing.validoAte,
+          status,
+          produtos: prodsMapped,
+          servicos: formServices,
+          desconto,
+          impostos,
+          total: calculatedTotal,
+          tipo,
+          nomeOrcamento: nomeOrcamento || (linkedEventName ? `Proposta Comercial - ${linkedEventName}` : undefined),
+          descricaoSimplificada,
+          itensDetalhados: formItensDetalhados,
+          eventId: linkedEventId,
+          eventoNome: linkedEventName,
+          eventName: linkedEventName,
+          localEvento: linkedEventLocation,
+          dataEvento: linkedEventDate,
+          revisoes: [
+            ...existing.revisoes,
+            { versao: existing.revisoes.length + 1, data: new Date().toISOString().split("T")[0], descricao: "Edição completa dos itens e valores da proposta." }
+          ]
+        };
+        onUpdateOrcamento(updated);
+        setSelectedOrc(updated);
+      }
+    } else {
+      onAddOrcamento({
+        cliente: cli.name,
+        emailCliente: cli.email,
+        cnpjCliente: cli.cnpj,
+        validoAte: validoAte || new Date(Date.now() + 15*24*60*60*1000).toISOString().split("T")[0],
+        status,
+        produtos: prodsMapped,
+        servicos: formServices,
+        desconto,
+        impostos,
+        total: calculatedTotal,
+        tipo,
+        nomeOrcamento: nomeOrcamento || (linkedEventName ? `Proposta Comercial - ${linkedEventName}` : undefined),
+        descricaoSimplificada,
+        itensDetalhados: formItensDetalhados,
+        eventId: linkedEventId,
+        eventoNome: linkedEventName,
+        eventName: linkedEventName,
+        localEvento: linkedEventLocation,
+        dataEvento: linkedEventDate
+      });
+    }
 
     // Reset Form
     setFormProducts([]);
@@ -269,6 +322,7 @@ export default function Orcamentos({
     setNewEventLocation("");
     setNewEventStartDate("");
     setNewEventEndDate("");
+    setEditingOrcId(null);
     setIsCreateModalOpen(false);
   };
 
@@ -654,6 +708,14 @@ export default function Orcamentos({
 
               <button 
                 className="btn-secondary btn-sm" 
+                onClick={() => handleStartEditOrcamento(selectedOrc)} 
+                style={{ display: "flex", alignItems: "center", gap: "5px", backgroundColor: "var(--accent)", color: "#ffffff" }}
+              >
+                <Plus size={13} /> Editar Proposta Total
+              </button>
+
+              <button 
+                className="btn-secondary btn-sm" 
                 onClick={() => { setEditingWordOrc(selectedOrc); setIsWordEditorOpen(true); }} 
                 style={{ display: "flex", alignItems: "center", gap: "5px", backgroundColor: "#144580", color: "#ffffff" }}
               >
@@ -696,37 +758,40 @@ export default function Orcamentos({
       })()}
 
 
-      {/* CREATE BUDGET MODAL */}
+      {/* CREATE / EDIT BUDGET MODAL */}
       {isCreateModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsCreateModalOpen(false)}>
-          <div className="modal-content" style={{ maxWidth: "650px" }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">Cadastrar Novo Orçamento</h3>
-              <button className="modal-close" onClick={() => setIsCreateModalOpen(false)}>X</button>
+        <div className="modal-overlay" onClick={() => { setIsCreateModalOpen(false); setEditingOrcId(null); }}>
+          <div className="modal-content" style={{ maxWidth: "1000px", padding: "28px", borderRadius: "16px" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header" style={{ marginBottom: "20px" }}>
+              <h3 className="modal-title" style={{ fontSize: "18px", fontWeight: "700" }}>
+                {editingOrcId ? "Editar Proposta Comercial" : "Cadastrar Novo Orçamento"}
+              </h3>
+              <button className="modal-close" onClick={() => { setIsCreateModalOpen(false); setEditingOrcId(null); }}>X</button>
             </div>
-            <form onSubmit={handleSubmit} className="modal-body">
+            <form onSubmit={handleSubmit} className="modal-body" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {/* Type Switcher */}
-              <div className="field" style={{ marginBottom: "12px", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>
-                <label style={{ fontWeight: "700", display: "block", marginBottom: "4px" }}>Modelo de Orçamento</label>
-                <div style={{ display: "flex", gap: "20px" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px" }}>
-                    <input type="radio" name="orc-model-type" checked={tipo === "simplificado"} onChange={() => setTipo("simplificado")} style={{ cursor: "pointer" }} />
+              <div className="field" style={{ marginBottom: "12px", borderBottom: "1px solid var(--border)", paddingBottom: "14px" }}>
+                <label style={{ fontWeight: "700", display: "block", marginBottom: "8px", fontSize: "14px" }}>Modelo de Orçamento</label>
+                <div style={{ display: "flex", gap: "24px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "14px", fontWeight: "500" }}>
+                    <input type="radio" name="orc-model-type" checked={tipo === "simplificado"} onChange={() => setTipo("simplificado")} style={{ cursor: "pointer", width: "16px", height: "16px" }} />
                     <span>Simplificado (Lump Sum / Valor Fechado)</span>
                   </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px" }}>
-                    <input type="radio" name="orc-model-type" checked={tipo === "detalhado"} onChange={() => setTipo("detalhado")} style={{ cursor: "pointer" }} />
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "14px", fontWeight: "500" }}>
+                    <input type="radio" name="orc-model-type" checked={tipo === "detalhado"} onChange={() => setTipo("detalhado")} style={{ cursor: "pointer", width: "16px", height: "16px" }} />
                     <span>Detalhado (Itens Descriminados)</span>
                   </label>
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "14px" }}>
                 <div className="field">
-                  <label>Cliente da JC Eventos</label>
+                  <label style={{ fontSize: "13px", fontWeight: "600", display: "block", marginBottom: "6px" }}>Cliente da JC Eventos</label>
                   <select 
                     value={clienteIndex}
                     onChange={(e) => setClienteIndex(Number(e.target.value))}
                     required
+                    style={{ width: "100%", padding: "10px 12px", fontSize: "13px", borderRadius: "8px", border: "1px solid var(--border)" }}
                   >
                     {clientes.map((c, i) => (
                       <option key={i} value={i}>{c.name}</option>
@@ -734,12 +799,26 @@ export default function Orcamentos({
                   </select>
                 </div>
                 <div className="field">
-                  <label>Validade da Proposta</label>
+                  <label style={{ fontSize: "13px", fontWeight: "600", display: "block", marginBottom: "6px" }}>Evento / Estande Atrelado</label>
+                  <select 
+                    value={selectedEventId}
+                    onChange={(e) => setSelectedEventId(e.target.value)}
+                    style={{ width: "100%", padding: "10px 12px", fontSize: "13px", borderRadius: "8px", border: "1px solid var(--border)" }}
+                  >
+                    <option value="">Nenhum (Sem Vínculo)</option>
+                    {events.map((evt) => (
+                      <option key={evt.id} value={evt.id}>{evt.name} ({evt.client})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label style={{ fontSize: "13px", fontWeight: "600", display: "block", marginBottom: "6px" }}>Validade da Proposta</label>
                   <input 
                     type="date" 
                     value={validoAte} 
                     onChange={(e) => setValidoAte(e.target.value)} 
                     required
+                    style={{ width: "100%", padding: "10px 12px", fontSize: "13px", borderRadius: "8px", border: "1px solid var(--border)" }}
                   />
                 </div>
               </div>

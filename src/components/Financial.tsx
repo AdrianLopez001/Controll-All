@@ -349,8 +349,11 @@ export default function Financial({
   invoices, events, fornecedores, onAddInvoice, onUpdateInvoice, onUpdateEvent, initialSubTab 
 }: FinancialProps) {
 
-  // Navigation main tabs
-  const [activeMainTab, setActiveMainTab] = useState<"dashboard" | "conciliacao" | "relatorios" | "configuracoes">("dashboard");
+  const [activeMainTab, setActiveMainTab] = useState<"dashboard" | "receber" | "pagar" | "servicos_avulsos" | "faturamento" | "conciliacao" | "relatorios" | "configuracoes">((initialSubTab as any) || "dashboard");
+
+  React.useEffect(() => {
+    if (initialSubTab) setActiveMainTab(initialSubTab as any);
+  }, [initialSubTab]);
   
   // Dashboard Sub-filters
   const [dashboardTipoFilter, setDashboardTipoFilter] = useState<"todos" | "receitas" | "despesas">("todos");
@@ -542,7 +545,26 @@ export default function Financial({
     setLateReceivables(lateReceivables.filter(r => r.id !== id));
     // update bank balance
     setBankAccounts(bankAccounts.map(b => b.id === bankAccounts[0].id ? { ...b, saldoAtual: b.saldoAtual + item.valor } : b));
-    alert(`Recebimento de R$ ${item.valor.toLocaleString("pt-BR")} baixado com sucesso!`);
+    
+    if (onAddInvoice) onAddInvoice(newTx);
+
+    // Sync project in events
+    const matchingEvent = events.find(e => 
+      e.client.toLowerCase().includes(item.cliente.toLowerCase()) || 
+      item.desc.toLowerCase().includes(e.name.toLowerCase()) ||
+      e.name.toLowerCase().includes(item.desc.toLowerCase())
+    );
+    if (matchingEvent && onUpdateEvent) {
+      const updatedRecebido = (matchingEvent.valorRecebido || 0) + item.valor;
+      const updatedPendente = Math.max(0, (matchingEvent.valorPendente || 0) - item.valor);
+      onUpdateEvent({
+        ...matchingEvent,
+        valorRecebido: updatedRecebido,
+        valorPendente: updatedPendente
+      });
+    }
+
+    alert(`Recebimento de R$ ${item.valor.toLocaleString("pt-BR")} baixado com sucesso e integrado ao projeto!`);
   };
 
   const handleQuickSettlePayable = (id: string) => {
@@ -566,7 +588,60 @@ export default function Financial({
     setLatePayables(latePayables.filter(p => p.id !== id));
     // update bank balance
     setBankAccounts(bankAccounts.map(b => b.id === bankAccounts[3].id ? { ...b, saldoAtual: b.saldoAtual - item.valor } : b));
-    alert(`Pagamento de R$ ${item.valor.toLocaleString("pt-BR")} baixado com sucesso!`);
+
+    if (onAddInvoice) onAddInvoice(newTx);
+
+    // Sync project in events
+    const matchingEvent = events.find(e => 
+      item.desc.toLowerCase().includes(e.name.toLowerCase()) ||
+      e.name.toLowerCase().includes(item.desc.toLowerCase())
+    );
+    if (matchingEvent && onUpdateEvent) {
+      onUpdateEvent({
+        ...matchingEvent,
+        custoRealizado: (matchingEvent.custoRealizado || 0) + item.valor
+      });
+    }
+
+    alert(`Pagamento de R$ ${item.valor.toLocaleString("pt-BR")} baixado com sucesso e integrado ao projeto!`);
+  };
+
+  const handleToggleTransactionStatus = (tx: InvoiceLog) => {
+    const nextStatus: "pendente" | "pago" = tx.status === "pago" ? "pendente" : "pago";
+    const updatedTx: InvoiceLog = { ...tx, status: nextStatus };
+    
+    setAllTransactions(prev => prev.map(t => t.id === tx.id ? updatedTx : t));
+    if (onUpdateInvoice) onUpdateInvoice(updatedTx);
+
+    // Sync matching event in projects
+    const matchingEvent = events.find(e => 
+      e.client.toLowerCase().includes(tx.vendor.toLowerCase()) ||
+      tx.vendor.toLowerCase().includes(e.client.toLowerCase()) ||
+      tx.description.toLowerCase().includes(e.name.toLowerCase()) ||
+      e.name.toLowerCase().includes(tx.description.toLowerCase())
+    );
+
+    if (matchingEvent && onUpdateEvent) {
+      if (tx.tipo === "receita") {
+        const delta = nextStatus === "pago" ? tx.value : -tx.value;
+        const newRecebido = Math.max(0, (matchingEvent.valorRecebido || 0) + delta);
+        const newPendente = Math.max(0, (matchingEvent.valorContratado || 0) - newRecebido);
+        onUpdateEvent({
+          ...matchingEvent,
+          valorRecebido: newRecebido,
+          valorPendente: newPendente
+        });
+      } else {
+        const delta = nextStatus === "pago" ? tx.value : -tx.value;
+        const newCusto = Math.max(0, (matchingEvent.custoRealizado || 0) + delta);
+        onUpdateEvent({
+          ...matchingEvent,
+          custoRealizado: newCusto
+        });
+      }
+    }
+
+    alert(`Lançamento "${tx.description}" alterado para ${nextStatus.toUpperCase()} e integrado ao projeto!`);
   };
 
   // Transfer execution
@@ -675,7 +750,64 @@ export default function Financial({
               boxShadow: "var(--shadow-sm)"
             }}
           >
-            <LayoutDashboard size={18} /> Dashboard Financeiro
+            <LayoutDashboard size={18} /> Visão Geral
+          </button>
+          <button 
+            className={`btn-tab ${activeMainTab === "receber" ? "active" : ""}`}
+            onClick={() => setActiveMainTab("receber")}
+            style={{
+              padding: "10px 18px",
+              borderRadius: "10px",
+              border: "none",
+              backgroundColor: activeMainTab === "receber" ? "var(--accent)" : "var(--bg-card)",
+              color: activeMainTab === "receber" ? "#fff" : "var(--text-primary)",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              boxShadow: "var(--shadow-sm)"
+            }}
+          >
+            <TrendingUp size={18} /> Contas a Receber
+          </button>
+          <button 
+            className={`btn-tab ${activeMainTab === "pagar" ? "active" : ""}`}
+            onClick={() => setActiveMainTab("pagar")}
+            style={{
+              padding: "10px 18px",
+              borderRadius: "10px",
+              border: "none",
+              backgroundColor: activeMainTab === "pagar" ? "var(--accent)" : "var(--bg-card)",
+              color: activeMainTab === "pagar" ? "#fff" : "var(--text-primary)",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              boxShadow: "var(--shadow-sm)"
+            }}
+          >
+            <TrendingDown size={18} /> Contas a Pagar
+          </button>
+          <button 
+            className={`btn-tab ${activeMainTab === "servicos_avulsos" ? "active" : ""}`}
+            onClick={() => setActiveMainTab("servicos_avulsos")}
+            style={{
+              padding: "10px 18px",
+              borderRadius: "10px",
+              border: "none",
+              backgroundColor: activeMainTab === "servicos_avulsos" ? "var(--accent)" : "var(--bg-card)",
+              color: activeMainTab === "servicos_avulsos" ? "#fff" : "var(--text-primary)",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              boxShadow: "var(--shadow-sm)"
+            }}
+          >
+            <Tag size={18} /> Serviços &amp; Despesas Avulsas
           </button>
           <button 
             className={`btn-tab ${activeMainTab === "conciliacao" ? "active" : ""}`}
@@ -837,60 +969,6 @@ export default function Financial({
                       <span style={{ fontSize: "10px", fontWeight: "700", color: card.faturaAtual > 0 ? "#ff3d00" : "var(--text-muted)" }}>
                         R$ {card.faturaAtual > 0 ? `-${card.faturaAtual.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "0,00"}
                       </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recebimentos em Atraso Panel */}
-              <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderLeft: "4px solid #ff9800", borderRadius: "16px", padding: "16px", boxShadow: "var(--shadow-sm)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "11px", fontWeight: "700", color: "#ff9800", textTransform: "uppercase" }}>RECEBIMENTOS EM ATRASO</span>
-                  <span style={{ backgroundColor: "#ff9800", color: "#fff", borderRadius: "50%", width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: "800" }}>
-                    {lateReceivables.length}
-                  </span>
-                </div>
-                <h3 style={{ fontSize: "18px", fontWeight: "800", margin: "8px 0" }}>
-                  R$ {totalLateReceivables.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                </h3>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "10px" }}>
-                  {lateReceivables.slice(0, 3).map(item => (
-                    <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", backgroundColor: "var(--bg-main)", padding: "6px 8px", borderRadius: "6px" }}>
-                      <div style={{ minWidth: 0, flexGrow: 1 }}>
-                        <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.desc}</strong>
-                        <span style={{ color: "#ff3d00" }}>{item.diasAtraso} dias em atraso</span>
-                      </div>
-                      <button className="btn-success btn-xs" onClick={() => handleQuickSettleReceivable(item.id)} style={{ marginLeft: "6px", fontSize: "9px" }}>
-                        Baixa
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Pagamentos em Atraso Panel */}
-              <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderLeft: "4px solid #ff3d00", borderRadius: "16px", padding: "16px", boxShadow: "var(--shadow-sm)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "11px", fontWeight: "700", color: "#ff3d00", textTransform: "uppercase" }}>PAGAMENTOS EM ATRASO</span>
-                  <span style={{ backgroundColor: "#ff3d00", color: "#fff", borderRadius: "50%", width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: "800" }}>
-                    {latePayables.length}
-                  </span>
-                </div>
-                <h3 style={{ fontSize: "18px", fontWeight: "800", margin: "8px 0" }}>
-                  R$ {totalLatePayables.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                </h3>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "10px" }}>
-                  {latePayables.slice(0, 3).map(item => (
-                    <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", backgroundColor: "var(--bg-main)", padding: "6px 8px", borderRadius: "6px" }}>
-                      <div style={{ minWidth: 0, flexGrow: 1 }}>
-                        <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.desc}</strong>
-                        <span style={{ color: "#ff3d00" }}>{item.diasAtraso} dias em atraso</span>
-                      </div>
-                      <button className="btn-danger btn-xs" onClick={() => handleQuickSettlePayable(item.id)} style={{ marginLeft: "6px", fontSize: "9px" }}>
-                        Pagar
-                      </button>
                     </div>
                   ))}
                 </div>
@@ -1174,6 +1252,245 @@ export default function Financial({
 
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* CONTAS A RECEBER TAB VIEW                                     */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* CONTAS A RECEBER TAB VIEW                                     */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {activeMainTab === "receber" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          {/* Recebimentos em Atraso Panel */}
+          {lateReceivables.length > 0 && (
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderLeft: "4px solid #ff9800", borderRadius: "16px", padding: "20px", boxShadow: "var(--shadow-sm)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ backgroundColor: "#ff9800", color: "#fff", borderRadius: "50%", width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: "800" }}>
+                    {lateReceivables.length}
+                  </span>
+                  <span style={{ fontSize: "12px", fontWeight: "700", color: "#ff9800", textTransform: "uppercase", letterSpacing: "0.5px" }}>RECEBIMENTOS EM ATRASO</span>
+                </div>
+                <h3 style={{ fontSize: "20px", fontWeight: "800", margin: 0, color: "#d97706" }}>
+                  R$ {totalLateReceivables.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </h3>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "10px", marginTop: "14px" }}>
+                {lateReceivables.map(item => (
+                  <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", backgroundColor: "var(--bg-main)", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                    <div style={{ minWidth: 0, flexGrow: 1, marginRight: "8px" }}>
+                      <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-primary)" }}>{item.desc}</strong>
+                      <span style={{ fontSize: "10px", color: "var(--text-muted)", display: "block" }}>Cliente: {item.cliente}</span>
+                      <span style={{ color: "#ff3d00", fontWeight: "600", fontSize: "10px" }}>{item.diasAtraso} dias em atraso (Venc: {item.vencimento})</span>
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <strong style={{ display: "block", fontSize: "12px", color: "#059669", marginBottom: "4px" }}>R$ {item.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+                      <button className="btn-success btn-xs" onClick={() => handleQuickSettleReceivable(item.id)} style={{ fontSize: "10px", padding: "4px 10px" }}>
+                        Baixa
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="section-box" style={{ padding: "20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <div>
+                <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#059669", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <TrendingUp size={20} /> Contas a Receber &amp; Liquidações de Clientes
+                </h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>Lançamentos de receitas contratadas de estandes, medições e recebimentos pendentes.</p>
+              </div>
+              <button className="btn-primary" onClick={() => setIsRecebimentoModalOpen(true)}>
+                <Plus size={14} /> Novo Recebimento
+              </button>
+            </div>
+
+            <div style={{ overflowX: "auto" }}>
+              <table className="data-table" style={{ width: "100%", fontSize: "12px" }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-main)", textAlign: "left" }}>
+                    <th style={{ padding: "10px" }}>VENCIMENTO</th>
+                    <th style={{ padding: "10px" }}>CLIENTE / PROJETO</th>
+                    <th style={{ padding: "10px" }}>DESCRIÇÃO</th>
+                    <th style={{ padding: "10px" }}>VALOR</th>
+                    <th style={{ padding: "10px" }}>STATUS</th>
+                    <th style={{ padding: "10px", textAlign: "right" }}>AÇÃO</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allTransactions.filter(t => t.tipo === "receita").map(t => (
+                    <tr key={t.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td style={{ padding: "10px" }}>{t.date}</td>
+                      <td style={{ padding: "10px" }}><strong>{t.vendor}</strong></td>
+                      <td style={{ padding: "10px" }}>{t.description}</td>
+                      <td style={{ padding: "10px", fontWeight: "700", color: "#059669" }}>R$ {t.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                      <td style={{ padding: "10px" }}>
+                        <span style={{ fontSize: "10px", fontWeight: "700", padding: "2px 8px", borderRadius: "10px", backgroundColor: t.status === "pago" ? "#ecfdf5" : "#fffbeb", color: t.status === "pago" ? "#047857" : "#b45309" }}>
+                          {t.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td style={{ padding: "10px", textAlign: "right" }}>
+                        {t.status !== "pago" ? (
+                          <button className="btn-success btn-xs" onClick={() => handleToggleTransactionStatus(t)}>Liquidar</button>
+                        ) : (
+                          <span style={{ fontSize: "10px", color: "#047857", fontWeight: "700" }}>✓ Liquidado</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* CONTAS A PAGAR TAB VIEW                                       */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {activeMainTab === "pagar" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          {/* Pagamentos em Atraso Panel */}
+          {latePayables.length > 0 && (
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderLeft: "4px solid #ff3d00", borderRadius: "16px", padding: "20px", boxShadow: "var(--shadow-sm)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ backgroundColor: "#ff3d00", color: "#fff", borderRadius: "50%", width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: "800" }}>
+                    {latePayables.length}
+                  </span>
+                  <span style={{ fontSize: "12px", fontWeight: "700", color: "#ff3d00", textTransform: "uppercase", letterSpacing: "0.5px" }}>PAGAMENTOS EM ATRASO</span>
+                </div>
+                <h3 style={{ fontSize: "20px", fontWeight: "800", margin: 0, color: "#dc2626" }}>
+                  R$ {totalLatePayables.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </h3>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "10px", marginTop: "14px" }}>
+                {latePayables.map(item => (
+                  <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", backgroundColor: "var(--bg-main)", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                    <div style={{ minWidth: 0, flexGrow: 1, marginRight: "8px" }}>
+                      <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-primary)" }}>{item.desc}</strong>
+                      <span style={{ fontSize: "10px", color: "var(--text-muted)", display: "block" }}>Fornecedor: {item.fornecedor}</span>
+                      <span style={{ color: "#ff3d00", fontWeight: "600", fontSize: "10px" }}>{item.diasAtraso} dias em atraso (Venc: {item.vencimento})</span>
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <strong style={{ display: "block", fontSize: "12px", color: "#dc2626", marginBottom: "4px" }}>R$ {item.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+                      <button className="btn-danger btn-xs" onClick={() => handleQuickSettlePayable(item.id)} style={{ fontSize: "10px", padding: "4px 10px" }}>
+                        Pagar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="section-box" style={{ padding: "20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <div>
+                <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#dc2626", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <TrendingDown size={20} /> Contas a Pagar &amp; Despesas com Fornecedores
+                </h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>Compromissos financeiros, compras de MDF, diárias de equipe e locação de ferramentas.</p>
+              </div>
+              <button className="btn-secondary" onClick={() => setIsDespesaModalOpen(true)} style={{ backgroundColor: "#dc2626", color: "#fff" }}>
+                <Plus size={14} /> Nova Despesa
+              </button>
+            </div>
+
+            <div style={{ overflowX: "auto" }}>
+              <table className="data-table" style={{ width: "100%", fontSize: "12px" }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-main)", textAlign: "left" }}>
+                    <th style={{ padding: "10px" }}>VENCIMENTO</th>
+                    <th style={{ padding: "10px" }}>FORNECEDOR / BENEFICIÁRIO</th>
+                    <th style={{ padding: "10px" }}>DESCRIÇÃO DA DESPESA</th>
+                    <th style={{ padding: "10px" }}>VALOR</th>
+                    <th style={{ padding: "10px" }}>STATUS</th>
+                    <th style={{ padding: "10px", textAlign: "right" }}>AÇÃO</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allTransactions.filter(t => t.tipo === "despesa").map(t => (
+                    <tr key={t.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td style={{ padding: "10px" }}>{t.date}</td>
+                      <td style={{ padding: "10px" }}><strong>{t.vendor}</strong></td>
+                      <td style={{ padding: "10px" }}>{t.description}</td>
+                      <td style={{ padding: "10px", fontWeight: "700", color: "#dc2626" }}>R$ {t.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                      <td style={{ padding: "10px" }}>
+                        <span style={{ fontSize: "10px", fontWeight: "700", padding: "2px 8px", borderRadius: "10px", backgroundColor: t.status === "pago" ? "#ecfdf5" : "#fef2f2", color: t.status === "pago" ? "#047857" : "#dc2626" }}>
+                          {t.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td style={{ padding: "10px", textAlign: "right" }}>
+                        {t.status !== "pago" ? (
+                          <button className="btn-primary btn-xs" onClick={() => handleToggleTransactionStatus(t)}>Pagar</button>
+                        ) : (
+                          <span style={{ fontSize: "10px", color: "#dc2626", fontWeight: "700" }}>✓ Pago</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* SERVIÇOS DIRETO & AVULSOS TAB VIEW                            */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {(activeMainTab === "servicos_avulsos" || activeMainTab === "faturamento") && (
+        <div className="section-box" style={{ padding: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: "700", color: "var(--accent)", display: "flex", alignItems: "center", gap: "8px" }}>
+                <Tag size={20} /> Serviços Avulsos &amp; Lançamentos Diretos sem Vínculo de Cliente
+              </h3>
+              <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "2px 0 0 0" }}>Registro de serviços gerais, taxas cartorárias, fretes avulsos e receitas operacionais não atreladas a projetos.</p>
+            </div>
+            <button className="btn-primary" onClick={() => setIsDespesaModalOpen(true)}>
+              <Plus size={14} /> Novo Serviço / Lançamento Avulso
+            </button>
+          </div>
+
+          <div style={{ overflowX: "auto" }}>
+            <table className="data-table" style={{ width: "100%", fontSize: "12px" }}>
+              <thead>
+                <tr style={{ background: "var(--bg-main)", textAlign: "left" }}>
+                  <th style={{ padding: "10px" }}>DATA</th>
+                  <th style={{ padding: "10px" }}>TIPO</th>
+                  <th style={{ padding: "10px" }}>DESCRIÇÃO DO SERVIÇO</th>
+                  <th style={{ padding: "10px" }}>CATEGORIA</th>
+                  <th style={{ padding: "10px" }}>VALOR</th>
+                  <th style={{ padding: "10px" }}>STATUS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allTransactions.map(t => (
+                  <tr key={t.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                    <td style={{ padding: "10px" }}>{t.date}</td>
+                    <td style={{ padding: "10px" }}>
+                      <span style={{ fontSize: "10px", fontWeight: "700", padding: "2px 6px", borderRadius: "4px", backgroundColor: t.tipo === "receita" ? "#ecfdf5" : "#fef2f2", color: t.tipo === "receita" ? "#047857" : "#dc2626" }}>
+                        {t.tipo.toUpperCase()}
+                      </span>
+                    </td>
+                    <td style={{ padding: "10px" }}><strong>{t.description}</strong></td>
+                    <td style={{ padding: "10px", color: "var(--text-muted)" }}>{t.categoria || "Geral"}</td>
+                    <td style={{ padding: "10px", fontWeight: "700", color: t.tipo === "receita" ? "#047857" : "var(--text-primary)" }}>R$ {t.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                    <td style={{ padding: "10px" }}>{t.status.toUpperCase()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

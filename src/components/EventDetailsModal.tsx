@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { 
   X, FileText, Shield, AlertCircle, DollarSign, MapPin, Navigation, Tag, Calendar, Truck,
-  Plus, Trash2, Edit2, Save, UserPlus, CheckCircle2
+  Plus, Trash2, Edit2, Save, UserPlus, CheckCircle2, Upload
 } from "lucide-react";
 import type { Project, Employee, WarehouseItem, ProductionSectors, ConventionCenterRules, ChecklistItem, AssignedEmployee, Orcamento } from "../types";
+import { sanitizeUrl } from "../utils/security";
 
 export const CONVENTION_CENTERS: ConventionCenterRules[] = [
   {
@@ -870,6 +871,7 @@ export default function EventDetailsModal({
               )}
 
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <h5 style={{ fontSize: "12px", fontWeight: "700", color: "var(--accent)", margin: "4px 0" }}>Equipe Escala Interna</h5>
                 {allEmployees.map((emp) => {
                   const isChecked = localEvent.assignedEmployees.some(e => e.id === emp.id);
                   return (
@@ -894,6 +896,30 @@ export default function EventDetailsModal({
                     </div>
                   );
                 })}
+
+                <h5 style={{ fontSize: "12px", fontWeight: "700", color: "var(--accent-secondary)", marginTop: "12px", marginBottom: "4px" }}>Terceirizados &amp; Escala de Última Hora</h5>
+                {localEvent.assignedEmployees.filter(e => e.terceirizado || !allEmployees.some(a => a.id === e.id)).length === 0 ? (
+                  <span style={{ fontSize: "11px", color: "var(--text-muted)", fontStyle: "italic" }}>Nenhum terceirizado de última hora escalado.</span>
+                ) : (
+                  localEvent.assignedEmployees.filter(e => e.terceirizado || !allEmployees.some(a => a.id === e.id)).map(terc => (
+                    <div key={terc.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "1px solid var(--accent)", borderRadius: "12px", background: "var(--bg-main)" }}>
+                      <div>
+                        <strong className="text-sm" style={{ display: "block", color: "var(--accent)" }}>{terc.name} (Terceirizado)</strong>
+                        <span className="text-xs text-muted">{terc.role} | {terc.horario}</span>
+                      </div>
+                      <button 
+                        className="btn-danger text-xs" 
+                        onClick={() => {
+                          const updated = localEvent.assignedEmployees.filter(e => e.id !== terc.id);
+                          handleUpdate({ ...localEvent, assignedEmployees: updated });
+                        }}
+                        style={{ padding: "4px 10px", borderRadius: "8px" }}
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -939,14 +965,27 @@ export default function EventDetailsModal({
                 Documentos Anexados do Pavilhão (Sem Limite de Categoria)
               </span>
 
-              <form onSubmit={handleAddCustomDoc} style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+              <form onSubmit={handleAddCustomDoc} style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
                 <input 
                   type="text" 
-                  placeholder="Nome do Novo Documento (Ex: Licença Sanitária, Laudo de Retardante de Chama)..." 
+                  placeholder="Nome do Novo Documento (Ex: Licença Sanitária, ART, Planta Baixa)..." 
                   value={newDocName} 
                   onChange={(e) => setNewDocName(e.target.value)} 
-                  style={{ flex: 1, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }}
+                  style={{ flex: 1, minWidth: "240px", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }}
                 />
+                <label className="btn-secondary" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", padding: "8px 14px", fontSize: "12px" }}>
+                  <Upload size={14} /> Selecionar Arquivo
+                  <input 
+                    type="file" 
+                    style={{ display: "none" }} 
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        const file = e.target.files[0];
+                        if (!newDocName) setNewDocName(file.name);
+                      }
+                    }} 
+                  />
+                </label>
                 <button type="submit" className="btn-primary" style={{ padding: "8px 14px", fontSize: "12px" }}>
                   <Plus size={14} /> Anexar Documento
                 </button>
@@ -981,11 +1020,25 @@ export default function EventDetailsModal({
             </div>
           )}
 
-          {/* TAB 8: CENTRO DE CUSTOS */}
+          {/* TAB 8: CENTRO DE CUSTOS & ESTIMATIVA DE ORÇAMENTO */}
           {activeTab === "costs" && (
             <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px" }}>
               <div style={{ backgroundColor: "var(--bg-main)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-secondary)", display: "block", marginBottom: "8px" }}>ESTIMAR ORÇAMENTO</span>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "8px" }}>
+                  <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--accent)" }}>ESTIMAR ORÇAMENTO DO PROJETO</span>
+                  <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>Valores Estimados vs Realizados</span>
+                </div>
+
+                <div style={{ margin: "6px 0" }}>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: "700", marginBottom: "4px" }}>Valor Total Fechado com Cliente (R$)</label>
+                  <input 
+                    type="number" 
+                    value={localEvent.valorContratado || 0} 
+                    onChange={(e) => handleUpdate({ ...localEvent, valorContratado: parseFloat(e.target.value) || 0 })}
+                    style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid var(--border)", fontWeight: "700", color: "var(--accent)" }}
+                  />
+                </div>
+
                 {Object.keys(localEvent.centroCusto || {})
                   .filter(k => k !== "fornecedoresDespesas")
                   .map((catKey) => {
@@ -997,7 +1050,7 @@ export default function EventDetailsModal({
                           type="number" 
                           value={(localEvent.centroCusto[typedKey] as number) || 0}
                           onChange={(e) => handleCostChange(typedKey, parseFloat(e.target.value) || 0)}
-                          style={{ width: "80px", padding: "4px 6px", border: "1px solid var(--border)", borderRadius: "4px", textAlign: "right" }}
+                          style={{ width: "90px", padding: "4px 6px", border: "1px solid var(--border)", borderRadius: "4px", textAlign: "right" }}
                         />
                       </div>
                     );
@@ -1006,20 +1059,67 @@ export default function EventDetailsModal({
 
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                 <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px" }}>
+                  <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>CUSTO TOTAL REALIZADO / ESTIMADO</span>
+                  <strong style={{ fontSize: "18px", color: "var(--text-primary)", display: "block", marginTop: "4px" }}>
+                    R$ {(localEvent.custoRealizado || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </strong>
+                </div>
+
+                <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px" }}>
                   <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>LUCRO LÍQUIDO PREVISTO</span>
-                  <strong style={{ fontSize: "18px", color: netProfit >= 0 ? "var(--success-text)" : "var(--danger)", display: "block" }}>
+                  <strong style={{ fontSize: "20px", color: netProfit >= 0 ? "var(--success-text)" : "var(--danger)", display: "block", marginTop: "4px" }}>
                     R$ {netProfit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </strong>
+                  <span style={{ fontSize: "11px", color: "var(--text-secondary)", display: "block", marginTop: "6px" }}>
+                    Margem Operacional: {((netProfit / (localEvent.valorContratado || 1)) * 100).toFixed(1)}%
+                  </span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 9: MAPA E ROTA */}
+          {/* TAB 9: MAPA E ROTA COMPLETA */}
           {activeTab === "route" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", backgroundColor: "var(--bg-card)" }}>
-                <strong>Endereço de Entrega:</strong> {localEvent.mapsRoute.endereco}
+              <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", backgroundColor: "var(--bg-card)", display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <Navigation size={22} style={{ color: "var(--accent)" }} />
+                  <div>
+                    <h4 style={{ fontSize: "14px", fontWeight: "700", margin: 0, color: "var(--text-primary)" }}>Rota de Transporte &amp; Logística da Montagem</h4>
+                    <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Endereço Oficial do Pavilhão de Eventos</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "4px", fontSize: "12px" }}>
+                  <div style={{ background: "var(--bg-main)", padding: "10px", borderRadius: "8px" }}>
+                    <strong>Ponto de Partida:</strong><br />
+                    Depósito Central JC Eventos (Natal/RN)
+                  </div>
+                  <div style={{ background: "var(--bg-main)", padding: "10px", borderRadius: "8px" }}>
+                    <strong>Ponto de Chegada:</strong><br />
+                    {localEvent.mapsRoute.endereco}
+                  </div>
+                  <div style={{ background: "var(--bg-main)", padding: "10px", borderRadius: "8px" }}>
+                    <strong>Distância Estimada:</strong><br />
+                    {localEvent.mapsRoute.distanciaKm} km
+                  </div>
+                  <div style={{ background: "var(--bg-main)", padding: "10px", borderRadius: "8px" }}>
+                    <strong>Tempo de Deslocamento:</strong><br />
+                    {localEvent.mapsRoute.tempoEstimado}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+                  <a 
+                    href={sanitizeUrl(localEvent.mapsRoute.linkMaps)} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="btn-primary" 
+                    style={{ textDecoration: "none", fontSize: "12px", padding: "8px 16px", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                  >
+                    <MapPin size={14} /> Abrir no Google Maps / Waze
+                  </a>
+                </div>
               </div>
             </div>
           )}

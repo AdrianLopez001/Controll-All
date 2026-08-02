@@ -14,7 +14,7 @@ interface NotificationsProps {
   onUpdateStock: (id: string, newStock: number) => void;
   onUpdateEvent: (updated: Project) => void;
   onToggleDocStatus: (id: string) => void;
-  onNavigateToTab: (tab: string) => void;
+  onNavigateToTab: (tab: string, subTab?: string, selectedItemId?: string) => void;
 }
 
 export default function Notifications({
@@ -691,6 +691,23 @@ export default function Notifications({
                           >
                             <RefreshCw size={12} />
                             Repor Estoque
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onNavigateToTab("warehouse", "inventario", alert.itemId)}
+                            className="btn-secondary"
+                            style={{ 
+                              padding: "6px 12px", 
+                              fontSize: "12px", 
+                              borderRadius: "6px", 
+                              fontWeight: "600",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              cursor: "pointer"
+                            }}
+                          >
+                            Ver Item no Estoque <ArrowRight size={12} />
                           </button>
                         </div>
                       )}

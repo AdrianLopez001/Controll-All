@@ -180,6 +180,7 @@ export interface Employee {
   // JC Eventos 2.0 fields
   foto: string;
   cpf: string;
+  dataNascimento?: string;
   rg: string;
   cnh: string;
   pixKey: string;
@@ -464,6 +465,8 @@ export interface LeadCRM {
   followUpDate?: string;
   proximaInteracao?: string;
   documentosCliente?: ClienteDocumento[];
+  fornecedoresVinculados?: string[];
+  parceirosComerciais?: string[];
 }
 
 export interface VeiculoLogistica {
@@ -499,10 +502,10 @@ export interface Orcamento {
   nomeOrcamento?: string;
   descricaoSimplificada?: string;
   itensDetalhados?: OrcamentoItemDetalhado[];
-
   // Event Linkage Additions
   eventId?: string;
   eventoNome?: string;
+  eventName?: string;
   localEvento?: string;
   dataEvento?: string;
 }

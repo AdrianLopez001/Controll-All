@@ -19,6 +19,9 @@ export default function Logistics({
   const [selectedEventTravel, setSelectedEventTravel] = useState<Project | null>(null);
   
   const [isAddVehicleOpen, setIsAddVehicleOpen] = useState(false);
+  const [isAddHospedagemOpen, setIsAddHospedagemOpen] = useState(false);
+  const [isAddViagemOpen, setIsAddViagemOpen] = useState(false);
+  const [targetEventId, setTargetEventId] = useState("");
 
   // New Vehicle form states
   const [newModel, setNewModel] = useState("");
@@ -198,7 +201,17 @@ export default function Logistics({
 
         {/* Right Side: Travel arrangements cards */}
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "var(--shadow-sm)" }}>
-          <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>Passagens &amp; Hospedagens da Equipe</h4>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>
+            <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>Passagens &amp; Hospedagens da Equipe</h4>
+            <div style={{ display: "flex", gap: "6px" }}>
+              <button className="btn-primary text-xs" style={{ padding: "4px 8px", display: "inline-flex", alignItems: "center", gap: "4px" }} onClick={() => setIsAddHospedagemOpen(true)}>
+                <Hotel size={12} /> + Nova Hospedagem
+              </button>
+              <button className="btn-secondary text-xs" style={{ padding: "4px 8px", display: "inline-flex", alignItems: "center", gap: "4px" }} onClick={() => setIsAddViagemOpen(true)}>
+                <Plane size={12} /> + Nova Viagem
+              </button>
+            </div>
+          </div>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             {travelEvents.map(evt => (
@@ -356,6 +369,86 @@ export default function Logistics({
                 <button type="button" className="btn-primary" onClick={handleSaveTravel}>Salvar Detalhes</button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Modal Nova Hospedagem */}
+      {isAddHospedagemOpen && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setIsAddHospedagemOpen(false)}>
+          <div style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "450px", boxShadow: "var(--shadow-lg)" }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>+ Cadastrar Nova Hospedagem</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (!targetEventId || !editHotelName) return;
+              const evt = events.find(x => x.id === targetEventId);
+              if (evt) {
+                onUpdateEvent({ ...evt, hotelName: editHotelName, hotelCheckin: editHotelCheckin });
+                alert("Hospedagem adicionada com sucesso!");
+              }
+              setIsAddHospedagemOpen(false);
+              setEditHotelName("");
+              setEditHotelCheckin("");
+            }} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Evento / Estande Relacionado</label>
+                <select value={targetEventId} onChange={(e) => setTargetEventId(e.target.value)} required style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }}>
+                  <option value="">Selecione o Projeto...</option>
+                  {events.map(e => (
+                    <option key={e.id} value={e.id}>{e.name} — {e.client}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Nome do Hotel / Acomodação</label>
+                <input type="text" value={editHotelName} onChange={(e) => setEditHotelName(e.target.value)} placeholder="Ex: Hotel Windsor Copacabana" required style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Data Check-in</label>
+                <input type="date" value={editHotelCheckin} onChange={(e) => setEditHotelCheckin(e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+                <button type="button" className="btn-secondary" onClick={() => setIsAddHospedagemOpen(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary">Salvar Hospedagem</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Nova Viagem / Voo */}
+      {isAddViagemOpen && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }} onClick={() => setIsAddViagemOpen(false)}>
+          <div style={{ backgroundColor: "var(--bg-card)", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "450px", boxShadow: "var(--shadow-lg)" }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "var(--accent)" }}>+ Cadastrar Nova Viagem / Voo</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (!targetEventId || !editFlightDetails) return;
+              const evt = events.find(x => x.id === targetEventId);
+              if (evt) {
+                onUpdateEvent({ ...evt, flightDetails: editFlightDetails });
+                alert("Detalhes de viagem cadastrados com sucesso!");
+              }
+              setIsAddViagemOpen(false);
+              setEditFlightDetails("");
+            }} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Evento / Estande Relacionado</label>
+                <select value={targetEventId} onChange={(e) => setTargetEventId(e.target.value)} required style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px" }}>
+                  <option value="">Selecione o Projeto...</option>
+                  {events.map(e => (
+                    <option key={e.id} value={e.id}>{e.name} — {e.client}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", marginBottom: "4px" }}>Detalhes de Voos &amp; Passagens</label>
+                <textarea rows={4} value={editFlightDetails} onChange={(e) => setEditFlightDetails(e.target.value)} placeholder="Ex: LATAM LA-3810 NAT-GRU | Localizador: XYZ123..." required style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "8px", fontFamily: "var(--font)" }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+                <button type="button" className="btn-secondary" onClick={() => setIsAddViagemOpen(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary">Salvar Viagem</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

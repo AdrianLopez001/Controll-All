@@ -6,7 +6,7 @@ import {
   Clock, Building2, ChevronRight, Calendar, X, Edit3, CheckCircle2, ArrowRight,
   Plus, ShieldAlert, Sparkles, Layers, Activity, FileText
 } from "lucide-react";
-import type { Project, InvoiceLog, Employee, WarehouseItem } from "../types";
+import type { Project, InvoiceLog, Employee, WarehouseItem, Orcamento } from "../types";
 
 interface OverviewProps {
   events: Project[];
@@ -16,10 +16,12 @@ interface OverviewProps {
   lowStockItemsCount: number;
   pendingDocsCount: number;
   invoices: InvoiceLog[];
+  orcamentos?: Orcamento[];
   onNavigateToTab: (tab: string, subTab?: string) => void;
   onSelectEvent: (event: Project) => void;
   onUpdateStock?: (id: string, newStock: number) => void;
   onUpdateEvent?: (updated: Project) => void;
+  onOpenBankReconciliation?: () => void;
 }
 
 const fmt = (v: number) =>
@@ -71,11 +73,13 @@ export default function Overview({
   employeesCount, 
   lowStockItemsCount, 
   pendingDocsCount,
-  invoices,
+  invoices = [],
+  orcamentos = [],
   onNavigateToTab,
   onSelectEvent,
   onUpdateStock,
-  onUpdateEvent
+  onUpdateEvent,
+  onOpenBankReconciliation
 }: OverviewProps) {
   // Modal states for Dashboard indicators
   const [activeModal, setActiveModal] = useState<"montadores" | "tarefas" | "estoque" | null>(null);
@@ -85,10 +89,28 @@ export default function Overview({
   const isActive = (e: Project) => !["Finalizado", "post"].includes(e.phase);
 
   const activeStands = events.filter(isActive).length;
-  const totalReceber = events.filter(isActive).reduce((acc, curr) => acc + curr.valorPendente, 0);
-  const totalContratado = events.reduce((acc, curr) => acc + curr.valorContratado, 0);
-  const totalCustoRealizado = events.reduce((acc, curr) => acc + curr.custoRealizado, 0);
-  const totalCustoPrevisto = events.filter(isActive).reduce((acc, curr) => acc + curr.custoPrevisto, 0);
+
+  // Calculo consistente de Faturamento Comercial (Eventos Contratados + Propostas Ganhas)
+  const totalFaturamentoEvents = events.reduce((acc, curr) => acc + (curr.valorContratado || 0), 0);
+  const totalApprovedOrcamentos = (orcamentos || [])
+    .filter(o => (o.status === "ganho" || o.status === "aprovado") && !events.some(e => e.codigo?.includes(o.codigo) || e.client === o.cliente))
+    .reduce((acc, curr) => acc + (curr.total || 0), 0);
+  const totalContratado = totalFaturamentoEvents + totalApprovedOrcamentos;
+
+  // Calculo de Contas a Receber (Soma de todos os saldos pendentes em eventos + faturas de receita a receber)
+  const totalReceberEvents = events.reduce((acc, curr) => acc + (curr.valorPendente || 0), 0);
+  const totalReceberInvoices = (invoices || [])
+    .filter(i => i.tipo === "receita" && i.status !== "pago")
+    .reduce((acc, curr) => acc + (curr.value || 0), 0);
+  const totalReceber = totalReceberEvents + totalReceberInvoices;
+
+  // Calculo de Custo Previsto de Obras (Custos previstos em todos os eventos + lançamentos de despesa a pagar)
+  const totalCustoPrevistoEvents = events.reduce((acc, curr) => acc + (curr.custoPrevisto || 0), 0);
+  const totalPagarInvoices = (invoices || [])
+    .filter(i => i.tipo === "despesa" && i.status !== "pago")
+    .reduce((acc, curr) => acc + (curr.value || 0), 0);
+  const totalCustoPrevisto = totalCustoPrevistoEvents + totalPagarInvoices;
+  const totalCustoRealizado = events.reduce((acc, curr) => acc + (curr.custoRealizado || 0), 0);
   const pendingChecklistItems = events.filter(isActive)
     .reduce((acc, curr) => acc + curr.checklist.filter(c => !c.done).length, 0);
 
@@ -129,7 +151,7 @@ export default function Overview({
       unit: "projetos em 2026",
       bgGradient: "linear-gradient(135deg, #059669 0%, #047857 100%)",
       color: "#ffffff",
-      action: () => onNavigateToTab("orcamentos"),
+      action: () => onNavigateToTab("financial", "faturamento"),
     },
     {
       icon: <TrendingUp size={22} />,
@@ -233,7 +255,7 @@ export default function Overview({
           </button>
 
           <button
-            onClick={() => onNavigateToTab("financial")}
+            onClick={() => onOpenBankReconciliation ? onOpenBankReconciliation() : onNavigateToTab("financial", "conciliacao")}
             style={{
               display: "flex",
               alignItems: "center",

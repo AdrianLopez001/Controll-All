@@ -21,6 +21,8 @@ import Orcamentos from "./components/Orcamentos";
 import logoImg from "./assets/logo.png";
 import OrdensServico from "./components/OrdensServico";
 import Agenda from "./components/Agenda";
+import { BankReconciliationModal } from "./components/BankReconciliationModal";
+import { safeStorage, canUserAccessTab } from "./utils/security";
 
 // Import shared types
 import type { 
@@ -377,6 +379,7 @@ const INITIAL_EMPLOYEES: Employee[] = [
     hasSafetyCert: true,
     foto: "A",
     cpf: "123.456.789-00",
+    dataNascimento: "1988-04-12",
     rg: "12.345.678-9",
     cnh: "AB-992812",
     pixKey: "jose.alves@gmail.com",
@@ -396,6 +399,7 @@ const INITIAL_EMPLOYEES: Employee[] = [
     hasSafetyCert: true,
     foto: "C",
     cpf: "987.654.321-11",
+    dataNascimento: "1992-08-25",
     rg: "98.765.432-1",
     cnh: "D-192837",
     pixKey: "carloshl@outlook.com",
@@ -414,6 +418,7 @@ const INITIAL_EMPLOYEES: Employee[] = [
     hasSafetyCert: true,
     foto: "B",
     cpf: "456.789.123-22",
+    dataNascimento: "1985-11-03",
     rg: "45.678.912-3",
     cnh: "B-229102",
     pixKey: "45678912322",
@@ -432,6 +437,7 @@ const INITIAL_EMPLOYEES: Employee[] = [
     hasSafetyCert: true,
     foto: "R",
     cpf: "321.654.987-44",
+    dataNascimento: "1990-05-15",
     rg: "32.165.498-7",
     cnh: "AB-881928",
     pixKey: "ricardo.mendes@jceventos.com",
@@ -448,6 +454,7 @@ const INITIAL_EMPLOYEES: Employee[] = [
     hasSafetyCert: false,
     foto: "M",
     cpf: "888.999.000-11",
+    dataNascimento: "1996-01-20",
     rg: "88.899.900-0",
     cnh: "",
     pixKey: "marcelo.santos@gmail.com",
@@ -665,38 +672,29 @@ export default function App() {
     auditoria: true
   });
   
-  // App Global State com Persistência em localStorage
-  const getStored = <T,>(key: string, fallback: T): T => {
-    try {
-      const item = localStorage.getItem(`controll_all_${key}`);
-      return item ? JSON.parse(item) : fallback;
-    } catch {
-      return fallback;
-    }
-  };
+  // App Global State com Persistência Segura
+  const [events, setEvents] = useState<Project[]>(() => safeStorage.getItem("events", INITIAL_EVENTS));
+  const [employees, setEmployees] = useState<Employee[]>(() => safeStorage.getItem("employees", INITIAL_EMPLOYEES));
+  const [warehouseItems, setWarehouseItems] = useState<WarehouseItem[]>(() => safeStorage.getItem("warehouse", INITIAL_WAREHOUSE));
+  const [invoiceLogs, setInvoiceLogs] = useState<InvoiceLog[]>(() => safeStorage.getItem("invoices", INITIAL_INVOICES));
+  const [leads, setLeads] = useState<LeadCRM[]>(() => safeStorage.getItem("leads", INITIAL_LEADS));
+  const [vehicles, setVehicles] = useState<VeiculoLogistica[]>(() => safeStorage.getItem("vehicles", INITIAL_VEHICLES));
+  const [auditLogs, setAuditLogs] = useState<AuditoriaLog[]>(() => safeStorage.getItem("audit", INITIAL_AUDIT_LOGS));
 
-  const [events, setEvents] = useState<Project[]>(() => getStored("events", INITIAL_EVENTS));
-  const [employees, setEmployees] = useState<Employee[]>(() => getStored("employees", INITIAL_EMPLOYEES));
-  const [warehouseItems, setWarehouseItems] = useState<WarehouseItem[]>(() => getStored("warehouse", INITIAL_WAREHOUSE));
-  const [invoiceLogs, setInvoiceLogs] = useState<InvoiceLog[]>(() => getStored("invoices", INITIAL_INVOICES));
-  const [leads, setLeads] = useState<LeadCRM[]>(() => getStored("leads", INITIAL_LEADS));
-  const [vehicles, setVehicles] = useState<VeiculoLogistica[]>(() => getStored("vehicles", INITIAL_VEHICLES));
-  const [auditLogs, setAuditLogs] = useState<AuditoriaLog[]>(() => getStored("audit", INITIAL_AUDIT_LOGS));
+  const [clientes, setClientes] = useState(() => safeStorage.getItem("clientes", INITIAL_CLIENTS));
+  const [fornecedores, setFornecedores] = useState(() => safeStorage.getItem("fornecedores", INITIAL_SUPPLIERS));
 
-  const [clientes, setClientes] = useState(() => getStored("clientes", INITIAL_CLIENTS));
-  const [fornecedores, setFornecedores] = useState(() => getStored("fornecedores", INITIAL_SUPPLIERS));
-
-  useEffect(() => { localStorage.setItem("controll_all_events", JSON.stringify(events)); }, [events]);
-  useEffect(() => { localStorage.setItem("controll_all_employees", JSON.stringify(employees)); }, [employees]);
-  useEffect(() => { localStorage.setItem("controll_all_warehouse", JSON.stringify(warehouseItems)); }, [warehouseItems]);
-  useEffect(() => { localStorage.setItem("controll_all_invoices", JSON.stringify(invoiceLogs)); }, [invoiceLogs]);
-  useEffect(() => { localStorage.setItem("controll_all_leads", JSON.stringify(leads)); }, [leads]);
-  useEffect(() => { localStorage.setItem("controll_all_vehicles", JSON.stringify(vehicles)); }, [vehicles]);
-  useEffect(() => { localStorage.setItem("controll_all_audit", JSON.stringify(auditLogs)); }, [auditLogs]);
-  useEffect(() => { localStorage.setItem("controll_all_clientes", JSON.stringify(clientes)); }, [clientes]);
-  useEffect(() => { localStorage.setItem("controll_all_fornecedores", JSON.stringify(fornecedores)); }, [fornecedores]);
+  useEffect(() => { safeStorage.setItem("events", events); }, [events]);
+  useEffect(() => { safeStorage.setItem("employees", employees); }, [employees]);
+  useEffect(() => { safeStorage.setItem("warehouse", warehouseItems); }, [warehouseItems]);
+  useEffect(() => { safeStorage.setItem("invoices", invoiceLogs); }, [invoiceLogs]);
+  useEffect(() => { safeStorage.setItem("leads", leads); }, [leads]);
+  useEffect(() => { safeStorage.setItem("vehicles", vehicles); }, [vehicles]);
+  useEffect(() => { safeStorage.setItem("audit", auditLogs); }, [auditLogs]);
+  useEffect(() => { safeStorage.setItem("clientes", clientes); }, [clientes]);
+  useEffect(() => { safeStorage.setItem("fornecedores", fornecedores); }, [fornecedores]);
   // Budgets State & Handlers
-  const [orcamentos, setOrcamentos] = useState<Orcamento[]>(() => getStored("orcamentos", [
+  const [orcamentos, setOrcamentos] = useState<Orcamento[]>(() => safeStorage.getItem("orcamentos", [
     {
       id: "orc-1",
       codigo: "PROP-2026-001",
@@ -722,7 +720,7 @@ export default function App() {
     }
   ]));
 
-  useEffect(() => { localStorage.setItem("controll_all_orcamentos", JSON.stringify(orcamentos)); }, [orcamentos]);
+  useEffect(() => { safeStorage.setItem("orcamentos", orcamentos); }, [orcamentos]);
 
   const handleAddOrcamento = (newOrc: Omit<Orcamento, "id" | "codigo" | "dataCriacao" | "revisoes" | "emailEnviado">) => {
     const orc: Orcamento = {
@@ -823,18 +821,7 @@ export default function App() {
   };
 
   const hasAccess = (tab: string) => {
-    if (!activeModules[tab]) return false;
-    if (userRole === "admin") return true;
-    if (userRole === "comercial") {
-      return ["overview", "crm", "orcamentos", "agenda"].includes(tab);
-    }
-    if (userRole === "estoque") {
-      return ["overview", "warehouse", "logistics", "agenda"].includes(tab);
-    }
-    if (userRole === "operador") {
-      return ["overview", "os", "kanban", "agenda"].includes(tab);
-    }
-    return false;
+    return canUserAccessTab(userRole, tab, activeModules);
   };
 
   // Add Event
@@ -1134,6 +1121,66 @@ export default function App() {
     registerAudit("Atualização Evento", `Dossiê operacional de "${updatedEvent.name}" alterado`);
   };
 
+  // Add Event / OS
+  const handleAddEvent = (name: string, client: string, startDate: string): Project => {
+    const newEvt: Project = {
+      id: `evt-${Date.now()}`,
+      codigo: `EST-2026-00${events.length + 1}`,
+      name,
+      client,
+      responsavel: "Coordenador de Montagem",
+      phase: "Montagem",
+      startDate,
+      endDate: startDate,
+      dataMontagem: startDate,
+      dataDesmontagem: startDate,
+      completionRate: 0,
+      checklist: [
+        { id: "c1", text: "Aprovação de planta baixa e layout", done: false },
+        { id: "c2", text: "Emissão de ART/RRT e taxas", done: false },
+        { id: "c3", text: "Carregamento e romaneio de materiais", done: false },
+        { id: "c4", text: "Credenciamento de equipe de montagem", done: false }
+      ],
+      assignedEmployees: [],
+      assignedTools: [],
+      hotelName: "Hotel Reis Magos Natal",
+      hotelCheckin: startDate,
+      flightDetails: "Equipe Local",
+      docs: [
+        { id: "d1", name: "Projeto Técnico PDF", status: "pending" },
+        { id: "d2", name: "Credencial Pavilhão", status: "pending" }
+      ],
+      valorContratado: 25000,
+      valorRecebido: 0,
+      valorPendente: 25000,
+      custoPrevisto: 12000,
+      custoRealizado: 0,
+      centroCusto: {
+        madeiraMdf: 3000,
+        vidrosVidraçaria: 0,
+        iluminacaoEletrica: 1500,
+        mobiliarioAlugado: 2000,
+        fretes: 1000,
+        combustivelPedagios: 500,
+        hospedagemPassagens: 1500,
+        equipePropria: 2500,
+        terceirizados: 0,
+        taxasOrganizador: 0
+      },
+      mapsRoute: {
+        endereco: "Centro de Convenções de Natal - Via Costeira",
+        latitude: -5.865700,
+        longitude: -35.188100,
+        linkMaps: "https://maps.google.com/?q=Centro+de+Convencoes+Natal",
+        distanciaKm: 15,
+        tempoEstimado: "30 min"
+      }
+    };
+    setEvents(prev => [newEvt, ...prev]);
+    registerAudit("Nova Ordem de Serviço", `OS "${name}" criada com código ${newEvt.codigo}`);
+    return newEvt;
+  };
+
   const deleteEvent = (id: string) => {
     const evt = events.find(e => e.id === id);
     setEvents((prev) => prev.filter(e => e.id !== id));
@@ -1151,6 +1198,7 @@ export default function App() {
   const [showTasksPanel, setShowTasksPanel] = useState(false);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [deepLinkOsId, setDeepLinkOsId] = useState<string>("");
+  const [deepLinkItemId, setDeepLinkItemId] = useState<string>("");
 
   const tasksPanelRef = useRef<HTMLDivElement>(null);
   const notifPanelRef = useRef<HTMLDivElement>(null);
@@ -1176,7 +1224,20 @@ export default function App() {
     };
   }, [showTasksPanel, showNotifPanel, isSearchOpen]);
 
-  // Password recovery states
+  // Password recovery & Modal states
+  const [isBankReconciliationModalOpen, setIsBankReconciliationModalOpen] = useState(false);
+
+  const handleAddInvoice = (newInv: Omit<InvoiceLog, "id">) => {
+    const inv: InvoiceLog = { ...newInv, id: `inv-${Date.now()}` };
+    setInvoiceLogs(prev => [inv, ...prev]);
+    registerAudit("Nova Transação", `Lançamento financeiro de R$ ${inv.value} (${inv.description}) cadastrado.`);
+  };
+
+  const handleUpdateInvoice = (updated: InvoiceLog) => {
+    setInvoiceLogs(prev => prev.map(inv => inv.id === updated.id ? updated : inv));
+    registerAudit("Atualização Financeira", `Transação "${updated.description}" atualizada.`);
+  };
+
   const [showPasswordRecovery, setShowPasswordRecovery] = useState(false);
   const [recoveryCpf, setRecoveryCpf] = useState("");
   const [recoveryDob, setRecoveryDob] = useState("");
@@ -1202,9 +1263,22 @@ export default function App() {
   const handleValidateRecovery = (e: React.FormEvent) => {
     e.preventDefault();
     if (!recoveryCpf || !recoveryDob) {
-      alert("Por favor, preencha o CPF e a Data de Nascimento.");
+      alert("Por favor, informe seu CPF e a Data de Nascimento para prosseguir.");
       return;
     }
+    const cleanInputCpf = recoveryCpf.replace(/\D/g, "");
+    
+    const matchedEmployee = employees.find(emp => {
+      const cleanEmpCpf = emp.cpf ? emp.cpf.replace(/\D/g, "") : "";
+      return cleanEmpCpf === cleanInputCpf && emp.dataNascimento === recoveryDob;
+    });
+
+    if (!matchedEmployee) {
+      alert("CPF ou Data de Nascimento não encontrados no cadastro. Verifique os dados digitados e tente novamente.");
+      return;
+    }
+
+    alert(`Acesso validado com sucesso para ${matchedEmployee.name}! Informe sua nova senha abaixo.`);
     setRecoveryStep("reset");
   };
 
@@ -1544,16 +1618,17 @@ export default function App() {
                         { name: "Auditoria & Logs de Segurança", tab: "auditoria", category: "Módulo Principal" }
                       ];
 
+                      const cleanDigits = term.replace(/\D/g, "");
                       const matches: SearchMatch[] = [
                         ...subTabModules.filter(m => m.name.toLowerCase().includes(term)),
                         ...clientes.filter(c => c.name.toLowerCase().includes(term) || c.cnpj.includes(term) || c.email.toLowerCase().includes(term)).map(c => ({ name: `${c.name} (${c.cnpj})`, tab: "crm", subTab: "clientes", category: "Cliente Homologado" })),
                         ...fornecedores.filter(f => f.name.toLowerCase().includes(term) || f.servico.toLowerCase().includes(term)).map(f => ({ name: `${f.name} — ${f.servico}`, tab: "crm", subTab: "fornecedores", category: "Fornecedor Homologado" })),
-                        ...leads.filter(l => l.empresa.toLowerCase().includes(term) || l.contato.toLowerCase().includes(term)).map(l => ({ name: `Lead: ${l.empresa} (${l.contato})`, tab: "crm", subTab: "pipeline", category: "Lead CRM" })),
-                        ...events.filter(e => e.name.toLowerCase().includes(term) || e.client.toLowerCase().includes(term) || e.codigo.toLowerCase().includes(term)).map(e => ({ name: `${e.codigo} · ${e.name}`, tab: "kanban", event: e, category: "Projeto/OS" })),
+                        ...leads.filter(l => l.empresa.toLowerCase().includes(term) || l.contato.toLowerCase().includes(term) || (cleanDigits.length > 2 && l.valorEstimado.toString().includes(cleanDigits))).map(l => ({ name: `Lead: ${l.empresa} (R$ ${l.valorEstimado})`, tab: "crm", subTab: "pipeline", category: "Lead CRM" })),
+                        ...events.filter(e => e.name.toLowerCase().includes(term) || e.client.toLowerCase().includes(term) || e.codigo.toLowerCase().includes(term) || (cleanDigits.length > 2 && (e.valorContratado.toString().includes(cleanDigits) || e.valorPendente.toString().includes(cleanDigits)))).map(e => ({ name: `${e.codigo} · ${e.name} (R$ ${e.valorContratado})`, tab: "kanban", event: e, category: "Projeto/OS" })),
                         ...warehouseItems.filter(i => i.name.toLowerCase().includes(term) || i.codigo.toLowerCase().includes(term) || i.marca?.toLowerCase().includes(term)).map(i => ({ name: `${i.codigo} · ${i.name}`, tab: "warehouse", subTab: "inventario", category: "Item WMS" })),
                         ...employees.filter(emp => emp.name.toLowerCase().includes(term) || emp.role.toLowerCase().includes(term)).map(emp => ({ name: `${emp.name} (${emp.role})`, tab: "employees", subTab: "cadastro", category: "Colaborador" })),
-                        ...orcamentos.filter(o => o.codigo.toLowerCase().includes(term) || o.cliente.toLowerCase().includes(term)).map(o => ({ name: `${o.codigo} — ${o.cliente}`, tab: "orcamentos", category: "Proposta Comercial" })),
-                        ...invoiceLogs.filter(inv => inv.invoiceNumber.toLowerCase().includes(term) || inv.vendor.toLowerCase().includes(term)).map(inv => ({ name: `${inv.invoiceNumber} — ${inv.vendor}`, tab: "financial", subTab: inv.tipo === "receita" ? "receber" : "pagar", category: "Financeiro" }))
+                        ...orcamentos.filter(o => o.codigo.toLowerCase().includes(term) || o.cliente.toLowerCase().includes(term) || (cleanDigits.length > 2 && o.total.toString().includes(cleanDigits))).map(o => ({ name: `${o.codigo} — ${o.cliente} (R$ ${o.total})`, tab: "orcamentos", category: "Proposta Comercial" })),
+                        ...invoiceLogs.filter(inv => inv.invoiceNumber.toLowerCase().includes(term) || inv.vendor.toLowerCase().includes(term) || inv.description.toLowerCase().includes(term) || (cleanDigits.length > 2 && inv.value.toString().includes(cleanDigits))).map(inv => ({ name: `${inv.invoiceNumber} — ${inv.vendor} (R$ ${inv.value})`, tab: "financial", subTab: inv.tipo === "receita" ? "receber" : "pagar", category: "Financeiro" }))
                       ];
 
                       if (matches.length === 0) {
@@ -1900,10 +1975,12 @@ export default function App() {
               lowStockItemsCount={lowStockCount}
               pendingDocsCount={pendingDocsCount}
               invoices={invoiceLogs}
+              orcamentos={orcamentos}
               onNavigateToTab={navigateToTab}
               onSelectEvent={(evt) => setSelectedEvent(evt)}
               onUpdateStock={updateStock}
               onUpdateEvent={updateEventDetails}
+              onOpenBankReconciliation={() => setIsBankReconciliationModalOpen(true)}
             />
           )}
 
@@ -1942,6 +2019,7 @@ export default function App() {
               allEmployees={employees}
               allWarehouseItems={warehouseItems}
               onUpdateEvent={updateEventDetails}
+              onAddOS={handleAddEvent}
               initialOsId={deepLinkOsId}
             />
           )}
@@ -1953,6 +2031,7 @@ export default function App() {
               onAddEvent={addEvent}
               onUpdateEventPhase={updateEventPhase}
               onDeleteEvent={deleteEvent}
+              onReorderEvents={(newEvents) => setEvents(newEvents)}
             />
           )}
 
@@ -1974,6 +2053,7 @@ export default function App() {
               onAddWarehouseItem={addWarehouseItem}
               onDeleteWarehouseItem={deleteWarehouseItem}
               initialSubTab={wmsSubTab}
+              initialSelectedItemId={deepLinkItemId}
             />
           )}
 
@@ -2083,6 +2163,16 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {isBankReconciliationModalOpen && (
+        <BankReconciliationModal
+          isOpen={isBankReconciliationModalOpen}
+          onClose={() => setIsBankReconciliationModalOpen(false)}
+          invoices={invoiceLogs}
+          onAddInvoice={handleAddInvoice}
+          onUpdateInvoice={handleUpdateInvoice}
+        />
+      )}
     </div>
   );
 }

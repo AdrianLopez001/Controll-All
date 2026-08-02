@@ -49,7 +49,7 @@ export default function CRM({
   const selectedLead = leads.find(l => l.id === selectedLeadId);
 
   // 3.1 Client Documents Tabs & Fields
-  const [activeLeadTab, setActiveLeadTab] = useState<"historico" | "documentos">("historico");
+  const [activeLeadTab, setActiveLeadTab] = useState<"historico" | "documentos" | "fornecedores" | "parceiros">("historico");
   const [docCategory, setDocCategory] = useState<"contrato" | "proposta" | "planta" | "documento_cliente" | "outro">("contrato");
   const [docName, setDocName] = useState("");
   const [docFileSelected, setDocFileSelected] = useState<string>("");
@@ -569,6 +569,12 @@ export default function CRM({
               <div 
                 key={stage} 
                 className={`mobile-crm-col ${activeMobileStage === stage ? "mobile-show" : ""}`}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const id = e.dataTransfer.getData("text/plain");
+                  if (id) onUpdateLeadEstagio(id, stage);
+                }}
                 style={{
                   backgroundColor: "var(--bg-kanban-col)",
                   border: "1px solid var(--border)",
@@ -613,21 +619,25 @@ export default function CRM({
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px", flexGrow: 1, overflowY: "auto" }}>
                   {getLeadsByEstagio(stage).length === 0 ? (
                     <div style={{ border: "1px dashed var(--border)", borderRadius: "12px", padding: "20px", textAlign: "center", color: "var(--text-muted)", fontSize: "11px", marginTop: "10px" }}>
-                      Nenhum lead nesta fase
+                      Nenhum lead nesta fase (Arraste aqui)
                     </div>
                   ) : (
                     getLeadsByEstagio(stage).map(lead => (
                       <div 
                         key={lead.id} 
+                        draggable
+                        onDragStart={(e) => e.dataTransfer.setData("text/plain", lead.id)}
                         style={{
                           backgroundColor: "var(--bg-card)",
                           border: "1px solid var(--border)",
+                          borderLeft: "4px solid var(--accent)",
                           borderRadius: "12px",
                           padding: "16px",
                           boxShadow: "var(--shadow-sm)",
                           display: "flex",
                           flexDirection: "column",
-                          gap: "10px"
+                          gap: "10px",
+                          cursor: "grab"
                         }}
                       >
                         <div onClick={() => handleOpenLead(lead)} style={{ cursor: "pointer" }} title="Ver detalhes do Lead">
@@ -1058,7 +1068,7 @@ export default function CRM({
             {/* Right Pane: Interactions & Tasks tabs */}
             <div style={{ display: "flex", flexDirection: "column", gap: "14px", overflowY: "auto", maxHeight: "80vh" }}>
               {/* Tab Navigation header */}
-              <div style={{ display: "flex", gap: "12px", borderBottom: "1px solid var(--border)", paddingBottom: "8px" }}>
+              <div style={{ display: "flex", gap: "12px", borderBottom: "1px solid var(--border)", paddingBottom: "8px", flexWrap: "wrap" }}>
                 <button 
                   type="button" 
                   onClick={() => setActiveLeadTab("historico")}
@@ -1085,7 +1095,35 @@ export default function CRM({
                     fontSize: "12px"
                   }}
                 >
-                  Documentos do Cliente
+                  Documentos
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setActiveLeadTab("fornecedores")}
+                  style={{ 
+                    border: "none", 
+                    background: "none", 
+                    fontWeight: activeLeadTab === "fornecedores" ? "bold" : "normal", 
+                    color: activeLeadTab === "fornecedores" ? "var(--accent)" : "var(--text-secondary)", 
+                    cursor: "pointer",
+                    fontSize: "12px"
+                  }}
+                >
+                  Fornecedores
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setActiveLeadTab("parceiros")}
+                  style={{ 
+                    border: "none", 
+                    background: "none", 
+                    fontWeight: activeLeadTab === "parceiros" ? "bold" : "normal", 
+                    color: activeLeadTab === "parceiros" ? "var(--accent)" : "var(--text-secondary)", 
+                    cursor: "pointer",
+                    fontSize: "12px"
+                  }}
+                >
+                  Parceiros
                 </button>
               </div>
 
@@ -1269,6 +1307,45 @@ export default function CRM({
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+
+              {activeLeadTab === "fornecedores" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <strong style={{ fontSize: "13px", color: "var(--text-primary)" }}>Fornecedores Envolvidos na Proposta</strong>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>Vincule os fornecedores homologados que fornecerão insumos, marceneiros ou terceirizados.</div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px" }}>
+                    {fornecedores.map((sup, idx) => (
+                      <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-main)" }}>
+                        <div>
+                          <strong style={{ fontSize: "12px", display: "block" }}>{sup.name}</strong>
+                          <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>{sup.servico} | {sup.email}</span>
+                        </div>
+                        <span style={{ fontSize: "10px", fontWeight: "700", color: "#059669", background: "#ecfdf5", padding: "2px 6px", borderRadius: "4px" }}>
+                          Homologado
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeLeadTab === "parceiros" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <strong style={{ fontSize: "13px", color: "var(--text-primary)" }}>Parceiros &amp; Co-Participantes</strong>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>Agências de cenografia, arquitetos parceiros ou organizadores da feira.</div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "6px" }}>
+                    <div style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "10px", background: "var(--bg-main)" }}>
+                      <strong style={{ fontSize: "12px", display: "block", color: "var(--accent)" }}>Agência Concept Design Ltda</strong>
+                      <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>Parceiro Comercial (Comissão 5%) | Contato: Roberto Arquiteto</span>
+                    </div>
+                    <div style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "10px", background: "var(--bg-main)" }}>
+                      <strong style={{ fontSize: "12px", display: "block", color: "var(--accent)" }}>Promotora Feicon RN</strong>
+                      <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>Organização de Pavilhão | Contato: Credenciamento Oficial</span>
+                    </div>
                   </div>
                 </div>
               )}
