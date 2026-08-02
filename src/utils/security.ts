@@ -152,3 +152,9 @@ export function logSecurityEvent(user: string, action: string, details: string):
   const updated = [newLog, ...existingLogs].slice(0, 100);
   safeStorage.setItem("security_audit_logs", updated);
 }
+
+export function validateEmail(email: string): boolean {
+  if (!email || typeof email !== "string") return false;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email.trim());
+}

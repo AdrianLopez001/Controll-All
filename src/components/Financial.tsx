@@ -349,10 +349,19 @@ export default function Financial({
   invoices, events, fornecedores, onAddInvoice, onUpdateInvoice, onUpdateEvent, initialSubTab 
 }: FinancialProps) {
 
-  const [activeMainTab, setActiveMainTab] = useState<"dashboard" | "receber" | "pagar" | "servicos_avulsos" | "faturamento" | "conciliacao" | "relatorios" | "configuracoes">((initialSubTab as any) || "dashboard");
+  const [activeMainTab, setActiveMainTab] = useState<"dashboard" | "receber" | "pagar" | "servicos_avulsos" | "faturamento" | "conciliacao" | "relatorios" | "configuracoes">(
+    initialSubTab === "centro_custo" ? "configuracoes" : ((initialSubTab as any) || "dashboard")
+  );
 
   React.useEffect(() => {
-    if (initialSubTab) setActiveMainTab(initialSubTab as any);
+    if (initialSubTab) {
+      if (initialSubTab === "centro_custo") {
+        setActiveMainTab("configuracoes");
+        setConfigActiveTab("centro_custo");
+      } else {
+        setActiveMainTab(initialSubTab as any);
+      }
+    }
   }, [initialSubTab]);
   
   // Dashboard Sub-filters

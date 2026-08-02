@@ -178,7 +178,7 @@ export default function Overview({
       unit: "equipe em campo",
       bgGradient: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
       color: "#ffffff",
-      action: () => setActiveModal("montadores"),
+      action: () => onNavigateToTab("employees", "cadastro"),
     },
     {
       icon: <Archive size={22} />,
@@ -187,7 +187,7 @@ export default function Overview({
       unit: "itens em nível crítico",
       bgGradient: lowStockItemsCount > 0 ? "linear-gradient(135deg, #dc2626 0%, #991b1b 100%)" : "linear-gradient(135deg, #475569 0%, #334155 100%)",
       color: "#ffffff",
-      action: () => setActiveModal("estoque"),
+      action: () => onNavigateToTab("warehouse", "critico"),
     },
   ];
 
@@ -482,7 +482,27 @@ export default function Overview({
                 { phase: "Produção", count: events.filter(e => e.phase === "Produção").length, color: "#d97706" },
                 { phase: "Montagem", count: events.filter(e => e.phase === "Montagem" || e.phase === "during").length, color: "#dc2626" },
               ].map((item, idx) => (
-                <div key={idx} style={{ backgroundColor: "var(--bg-main)", borderRadius: "10px", padding: "12px", border: "1px solid var(--border)" }}>
+                <div 
+                  key={idx} 
+                  onClick={() => onNavigateToTab("kanban", item.phase)}
+                  title={`Filtrar estandes em ${item.phase} no Kanban`}
+                  style={{ 
+                    backgroundColor: "var(--bg-main)", 
+                    borderRadius: "10px", 
+                    padding: "12px", 
+                    border: "1px solid var(--border)",
+                    cursor: "pointer",
+                    transition: "transform 0.15s, borderColor 0.15s"
+                  }}
+                  onMouseOver={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = item.color;
+                    (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
+                  }}
+                  onMouseOut={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
+                    (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+                  }}
+                >
                   <div style={{ fontSize: "18px", fontWeight: "800", color: item.color }}>{item.count}</div>
                   <div style={{ fontSize: "10px", fontWeight: "600", color: "var(--text-muted)", marginTop: "2px" }}>{item.phase}</div>
                 </div>
