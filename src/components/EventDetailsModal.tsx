@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import type { Project, Employee, WarehouseItem, ProductionSectors, ConventionCenterRules, ChecklistItem, AssignedEmployee, Orcamento } from "../types";
 import { sanitizeUrl } from "../utils/security";
+import FileUploadManager from "./FileUploadManager";
 
 export const CONVENTION_CENTERS: ConventionCenterRules[] = [
   {
@@ -991,32 +992,23 @@ export default function EventDetailsModal({
                 </button>
               </form>
               
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {localEvent.docs.map((doc) => (
-                  <div key={doc.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "1px solid var(--border)", borderRadius: "12px", background: "var(--bg-card)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <FileText size={16} className="text-muted" />
-                      <strong className="text-sm" style={{ color: "var(--text-primary)" }}>{doc.name}</strong>
-                    </div>
-                    
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <button 
-                        className="btn-secondary text-xs"
-                        style={{ padding: "4px 8px" }}
-                        onClick={() => simulateDocUpload(doc.id)}
-                      >
-                        {doc.status === "pending" ? "Subir Arquivo" : doc.status === "uploaded" ? "Aprovar" : "Liberado"}
-                      </button>
-                      <button 
-                        style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer" }}
-                        onClick={() => handleDeleteDoc(doc.id)}
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <FileUploadManager
+                moduleFolder="eventos"
+                entityId={localEvent.id}
+                documents={(localEvent.docs || []).map(d => ({
+                  id: d.id,
+                  name: d.name,
+                  category: "planta_baixa",
+                  sizeBytes: 1024 * 500,
+                  uploadedAt: new Date().toISOString(),
+                  fileUrl: "#"
+                }))}
+                onUploadSuccess={(newDoc) => {
+                  const updatedDocs = [...localEvent.docs, { id: newDoc.id, name: newDoc.name, status: "uploaded" as const }];
+                  handleUpdate({ ...localEvent, docs: updatedDocs });
+                }}
+                onDeleteDocument={(docId) => handleDeleteDoc(docId)}
+              />
             </div>
           )}
 

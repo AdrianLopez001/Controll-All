@@ -8,6 +8,8 @@ import {
 import type { Project, Employee, WarehouseItem, OSComentario, OSFoto, OSAssinaturas, AssignedEmployee } from "../types";
 import logoImg from "../assets/logo.png";
 import { exportElementToPDF } from "../utils/pdfGenerator";
+import { logSecurityEvent } from "../utils/security";
+import SignaturePad, { type SignatureData } from "./SignaturePad";
 
 interface OrdensServicoProps {
   events: Project[];
@@ -1709,6 +1711,43 @@ export default function OrdensServico({
                 Confirmar e Seguir Criando Demais OS
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SIGNATURE CANVAS MODAL */}
+      {isSignatureModalOpen && selectedOS && (
+        <div className="modal-overlay" onClick={() => setIsSignatureModalOpen(false)}>
+          <div className="modal-content" style={{ maxWidth: "560px", padding: "16px", background: "transparent", border: "none", boxShadow: "none" }} onClick={(e) => e.stopPropagation()}>
+            <SignaturePad
+              defaultName={signatureType === "cliente" ? selectedOS.client : "Responsável Técnico"}
+              defaultCargo={signatureType === "cliente" ? "Cliente Signatário" : "Supervisor de Montagem"}
+              onCancel={() => setIsSignatureModalOpen(false)}
+              onSaveSignature={(signatureData) => {
+                const currentAssinaturas = selectedOS.assinaturas || {};
+                const updatedAssinaturas: OSAssinaturas = {
+                  ...currentAssinaturas,
+                  dataAssinatura: new Date(signatureData.dataAssinatura).toLocaleDateString(),
+                  ...(signatureType === "cliente" 
+                    ? { clienteAssinatura: signatureData.imagemAssinatura }
+                    : { responsavelAssinatura: signatureData.imagemAssinatura }
+                  )
+                };
+
+                onUpdateEvent({
+                  ...selectedOS,
+                  assinaturas: updatedAssinaturas
+                });
+
+                logSecurityEvent(
+                  signatureData.assinadoPor,
+                  "ASSINATURA_OS_DIGITAL",
+                  `Assinatura digital (${signatureType}) registrada na OS ${selectedOS.codigo}`
+                );
+
+                setIsSignatureModalOpen(false);
+              }}
+            />
           </div>
         </div>
       )}

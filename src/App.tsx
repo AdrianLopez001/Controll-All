@@ -22,7 +22,8 @@ import logoImg from "./assets/logo.png";
 import OrdensServico from "./components/OrdensServico";
 import Agenda from "./components/Agenda";
 import { BankReconciliationModal } from "./components/BankReconciliationModal";
-import { safeStorage, canUserAccessTab } from "./utils/security";
+import TwoFactorModal from "./components/TwoFactorModal";
+import { safeStorage, canUserAccessTab, ROLE_LABELS, type UserRole } from "./utils/security";
 
 // Import shared types
 import type { 
@@ -657,7 +658,7 @@ export default function App() {
   };
 
   // Permissions & Modules Activation States
-  const [userRole, setUserRole] = useState<"admin" | "comercial" | "estoque" | "operador">("admin");
+  const [userRole, setUserRole] = useState<UserRole>("dono");
   const [activeModules, setActiveModules] = useState<Record<string, boolean>>({
     overview: true,
     crm: true,
@@ -1252,9 +1253,12 @@ export default function App() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (loginEmail.includes("comercial")) setUserRole("comercial");
-    else if (loginEmail.includes("estoque") || loginEmail.includes("almoxarifado")) setUserRole("estoque");
+    else if (loginEmail.includes("estoque") || loginEmail.includes("almoxarifado")) setUserRole("estoquista");
     else if (loginEmail.includes("operador")) setUserRole("operador");
-    else setUserRole("admin");
+    else if (loginEmail.includes("financeiro")) setUserRole("financeiro");
+    else if (loginEmail.includes("gerente")) setUserRole("gerente");
+    else if (loginEmail.includes("supervisor")) setUserRole("supervisor");
+    else setUserRole("dono");
 
     setIsLoggedIn(true);
     registerAudit("Login de Usuário", `Login efetuado no sistema via portal JC Eventos como ${userRole}`);
@@ -1918,21 +1922,24 @@ export default function App() {
               JC
             </div>
             
-            <div className="menu-dropdown" style={{ right: 0, left: "auto" }}>
+            <div className="menu-dropdown" style={{ right: 0, left: "auto", minWidth: "220px" }}>
               <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)", marginBottom: "4px" }}>
-                <span style={{ fontSize: "10px", fontWeight: "600", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Alterar Nível de Acesso</span>
+                <span style={{ fontSize: "10px", fontWeight: "600", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Alterar Perfil RBAC (5 Perfis)</span>
               </div>
-              <button className={`dropdown-item ${userRole === "admin" ? "active" : ""}`} onClick={() => { setUserRole("admin"); registerAudit("Alteração de Perfil", "Nível de acesso alterado para ADMIN"); }}>
-                Administrador Geral
+              <button className={`dropdown-item ${userRole === "dono" || userRole === "admin" ? "active" : ""}`} onClick={() => { setUserRole("dono"); registerAudit("Alteração de Perfil", "Nível de acesso alterado para DONO (Admin Master)"); }}>
+                🔴 DONO (Admin Master)
               </button>
-              <button className={`dropdown-item ${userRole === "comercial" ? "active" : ""}`} onClick={() => { setUserRole("comercial"); registerAudit("Alteração de Perfil", "Nível de acesso alterado para COMERCIAL"); }}>
-                Comercial / Vendas
+              <button className={`dropdown-item ${userRole === "gerente" ? "active" : ""}`} onClick={() => { setUserRole("gerente"); registerAudit("Alteração de Perfil", "Nível de acesso alterado para GERENTE"); }}>
+                🟧 GERENTE
               </button>
-              <button className={`dropdown-item ${userRole === "estoque" ? "active" : ""}`} onClick={() => { setUserRole("estoque"); registerAudit("Alteração de Perfil", "Nível de acesso alterado para ESTOQUE"); }}>
-                Almoxarifado / Estoque
+              <button className={`dropdown-item ${userRole === "supervisor" ? "active" : ""}`} onClick={() => { setUserRole("supervisor"); registerAudit("Alteração de Perfil", "Nível de acesso alterado para SUPERVISOR"); }}>
+                🟡 SUPERVISOR
               </button>
-              <button className={`dropdown-item ${userRole === "operador" ? "active" : ""}`} onClick={() => { setUserRole("operador"); registerAudit("Alteração de Perfil", "Nível de acesso alterado para OPERADOR"); }}>
-                Operacional (OS/Montagem)
+              <button className={`dropdown-item ${userRole === "estoquista" ? "active" : ""}`} onClick={() => { setUserRole("estoquista"); registerAudit("Alteração de Perfil", "Nível de acesso alterado para ESTOQUISTA"); }}>
+                🔵 ESTOQUISTA (WMS/Depósito)
+              </button>
+              <button className={`dropdown-item ${userRole === "financeiro" ? "active" : ""}`} onClick={() => { setUserRole("financeiro"); registerAudit("Alteração de Perfil", "Nível de acesso alterado para FINANCEIRO"); }}>
+                🟢 FINANCEIRO
               </button>
               
               <div style={{ borderTop: "1px solid var(--border)", marginTop: "6px", paddingTop: "4px" }}>

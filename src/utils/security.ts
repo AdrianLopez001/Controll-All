@@ -60,23 +60,75 @@ export const safeStorage = {
   }
 };
 
-// 4. Role-Based Access Control (RBAC) Enforcer
-export type UserRole = "admin" | "comercial" | "estoque" | "operador";
+// 4. Role-Based Access Control (RBAC) Enforcer - PLANO DE PRODUÇÃO SEÇÃO 2.2
+export type UserRole = "dono" | "gerente" | "supervisor" | "estoquista" | "financeiro" | "admin" | "comercial" | "operador";
+
+export const ROLE_LABELS: Record<UserRole, { title: string; color: string; desc: string }> = {
+  dono: { title: "DONO (Admin Master)", color: "#ef4444", desc: "Acesso Total a Todos os Módulos" },
+  gerente: { title: "GERENTE", color: "#f97316", desc: "Acesso Geral (exceto Config. do Sistema)" },
+  supervisor: { title: "SUPERVISOR", color: "#eab308", desc: "Eventos, OS, Equipes, Logística & WMS" },
+  estoquista: { title: "ESTOQUISTA", color: "#3b82f6", desc: "Depósito/WMS, OS & Agenda" },
+  financeiro: { title: "FINANCEIRO", color: "#10b981", desc: "Financeiro, Orçamentos, Config. & CRM" },
+  admin: { title: "DONO (Admin Master)", color: "#ef4444", desc: "Acesso Total" },
+  comercial: { title: "COMERCIAL", color: "#8b5cf6", desc: "CRM & Orçamentos" },
+  operador: { title: "OPERADOR", color: "#6b7280", desc: "OS & Kanban" }
+};
+
+const ALL_MODULES = [
+  "overview", "crm", "orcamentos", "os", "kanban", "agenda", 
+  "warehouse", "logistics", "financial", "employees", "auditoria", "config"
+];
 
 const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
-  admin: [
+  dono: ALL_MODULES,
+  admin: ALL_MODULES,
+  gerente: [
     "overview", "crm", "orcamentos", "os", "kanban", "agenda", 
     "warehouse", "logistics", "financial", "employees", "auditoria"
   ],
+  supervisor: [
+    "overview", "crm", "orcamentos", "os", "kanban", "agenda", 
+    "warehouse", "logistics", "employees", "auditoria"
+  ],
+  estoquista: [
+    "overview", "os", "kanban", "agenda", "warehouse", "logistics"
+  ],
+  financeiro: [
+    "overview", "crm", "orcamentos", "os", "kanban", "agenda", 
+    "logistics", "financial", "config", "auditoria"
+  ],
   comercial: ["overview", "crm", "orcamentos", "agenda"],
-  estoque: ["overview", "warehouse", "logistics", "agenda"],
   operador: ["overview", "os", "kanban", "agenda"]
 };
 
+// Returns whether a user role has read/write permission to a module tab
 export function canUserAccessTab(role: UserRole, tab: string, activeModules: Record<string, boolean>): boolean {
   if (!activeModules[tab]) return false;
-  const allowedTabs = ROLE_PERMISSIONS[role] || [];
+  const allowedTabs = ROLE_PERMISSIONS[role] || ALL_MODULES;
   return allowedTabs.includes(tab);
+}
+
+// Returns whether a user role can perform write/edit actions in a module
+export function canUserEditModule(role: UserRole, tab: string): boolean {
+  if (role === "dono" || role === "admin" || role === "gerente") return true;
+  
+  if (role === "supervisor") {
+    return ["os", "kanban", "employees", "logistics", "warehouse"].includes(tab);
+  }
+  if (role === "estoquista") {
+    return ["warehouse", "os"].includes(tab);
+  }
+  if (role === "financeiro") {
+    return ["financial", "orcamentos", "config"].includes(tab);
+  }
+  if (role === "comercial") {
+    return ["crm", "orcamentos"].includes(tab);
+  }
+  if (role === "operador") {
+    return ["os"].includes(tab);
+  }
+  
+  return false;
 }
 
 // 5. Hostinger Production Audit Logger
