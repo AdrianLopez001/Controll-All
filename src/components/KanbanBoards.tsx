@@ -1,11 +1,15 @@
-import { useState, useRef, type FormEvent } from "react";
-import { Plus, Calendar, CheckSquare, ArrowRight, ArrowLeft, Move, Filter } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { 
+  Calendar, Plus, MapPin, ChevronDown, ChevronUp, FileText, 
+  Trash2, CheckSquare, DollarSign, ArrowRight, Filter, Search,
+  Building2, Layers
+} from "lucide-react";
 import type { Project } from "../types";
 
 interface KanbanBoardsProps {
   events: Project[];
   onSelectEvent: (event: Project) => void;
-  onAddEvent: (name: string, client: string, startDate: string) => void;
+  onAddEvent: (name: string, client: string, startDate: string, extra?: Partial<Project>) => void;
   onUpdateEventPhase: (id: string, phase: any) => void;
   onDeleteEvent?: (id: string) => void;
   onReorderEvents?: (reorderedEvents: Project[]) => void;
@@ -16,501 +20,571 @@ export default function KanbanBoards({
   onSelectEvent, 
   onAddEvent,
   onUpdateEventPhase,
-  onReorderEvents,
+  onDeleteEvent
 }: KanbanBoardsProps) {
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [name, setName] = useState("");
-  const [client, setClient] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [selectedFeiraFilter, setSelectedFeiraFilter] = useState<string>("all");
-  const [selectedEventIdFilter, setSelectedEventIdFilter] = useState<string>("all");
-  const [activeMobileColumn, setActiveMobileColumn] = useState<"no_event" | "during" | "post">("no_event");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [cidadeFilter, setCidadeFilter] = useState("all");
+  const [expandedEvents, setExpandedEvents] = useState<string[]>([]);
+  
+  // Modal States
+  const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [showAddStandModal, setShowAddStandModal] = useState(false);
+  const [targetFeiraName, setTargetFeiraName] = useState("");
 
-  // Drag and Drop state
-  const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
-  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
-  const cardDragTimestampRef = useRef<number>(0);
+  // Form States
+  const [formNomeFeira, setFormNomeFeira] = useState("");
+  const [formCidade, setFormCidade] = useState("Recife / PE");
+  const [formEstandeName, setFormEstandeName] = useState("");
+  const [formClient, setFormClient] = useState("");
+  const [formStartDate, setFormStartDate] = useState(new Date().toISOString().split("T")[0]);
+  const [formEndDate, setFormEndDate] = useState("");
+  const [formValor, setFormValor] = useState(35000);
+  const [formTipo, setFormTipo] = useState<"padrao" | "misto" | "construido">("misto");
 
-  const handleCardClick = (e: React.MouseEvent, event: Project) => {
-    if (Date.now() - cardDragTimestampRef.current < 800) {
-      return; // Ignore synthetic click after drag and drop
+  // Group projects into Eventos / Feiras Principais
+  const groupedEventsMap = new Map<string, Project[]>();
+  events.forEach(item => {
+    const key = item.nomeFeira || item.name;
+    if (!groupedEventsMap.has(key)) {
+      groupedEventsMap.set(key, []);
     }
-    onSelectEvent(event);
-  };
+    groupedEventsMap.get(key)!.push(item);
+  });
 
-  // Extract unique Feiras / Eventos Principais
-  const uniqueFeiras = Array.from(
-    new Set(events.map(e => e.nomeFeira || e.name).filter(Boolean))
+  const uniqueEventNames = Array.from(groupedEventsMap.keys());
+
+  // Available unique cities for filtering
+  const uniqueCidades = Array.from(
+    new Set(events.map(e => e.cidadeEvento || "Recife / PE").filter(Boolean))
   );
 
-  const handleAddSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (!name || !client || !startDate) return;
-    onAddEvent(name, client, startDate);
-    setName("");
-    setClient("");
-    setStartDate("");
-    setShowAddForm(false);
-  };
-
-  // Filter events by selected Feira/Evento AND selected individual stand
-  let displayedEvents = events;
-  if (selectedFeiraFilter !== "all") {
-    displayedEvents = displayedEvents.filter(e => (e.nomeFeira || e.name) === selectedFeiraFilter);
-  }
-  if (selectedEventIdFilter !== "all") {
-    displayedEvents = displayedEvents.filter(e => e.id === selectedEventIdFilter);
-  }
-
-  // Active selected Feira statistics
-  const currentFeiraObj = events.find(e => (e.nomeFeira || e.name) === selectedFeiraFilter);
-
-  // Filter events by phase accurately
-  const noEventPhases = ["no_event", "Briefing", "Orçamento", "Pré-Evento"];
-  const duringPhases = ["during", "Produção", "Montagem", "Evento", "Aprovado"];
-  const postPhases = ["post", "Desmontagem", "Finalizado"];
-
-  const noEventList = displayedEvents.filter((e) => noEventPhases.includes(e.phase));
-  const duringList = displayedEvents.filter((e) => duringPhases.includes(e.phase));
-  const postList = displayedEvents.filter((e) => postPhases.includes(e.phase) || (!noEventPhases.includes(e.phase) && !duringPhases.includes(e.phase)));
-
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    cardDragTimestampRef.current = Date.now();
-    e.dataTransfer.setData("text/plain", id);
-    setDraggedCardId(id);
-  };
-
-  const handleDragEnd = () => {
-    cardDragTimestampRef.current = Date.now();
-    setDraggedCardId(null);
-    setDragOverColumn(null);
-  };
-
-  const handleDragOver = (e: React.DragEvent, colName: string) => {
-    e.preventDefault();
-    cardDragTimestampRef.current = Date.now();
-    if (dragOverColumn !== colName) setDragOverColumn(colName);
-  };
-
-  const handleDrop = (e: React.DragEvent, targetPhase: string) => {
-    e.preventDefault();
-    cardDragTimestampRef.current = Date.now();
-    const id = e.dataTransfer.getData("text/plain") || draggedCardId;
-    if (!id) return;
-
-    const draggedItem = events.find(x => x.id === id);
-    if (!draggedItem) return;
-
-    if (draggedItem.phase !== targetPhase) {
-      onUpdateEventPhase(id, targetPhase);
-    }
-
-    if (onReorderEvents) {
-      const remaining = events.filter(x => x.id !== id);
-      const updatedItem = { ...draggedItem, phase: targetPhase };
-      remaining.push(updatedItem);
-      onReorderEvents(remaining);
-    }
-
-    setDraggedCardId(null);
-    setDragOverColumn(null);
-  };
-
-  const handleCardDrop = (e: React.DragEvent, targetCard: Project, targetPhase: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const draggedId = e.dataTransfer.getData("text/plain") || draggedCardId;
-    if (!draggedId || draggedId === targetCard.id) {
-      setDraggedCardId(null);
-      setDragOverColumn(null);
-      return;
-    }
-
-    const draggedItem = events.find(x => x.id === draggedId);
-    if (!draggedItem) return;
-
-    if (draggedItem.phase !== targetPhase) {
-      onUpdateEventPhase(draggedId, targetPhase);
-    }
-
-    if (onReorderEvents) {
-      const listWithoutDragged = events.filter(x => x.id !== draggedId);
-      const targetIndex = listWithoutDragged.findIndex(x => x.id === targetCard.id);
-      if (targetIndex !== -1) {
-        const updatedItem = { ...draggedItem, phase: targetPhase };
-        listWithoutDragged.splice(targetIndex, 0, updatedItem);
-        onReorderEvents(listWithoutDragged);
-      }
-    }
-
-    setDraggedCardId(null);
-    setDragOverColumn(null);
-  };
-
-  const moveCardUp = (list: Project[], index: number) => {
-    if (index <= 0) return;
-    const item = list[index];
-    const prevItem = list[index - 1];
-
-    const itemIdx = events.findIndex(e => e.id === item.id);
-    const prevIdx = events.findIndex(e => e.id === prevItem.id);
-
-    if (itemIdx !== -1 && prevIdx !== -1 && onReorderEvents) {
-      const updated = [...events];
-      const temp = updated[itemIdx];
-      updated[itemIdx] = updated[prevIdx];
-      updated[prevIdx] = temp;
-      onReorderEvents(updated);
-    }
-  };
-
-  const moveCardDown = (list: Project[], index: number) => {
-    if (index >= list.length - 1) return;
-    const item = list[index];
-    const nextItem = list[index + 1];
-
-    const itemIdx = events.findIndex(e => e.id === item.id);
-    const nextIdx = events.findIndex(e => e.id === nextItem.id);
-
-    if (itemIdx !== -1 && nextIdx !== -1 && onReorderEvents) {
-      const updated = [...events];
-      const temp = updated[itemIdx];
-      updated[itemIdx] = updated[nextIdx];
-      updated[nextIdx] = temp;
-      onReorderEvents(updated);
-    }
-  };
-
-  const renderCard = (event: Project, index: number, list: Project[], columnPhase: string) => {
-    const totalTasks = event.checklist.length;
-    const completedTasks = event.checklist.filter((c) => c.done).length;
-
-    return (
-      <div 
-        key={event.id} 
-        className="kanban-card"
-        draggable
-        onDragStart={(e) => handleDragStart(e, event.id)}
-        onDragEnd={handleDragEnd}
-        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-        onDrop={(e) => handleCardDrop(e, event, columnPhase)}
-        style={{
-          cursor: "grab",
-          userSelect: "none",
-          borderLeft: "4px solid var(--accent)",
-          transition: "transform 0.15s ease, box-shadow 0.15s ease",
-          opacity: draggedCardId === event.id ? 0.4 : 1
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Move size={12} style={{ color: "var(--text-muted)", cursor: "grab" }} />
-            <span style={{ fontSize: "10px", fontWeight: "700", color: "var(--accent)", background: "var(--bg-main)", padding: "2px 6px", borderRadius: "4px" }}>
-              {event.codigo}
-            </span>
-          </div>
-          <div style={{ display: "flex", gap: "2px" }}>
-            <button 
-              type="button"
-              disabled={index === 0}
-              onClick={(e) => { e.stopPropagation(); moveCardUp(list, index); }}
-              style={{ background: "none", border: "none", cursor: index === 0 ? "default" : "pointer", opacity: index === 0 ? 0.3 : 1, fontSize: "10px", padding: "2px 4px" }}
-              title="Mover para cima"
-            >
-              ▲
-            </button>
-            <button 
-              type="button"
-              disabled={index === list.length - 1}
-              onClick={(e) => { e.stopPropagation(); moveCardDown(list, index); }}
-              style={{ background: "none", border: "none", cursor: index === list.length - 1 ? "default" : "pointer", opacity: index === list.length - 1 ? 0.3 : 1, fontSize: "10px", padding: "2px 4px" }}
-              title="Mover para baixo"
-            >
-              ▼
-            </button>
-          </div>
-        </div>
-
-        <div onClick={(e) => handleCardClick(e, event)} style={{ flexGrow: 1, cursor: "pointer" }}>
-          <h4 className="kanban-card-title" style={{ fontSize: "13px", fontWeight: "700" }}>{event.name}</h4>
-          <span className="text-xs text-muted" style={{ display: "block", marginTop: "4px" }}>
-            Cliente: <strong>{event.client}</strong>
-          </span>
-          
-          <div className="flex-row gap-10 mt-20" style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <Calendar size={11} />
-              <span>{event.startDate}</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "4px", marginLeft: "auto" }}>
-              <CheckSquare size={11} />
-              <span>{completedTasks}/{totalTasks}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Phase Navigation Shortcuts */}
-        <div style={{ display: "flex", gap: "6px", borderTop: "1px solid var(--border)", paddingTop: "8px", marginTop: "8px" }}>
-          {event.phase !== "no_event" && (
-            <button 
-              className="btn-secondary text-xs" 
-              style={{ padding: "4px 8px", display: "flex", alignItems: "center", gap: "2px" }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdateEventPhase(event.id, event.phase === "during" ? "no_event" : "during");
-              }}
-              title="Mover para fase anterior"
-            >
-              <ArrowLeft size={10} /> Voltar
-            </button>
-          )}
-          {event.phase !== "post" && (
-            <button 
-              className="btn-primary text-xs" 
-              style={{ padding: "4px 8px", display: "flex", alignItems: "center", gap: "2px", marginLeft: "auto" }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdateEventPhase(event.id, event.phase === "no_event" ? "during" : "post");
-              }}
-              title="Avançar fase"
-            >
-              Avançar <ArrowRight size={10} />
-            </button>
-          )}
-        </div>
-      </div>
+  const toggleExpand = (feiraName: string) => {
+    setExpandedEvents(prev => 
+      prev.includes(feiraName) ? prev.filter(name => name !== feiraName) : [...prev, feiraName]
     );
   };
 
+  const handleCreateNewEvent = (e: FormEvent) => {
+    e.preventDefault();
+    if (!formNomeFeira.trim() || !formEstandeName.trim() || !formClient.trim()) return;
+
+    onAddEvent(formEstandeName, formClient, formStartDate, {
+      nomeFeira: formNomeFeira,
+      cidadeEvento: formCidade,
+      endDate: formEndDate || formStartDate,
+      valorContratado: formValor,
+      tipoEstande: formTipo
+    });
+
+    // Reset Form
+    setFormNomeFeira("");
+    setFormEstandeName("");
+    setFormClient("");
+    setFormValor(35000);
+    setShowAddEventModal(false);
+  };
+
+  const handleAddStandToEvent = (e: FormEvent) => {
+    e.preventDefault();
+    if (!targetFeiraName || !formEstandeName.trim() || !formClient.trim()) return;
+
+    const existingInFeira = events.find(x => (x.nomeFeira || x.name) === targetFeiraName);
+
+    onAddEvent(formEstandeName, formClient, formStartDate, {
+      nomeFeira: targetFeiraName,
+      cidadeEvento: existingInFeira?.cidadeEvento || "Recife / PE",
+      endDate: formEndDate || formStartDate,
+      valorContratado: formValor,
+      tipoEstande: formTipo
+    });
+
+    setFormEstandeName("");
+    setFormClient("");
+    setFormValor(25000);
+    setShowAddStandModal(false);
+  };
+
+  const formatCurrency = (val: number) => {
+    return (val || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  };
+
+  // Filtered Event List
+  const filteredEventNames = uniqueEventNames.filter(feiraName => {
+    const list = groupedEventsMap.get(feiraName) || [];
+    const matchesSearch = feiraName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      list.some(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.client.toLowerCase().includes(searchTerm.toLowerCase()) || p.codigo.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesCidade = cidadeFilter === "all" || list.some(p => (p.cidadeEvento || "Recife / PE") === cidadeFilter);
+
+    return matchesSearch && matchesCidade;
+  });
+
+  // Calculate Metrics
+  const totalEventosCount = uniqueEventNames.length;
+  const totalEstandesCount = events.length;
+  const totalFaturamento = events.reduce((acc, curr) => acc + (curr.valorContratado || 0), 0);
+  const estandesEmProducao = events.filter(e => ["Produção", "Montagem", "during"].includes(e.phase)).length;
+
+  const ALL_PHASES = ["Briefing", "Orçamento", "Aprovado", "Produção", "Montagem", "Evento", "Desmontagem", "Finalizado"];
+
   return (
-    <div style={{ position: "relative" }}>
-      {/* Event/Feira Filter Tabs & Header */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "20px", background: "var(--bg-card)", padding: "18px 20px", borderRadius: "16px", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {/* Header Bar */}
+      <div style={{ backgroundColor: "var(--bg-card)", borderRadius: "16px", padding: "20px 24px", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
           <div>
-            <h3 style={{ fontSize: "16px", fontWeight: "800", margin: 0, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px" }}>
-              <Calendar size={20} style={{ color: "var(--accent)" }} /> Quadro Kanban por Evento &amp; Feira
-            </h3>
-            <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "4px 0 0 0" }}>
-              Selecione o evento principal para gerenciar todos os estandes e etapas vinculadas àquela feira específica.
+            <h2 style={{ fontSize: "18px", fontWeight: "800", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "10px", margin: 0 }}>
+              <Calendar size={22} style={{ color: "var(--accent)" }} /> Central de Gestão de Eventos &amp; Feiras
+            </h2>
+            <p style={{ fontSize: "13px", color: "var(--text-muted)", margin: "4px 0 0 0" }}>
+              Visualização unificada dos eventos principais com expansão detalhada de informações e estandes vinculados.
             </p>
           </div>
 
-          <button className="btn-primary" onClick={() => setShowAddForm(true)} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Plus size={16} /> Novo Estande / Projeto
-          </button>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            <button 
+              className="btn-secondary"
+              onClick={() => {
+                setTargetFeiraName(uniqueEventNames[0] || "");
+                setShowAddStandModal(true);
+              }}
+              style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: "600" }}
+            >
+              <Plus size={16} /> Novo Estande Vinculado
+            </button>
+            <button 
+              className="btn-primary"
+              onClick={() => setShowAddEventModal(true)}
+              style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: "700" }}
+            >
+              <Building2 size={16} /> Cadastrar Novo Evento
+            </button>
+          </div>
         </div>
 
-        {/* Feiras Selector Tabs */}
-        <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "4px", borderTop: "1px solid var(--border)", paddingTop: "14px" }}>
-          <button
-            onClick={() => { setSelectedFeiraFilter("all"); setSelectedEventIdFilter("all"); }}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "20px",
-              border: selectedFeiraFilter === "all" ? "none" : "1px solid var(--border)",
-              backgroundColor: selectedFeiraFilter === "all" ? "var(--accent)" : "var(--bg-main)",
-              color: selectedFeiraFilter === "all" ? "#fff" : "var(--text-primary)",
-              fontWeight: "700",
-              fontSize: "12px",
-              cursor: "pointer",
-              whiteSpace: "nowrap"
-            }}
-          >
-            🎪 Todos os Eventos ({events.length})
-          </button>
+        {/* Metrics Summary Widgets */}
+        <div className="responsive-layout-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px", marginTop: "20px", borderTop: "1px solid var(--border)", paddingTop: "16px" }}>
+          <div style={{ backgroundColor: "var(--bg-main)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border)" }}>
+            <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Eventos Principais</span>
+            <div style={{ fontSize: "20px", fontWeight: "800", color: "var(--accent)", marginTop: "2px" }}>{totalEventosCount} feiras</div>
+          </div>
+          <div style={{ backgroundColor: "var(--bg-main)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border)" }}>
+            <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Estandes Contratados</span>
+            <div style={{ fontSize: "20px", fontWeight: "800", color: "var(--text-primary)", marginTop: "2px" }}>{totalEstandesCount} projetos</div>
+          </div>
+          <div style={{ backgroundColor: "var(--bg-main)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border)" }}>
+            <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Faturamento Acumulado</span>
+            <div style={{ fontSize: "20px", fontWeight: "800", color: "#059669", marginTop: "2px" }}>{formatCurrency(totalFaturamento)}</div>
+          </div>
+          <div style={{ backgroundColor: "var(--bg-main)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border)" }}>
+            <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Em Produção/Montagem</span>
+            <div style={{ fontSize: "20px", fontWeight: "800", color: "#d97706", marginTop: "2px" }}>{estandesEmProducao} estande(s)</div>
+          </div>
+        </div>
+      </div>
 
-          {uniqueFeiras.map((feira, idx) => {
-            const count = events.filter(e => (e.nomeFeira || e.name) === feira).length;
-            const isSelected = selectedFeiraFilter === feira;
+      {/* Filter and Search controls */}
+      <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ position: "relative", flexGrow: 1, minWidth: "260px" }}>
+          <Search size={16} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+          <input 
+            type="text"
+            placeholder="Buscar evento, cidade, cliente ou estande..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px 14px 10px 38px",
+              borderRadius: "10px",
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--bg-card)",
+              color: "var(--text-primary)",
+              fontSize: "13px"
+            }}
+          />
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", backgroundColor: "var(--bg-card)", padding: "4px 12px", borderRadius: "10px", border: "1px solid var(--border)" }}>
+          <Filter size={14} style={{ color: "var(--text-muted)" }} />
+          <span style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-secondary)" }}>Cidade:</span>
+          <select 
+            value={cidadeFilter}
+            onChange={(e) => setCidadeFilter(e.target.value)}
+            style={{ background: "transparent", border: "none", fontSize: "12px", fontWeight: "700", color: "var(--accent)" }}
+          >
+            <option value="all">Todas as Cidades ({uniqueCidades.length})</option>
+            {uniqueCidades.map((cid, i) => (
+              <option key={i} value={cid}>{cid}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Main List of Events */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {filteredEventNames.length === 0 ? (
+          <div style={{ backgroundColor: "var(--bg-card)", padding: "40px", textAlign: "center", borderRadius: "16px", border: "1px solid var(--border)" }}>
+            <Calendar size={40} style={{ color: "var(--text-muted)", marginBottom: "12px" }} />
+            <h3 style={{ fontSize: "16px", color: "var(--text-primary)", margin: 0 }}>Nenhum evento encontrado</h3>
+            <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>Tente ajustar a busca ou cadastrar um novo evento.</p>
+          </div>
+        ) : (
+          filteredEventNames.map(feiraName => {
+            const linkedProjetos = groupedEventsMap.get(feiraName) || [];
+            const isExpanded = expandedEvents.includes(feiraName);
+            const firstProj = linkedProjetos[0];
+            const cidade = firstProj?.cidadeEvento || "Recife / PE";
+            const valorTotalEvento = linkedProjetos.reduce((acc, curr) => acc + (curr.valorContratado || 0), 0);
+            const totalTasksAll = linkedProjetos.reduce((acc, curr) => acc + curr.checklist.length, 0);
+            const completedTasksAll = linkedProjetos.reduce((acc, curr) => acc + curr.checklist.filter(c => c.done).length, 0);
+            const pctDone = totalTasksAll > 0 ? Math.round((completedTasksAll / totalTasksAll) * 100) : 0;
+
             return (
-              <button
-                key={idx}
-                onClick={() => { setSelectedFeiraFilter(feira); setSelectedEventIdFilter("all"); }}
+              <div 
+                key={feiraName}
                 style={{
-                  padding: "8px 16px",
-                  borderRadius: "20px",
-                  border: isSelected ? "none" : "1px solid var(--border)",
-                  backgroundColor: isSelected ? "var(--accent)" : "var(--bg-main)",
-                  color: isSelected ? "#fff" : "var(--text-primary)",
-                  fontWeight: "700",
-                  fontSize: "12px",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px"
+                  backgroundColor: "var(--bg-card)",
+                  borderRadius: "16px",
+                  border: isExpanded ? "2px solid var(--accent)" : "1px solid var(--border)",
+                  boxShadow: isExpanded ? "var(--shadow-md)" : "var(--shadow-sm)",
+                  overflow: "hidden",
+                  transition: "all 0.2s ease-in-out"
                 }}
               >
-                <span>📍 {feira}</span>
-                <span style={{ fontSize: "10px", padding: "1px 6px", borderRadius: "10px", backgroundColor: isSelected ? "rgba(255,255,255,0.25)" : "var(--accent-glow)", color: isSelected ? "#fff" : "var(--accent)" }}>
-                  {count} estande(s)
-                </span>
-              </button>
-            );
-          })}
-        </div>
+                {/* Event Header Bar (Clickable to Expand) */}
+                <div 
+                  onClick={() => toggleExpand(feiraName)}
+                  style={{
+                    padding: "16px 20px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    cursor: "pointer",
+                    backgroundColor: isExpanded ? "var(--accent-glow)" : "var(--bg-card)",
+                    borderBottom: isExpanded ? "1px solid var(--border)" : "none"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+                    <div style={{ backgroundColor: "var(--accent)", color: "#fff", width: "42px", height: "42px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "800", fontSize: "18px" }}>
+                      🎪
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <h3 style={{ fontSize: "16px", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>
+                          {feiraName}
+                        </h3>
+                        <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--accent)", backgroundColor: "var(--bg-main)", padding: "2px 8px", borderRadius: "12px", border: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "4px" }}>
+                          <MapPin size={10} /> {cidade}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "16px", marginTop: "4px", fontSize: "12px", color: "var(--text-muted)" }}>
+                        <span>📅 {firstProj?.startDate || "Período do Evento"}</span>
+                        <span>🏢 <strong>{linkedProjetos.length}</strong> estande(s) vinculado(s)</span>
+                        <span>💰 Faturamento: <strong style={{ color: "#059669" }}>{formatCurrency(valorTotalEvento)}</strong></span>
+                      </div>
+                    </div>
+                  </div>
 
-        {/* Selected Feira Details Banner */}
-        {selectedFeiraFilter !== "all" && currentFeiraObj && (
-          <div style={{ backgroundColor: "var(--accent-glow)", border: "1px solid var(--accent)", borderRadius: "12px", padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", fontSize: "12px" }}>
-            <div>
-              <strong style={{ fontSize: "14px", color: "var(--accent)", display: "block" }}>{selectedFeiraFilter}</strong>
-              <span style={{ color: "var(--text-secondary)" }}>
-                Local: <strong>{currentFeiraObj.cidadeEvento || currentFeiraObj.centroConvencoes || "Pavilhão Principal"}</strong> | Montagem: <strong>{currentFeiraObj.dataMontagem}</strong> | Evento: <strong>{currentFeiraObj.startDate} a {currentFeiraObj.endDate}</strong>
-              </span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ fontWeight: "700", color: "var(--text-primary)" }}>{displayedEvents.length} Estande(s) neste Evento</span>
-              <button 
-                className="btn-secondary text-xs" 
-                onClick={() => setSelectedFeiraFilter("all")}
-                style={{ padding: "4px 10px" }}
-              >
-                Ver Todos
-              </button>
-            </div>
-          </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                    <div style={{ textAlign: "right" }}>
+                      <span style={{ fontSize: "11px", color: "var(--text-muted)", display: "block" }}>Checklist Geral</span>
+                      <strong style={{ fontSize: "13px", color: pctDone === 100 ? "#059669" : "var(--accent)" }}>{pctDone}% concluído</strong>
+                    </div>
+
+                    <button 
+                      type="button" 
+                      style={{ background: "var(--bg-main)", border: "1px solid var(--border)", borderRadius: "50%", width: "34px", height: "34px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--accent)" }}
+                    >
+                      {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Expanded Event Details & Linked Projects */}
+                {isExpanded && (
+                  <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "20px", backgroundColor: "var(--bg-card)" }}>
+                    
+                    {/* Event Details Grid Panel */}
+                    <div style={{ backgroundColor: "var(--bg-main)", borderRadius: "12px", padding: "16px", border: "1px solid var(--border)" }}>
+                      <h4 style={{ fontSize: "13px", fontWeight: "800", color: "var(--accent)", margin: "0 0 12px 0", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <Layers size={14} /> Dados Completos do Evento
+                      </h4>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px", fontSize: "12px" }}>
+                        <div>
+                          <span style={{ color: "var(--text-muted)", display: "block" }}>Localização / Pavilhão:</span>
+                          <strong style={{ color: "var(--text-primary)" }}>{cidade} — Pavilhão Principal</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "var(--text-muted)", display: "block" }}>Período de Montagem:</span>
+                          <strong style={{ color: "var(--text-primary)" }}>{firstProj?.dataMontagem || firstProj?.startDate}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "var(--text-muted)", display: "block" }}>Período de Desmontagem:</span>
+                          <strong style={{ color: "var(--text-primary)" }}>{firstProj?.dataDesmontagem || firstProj?.endDate}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "var(--text-muted)", display: "block" }}>Responsável Geral:</span>
+                          <strong style={{ color: "var(--text-primary)" }}>{firstProj?.responsavel || "Supervisor JC Eventos"}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Linked Projects Table */}
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                        <h4 style={{ fontSize: "14px", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>
+                          Estandes e Projetos Vinculados ({linkedProjetos.length})
+                        </h4>
+                        <button 
+                          className="btn-secondary text-xs"
+                          onClick={() => {
+                            setTargetFeiraName(feiraName);
+                            setShowAddStandModal(true);
+                          }}
+                          style={{ padding: "6px 12px", display: "flex", alignItems: "center", gap: "4px" }}
+                        >
+                          <Plus size={12} /> Vincular Outro Estande
+                        </button>
+                      </div>
+
+                      <div style={{ borderRadius: "12px", border: "1px solid var(--border)", overflow: "hidden" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "12px" }}>
+                          <thead>
+                            <tr style={{ backgroundColor: "var(--bg-main)", borderBottom: "1px solid var(--border)" }}>
+                              <th style={{ padding: "10px 14px", fontWeight: "700" }}>CÓDIGO</th>
+                              <th style={{ padding: "10px 14px", fontWeight: "700" }}>NOME DO ESTANDE</th>
+                              <th style={{ padding: "10px 14px", fontWeight: "700" }}>CLIENTE</th>
+                              <th style={{ padding: "10px 14px", fontWeight: "700" }}>TIPO / ÁREA</th>
+                              <th style={{ padding: "10px 14px", fontWeight: "700" }}>VALOR</th>
+                              <th style={{ padding: "10px 14px", fontWeight: "700" }}>FASE ATUAL</th>
+                              <th style={{ padding: "10px 14px", fontWeight: "700", textAlign: "center" }}>AÇÕES</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {linkedProjetos.map(proj => {
+                              const totalChecklist = proj.checklist.length;
+                              const doneChecklist = proj.checklist.filter(c => c.done).length;
+
+                              return (
+                                <tr key={proj.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                                  <td style={{ padding: "10px 14px" }}>
+                                    <span style={{ fontWeight: "800", color: "var(--accent)", backgroundColor: "var(--accent-glow)", padding: "3px 8px", borderRadius: "6px" }}>
+                                      {proj.codigo}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: "10px 14px", fontWeight: "700", color: "var(--text-primary)" }}>
+                                    {proj.name}
+                                  </td>
+                                  <td style={{ padding: "10px 14px", color: "var(--text-secondary)" }}>
+                                    {proj.client}
+                                  </td>
+                                  <td style={{ padding: "10px 14px", color: "var(--text-secondary)", textTransform: "capitalize" }}>
+                                    {proj.tipoEstande || "Misto"} {proj.areaM2 ? `(${proj.areaM2}m²)` : ""}
+                                  </td>
+                                  <td style={{ padding: "10px 14px", fontWeight: "700", color: "#059669" }}>
+                                    {formatCurrency(proj.valorContratado)}
+                                  </td>
+                                  <td style={{ padding: "10px 14px" }}>
+                                    <select 
+                                      value={proj.phase}
+                                      onChange={(e) => onUpdateEventPhase(proj.id, e.target.value)}
+                                      style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid var(--border)", fontSize: "11px", fontWeight: "700", backgroundColor: "var(--bg-main)", color: "var(--accent)" }}
+                                    >
+                                      {ALL_PHASES.map(ph => (
+                                        <option key={ph} value={ph}>{ph}</option>
+                                      ))}
+                                    </select>
+                                  </td>
+                                  <td style={{ padding: "10px 14px", textAlign: "center" }}>
+                                    <div style={{ display: "flex", justifyContent: "center", gap: "6px" }}>
+                                      <button 
+                                        className="btn-primary"
+                                        onClick={() => onSelectEvent(proj)}
+                                        style={{ padding: "4px 10px", fontSize: "11px", display: "flex", alignItems: "center", gap: "4px" }}
+                                        title="Abrir ficha completa do estande"
+                                      >
+                                        <FileText size={12} /> Detalhes
+                                      </button>
+                                      {onDeleteEvent && (
+                                        <button 
+                                          className="btn-danger"
+                                          onClick={() => {
+                                            if (confirm(`Deseja excluir o estande "${proj.name}"?`)) {
+                                              onDeleteEvent(proj.id);
+                                            }
+                                          }}
+                                          style={{ padding: "4px 8px", fontSize: "11px" }}
+                                          title="Excluir estande"
+                                        >
+                                          <Trash2 size={12} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 
-      {/* Seletor Mobile de Colunas do Kanban */}
-      <div className="mobile-kanban-tabs" style={{ display: "none", marginBottom: "16px", gap: "6px" }}>
-        <button 
-          className={`btn-secondary text-xs ${activeMobileColumn === "no_event" ? "active" : ""}`} 
-          style={{ flex: 1, padding: "8px 4px", borderBottom: activeMobileColumn === "no_event" ? "3px solid var(--accent)" : "none", borderRadius: "8px", fontWeight: "600" }}
-          onClick={() => setActiveMobileColumn("no_event")}
-        >
-          Depósito ({noEventList.length})
-        </button>
-        <button 
-          className={`btn-secondary text-xs ${activeMobileColumn === "during" ? "active" : ""}`} 
-          style={{ flex: 1, padding: "8px 4px", borderBottom: activeMobileColumn === "during" ? "3px solid var(--accent)" : "none", borderRadius: "8px", fontWeight: "600" }}
-          onClick={() => setActiveMobileColumn("during")}
-        >
-          Montagem ({duringList.length})
-        </button>
-        <button 
-          className={`btn-secondary text-xs ${activeMobileColumn === "post" ? "active" : ""}`} 
-          style={{ flex: 1, padding: "8px 4px", borderBottom: activeMobileColumn === "post" ? "3px solid var(--accent)" : "none", borderRadius: "8px", fontWeight: "600" }}
-          onClick={() => setActiveMobileColumn("post")}
-        >
-          Retorno ({postList.length})
-        </button>
-      </div>
+      {/* MODAL: CADASTRO DE NOVO EVENTO PRINCIPAL */}
+      {showAddEventModal && (
+        <div className="modal-overlay" onClick={() => setShowAddEventModal(false)}>
+          <div className="modal-content" style={{ maxWidth: "520px" }} onClick={e => e.stopPropagation()}>
+            <h3 className="modal-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Building2 size={20} style={{ color: "var(--accent)" }} /> Cadastrar Novo Evento / Feira
+            </h3>
 
-      <div className="kanban-grid">
-        {/* Column 1 - No Event */}
-        <div 
-          className={`kanban-column mobile-kanban-col ${activeMobileColumn === "no_event" ? "mobile-show" : ""}`}
-          onDragOver={(e) => handleDragOver(e, "no_event")}
-          onDrop={(e) => handleDrop(e, "no_event")}
-          style={{
-            border: dragOverColumn === "no_event" ? "2px dashed var(--accent)" : "1px solid var(--border)",
-            borderRadius: "12px",
-            transition: "all 0.2s ease"
-          }}
-        >
-          <div className="kanban-column-header">
-            <div className="kanban-column-title-box">
-              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--text-muted)", display: "inline-block" }}></span>
-              <h3 className="kanban-column-title">Planejamento & Depósito</h3>
-            </div>
-            <span className="kanban-column-count">{noEventList.length}</span>
-          </div>
-          <div className="kanban-cards-container" style={{ minHeight: "200px" }}>
-            {noEventList.map((evt, idx) => renderCard(evt, idx, noEventList, "no_event"))}
-          </div>
-        </div>
-
-        {/* Column 2 - During Event */}
-        <div 
-          className={`kanban-column mobile-kanban-col ${activeMobileColumn === "during" ? "mobile-show" : ""}`}
-          onDragOver={(e) => handleDragOver(e, "during")}
-          onDrop={(e) => handleDrop(e, "during")}
-          style={{
-            border: dragOverColumn === "during" ? "2px dashed var(--accent)" : "1px solid var(--border)",
-            borderRadius: "12px",
-            transition: "all 0.2s ease"
-          }}
-        >
-          <div className="kanban-column-header">
-            <div className="kanban-column-title-box">
-              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--accent)", display: "inline-block" }}></span>
-              <h3 className="kanban-column-title">Durante (Montagem & Execução)</h3>
-            </div>
-            <span className="kanban-column-count">{duringList.length}</span>
-          </div>
-          <div className="kanban-cards-container" style={{ minHeight: "200px" }}>
-            {duringList.map((evt, idx) => renderCard(evt, idx, duringList, "during"))}
-          </div>
-        </div>
-
-        {/* Column 3 - Post Event */}
-        <div 
-          className={`kanban-column mobile-kanban-col ${activeMobileColumn === "post" ? "mobile-show" : ""}`}
-          onDragOver={(e) => handleDragOver(e, "post")}
-          onDrop={(e) => handleDrop(e, "post")}
-          style={{
-            border: dragOverColumn === "post" ? "2px dashed var(--accent)" : "1px solid var(--border)",
-            borderRadius: "12px",
-            transition: "all 0.2s ease"
-          }}
-        >
-          <div className="kanban-column-header">
-            <div className="kanban-column-title-box">
-              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--success)", display: "inline-block" }}></span>
-              <h3 className="kanban-column-title">Pós-Evento (Desmontagem / Retorno)</h3>
-            </div>
-            <span className="kanban-column-count">{postList.length}</span>
-          </div>
-          <div className="kanban-cards-container" style={{ minHeight: "200px" }}>
-            {postList.map((evt, idx) => renderCard(evt, idx, postList, "post"))}
-          </div>
-        </div>
-      </div>
-
-      {/* Add Event Modal Overlay */}
-      {showAddForm && (
-        <div className="modal-overlay" onClick={() => setShowAddForm(false)}>
-          <div className="modal-content" style={{ maxWidth: "450px" }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">Novo Estande / Evento</h3>
-              <button className="modal-close" onClick={() => setShowAddForm(false)}>X</button>
-            </div>
-            <form onSubmit={handleAddSubmit} className="modal-body">
+            <form onSubmit={handleCreateNewEvent} style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "14px" }}>
               <div className="field">
-                <label>Nome do Evento / Estande</label>
+                <label>Nome do Evento / Feira Principal *</label>
                 <input 
                   type="text" 
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)} 
-                  placeholder="Ex: Estande Coca-Cola - Bienal 2026" 
-                  required
+                  placeholder="Ex: ExpoSaúde Nordeste 2026" 
+                  value={formNomeFeira} 
+                  onChange={e => setFormNomeFeira(e.target.value)} 
+                  required 
                 />
               </div>
+
               <div className="field">
-                <label>Cliente</label>
+                <label>Cidade / Pavilhão *</label>
                 <input 
                   type="text" 
-                  value={client} 
-                  onChange={(e) => setClient(e.target.value)} 
-                  placeholder="Ex: Coca-Cola Brasil" 
-                  required
+                  placeholder="Ex: Recife / PE — Centro de Convenções" 
+                  value={formCidade} 
+                  onChange={e => setFormCidade(e.target.value)} 
+                  required 
                 />
               </div>
+
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px", margin: "4px 0" }}>
+                <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--accent)", display: "block", marginBottom: "10px" }}>
+                  🏢 Dados do Primeiros Estande Vinculado
+                </span>
+                
+                <div className="field" style={{ marginBottom: "10px" }}>
+                  <label>Nome do Estande / Projeto *</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ex: Stand Unimed 45m²" 
+                    value={formEstandeName} 
+                    onChange={e => setFormEstandeName(e.target.value)} 
+                    required 
+                  />
+                </div>
+
+                <div className="field" style={{ marginBottom: "10px" }}>
+                  <label>Nome do Cliente / Empresa *</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ex: Unimed Recife Cooperativa" 
+                    value={formClient} 
+                    onChange={e => setFormClient(e.target.value)} 
+                    required 
+                  />
+                </div>
+
+                <div className="responsive-layout-grid-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <div className="field">
+                    <label>Data Início Evento</label>
+                    <input 
+                      type="date" 
+                      value={formStartDate} 
+                      onChange={e => setFormStartDate(e.target.value)} 
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Valor Contratado (R$)</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      step="500" 
+                      value={formValor} 
+                      onChange={e => setFormValor(parseFloat(e.target.value) || 0)} 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowAddEventModal(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary">Criar Evento &amp; Estande</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADICIONAR ESTANDE A UM EVENTO EXISTENTE */}
+      {showAddStandModal && (
+        <div className="modal-overlay" onClick={() => setShowAddStandModal(false)}>
+          <div className="modal-content" style={{ maxWidth: "480px" }} onClick={e => e.stopPropagation()}>
+            <h3 className="modal-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Plus size={20} style={{ color: "var(--accent)" }} /> Vincular Novo Estande ao Evento
+            </h3>
+
+            <form onSubmit={handleAddStandToEvent} style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "14px" }}>
               <div className="field">
-                <label>Data de Início da Montagem</label>
-                <input 
-                  type="date" 
-                  value={startDate} 
-                  onChange={(e) => setStartDate(e.target.value)} 
+                <label>Selecione o Evento / Feira *</label>
+                <select 
+                  value={targetFeiraName} 
+                  onChange={e => setTargetFeiraName(e.target.value)}
+                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--border)" }}
                   required
+                >
+                  {uniqueEventNames.map(f => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="field">
+                <label>Nome do Estande / Marca *</label>
+                <input 
+                  type="text" 
+                  placeholder="Ex: Stand Fiat - Salão Automóvel" 
+                  value={formEstandeName} 
+                  onChange={e => setFormEstandeName(e.target.value)} 
+                  required 
                 />
               </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "24px" }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowAddForm(false)}>Cancelar</button>
-                <button type="submit" className="btn-primary">Criar Evento</button>
+
+              <div className="field">
+                <label>Cliente / Empresa Responsável *</label>
+                <input 
+                  type="text" 
+                  placeholder="Ex: Fiat Automóveis Brasil" 
+                  value={formClient} 
+                  onChange={e => setFormClient(e.target.value)} 
+                  required 
+                />
+              </div>
+
+              <div className="field">
+                <label>Valor do Contrato (R$)</label>
+                <input 
+                  type="number" 
+                  min="0" 
+                  step="500" 
+                  value={formValor} 
+                  onChange={e => setFormValor(parseFloat(e.target.value) || 0)} 
+                />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowAddStandModal(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary">Vincular Estande</button>
               </div>
             </form>
           </div>
