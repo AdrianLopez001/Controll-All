@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import React, { useState, type FormEvent } from "react";
 import { Archive, FileText, CheckCircle2, ArrowDownCircle } from "lucide-react";
 import type { WarehouseItem, InvoiceLog } from "../types";
 

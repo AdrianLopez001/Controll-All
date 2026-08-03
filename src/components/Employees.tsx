@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from "react";
+import React, { useState, useEffect, type FormEvent } from "react";
 import { 
   Plus, Users, Shield, ShieldAlert, CheckCircle, AlertTriangle, UserCheck, 
   X, FileText, Upload, Calendar, DollarSign, Key, Trash2, Trophy, Crown, Medal, Award, Star, Zap, Target

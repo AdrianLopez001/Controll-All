@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { KeyRound, ShieldAlert, CheckCircle, Mail, Smartphone } from "lucide-react";
 
 interface TwoFactorModalProps {

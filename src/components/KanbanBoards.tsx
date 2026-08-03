@@ -1,4 +1,4 @@
-import { useState, useRef, type FormEvent } from "react";
+import React, { useState, useRef, type FormEvent } from "react";
 import { 
   Calendar, Plus, MapPin, ChevronDown, ChevronUp, FileText, 
   Trash2, CheckSquare, ArrowRight, ArrowLeft, Move, Filter, 
