@@ -1,7 +1,7 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { 
   Plus, Users, Shield, ShieldAlert, CheckCircle, AlertTriangle, UserCheck, 
-  X, FileText, Upload, Calendar, DollarSign, Key, Trash2 
+  X, FileText, Upload, Calendar, DollarSign, Key, Trash2, Trophy, Crown, Medal, Award, Star, Zap, Target
 } from "lucide-react";
 import type { Employee } from "../types";
 
@@ -91,6 +91,7 @@ export default function Employees({
   const [editSalario, setEditSalario] = useState(0);
   const [editNr10, setEditNr10] = useState("");
   const [editNr35, setEditNr35] = useState("");
+  const [editTipoContrato, setEditTipoContrato] = useState<Employee["tipoContrato"]>("CLT");
 
   const handleOpenDetails = (emp: Employee) => {
     setSelectedEmp(emp);
@@ -103,6 +104,7 @@ export default function Employees({
     setEditSalario(emp.salario || 0);
     setEditNr10(emp.nr10Vencimento || "");
     setEditNr35(emp.nr35Vencimento || "");
+    setEditTipoContrato(emp.tipoContrato || "CLT");
   };
 
   const handleSaveChanges = () => {
@@ -118,6 +120,7 @@ export default function Employees({
       salario: editSalario,
       nr10Vencimento: editNr10,
       nr35Vencimento: editNr35,
+      tipoContrato: editTipoContrato,
       hasSafetyCert: editNr35 !== "" // sync standard cert boolean
     };
     onUpdateEmployee(updated);
@@ -243,7 +246,12 @@ export default function Employees({
                   {emp.foto || emp.name.substring(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <strong className="text-sm" style={{ display: "block" }}>{emp.name}</strong>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <strong className="text-sm" style={{ display: "block" }}>{emp.name}</strong>
+                    <span style={{ fontSize: "10px", fontWeight: "700", padding: "1px 6px", borderRadius: "10px", backgroundColor: "#e2e8f0", color: "#334155" }}>
+                      {emp.tipoContrato || "CLT"}
+                    </span>
+                  </div>
                   <span className="text-xs text-muted">{emp.role}</span>
                 </div>
               </div>
@@ -422,9 +430,20 @@ export default function Employees({
                   </div>
                 </div>
 
-                <div>
-                  <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Salário Base / Diária (R$)</label>
-                  <input type="number" value={editSalario} onChange={(e) => setEditSalario(parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <div>
+                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Tipo de Contrato</label>
+                    <select value={editTipoContrato} onChange={(e) => setEditTipoContrato(e.target.value as any)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px", fontSize: "12px" }}>
+                      <option value="CLT">CLT (Efetivo)</option>
+                      <option value="PJ">PJ (Pessoa Jurídica)</option>
+                      <option value="Freelancer">Freelancer (Diária)</option>
+                      <option value="Terceirizado">Terceirizado Externe</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontWeight: "600", marginBottom: "2px" }}>Salário Base / Diária (R$)</label>
+                    <input type="number" value={editSalario} onChange={(e) => setEditSalario(parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "6px", border: "1px solid var(--border)", borderRadius: "4px" }} />
+                  </div>
                 </div>
 
                 <div style={{ display: "flex", gap: "8px", marginTop: "10px", flexWrap: "wrap" }}>
@@ -518,64 +537,224 @@ export default function Employees({
 
       {/* Tab: Produtividade & Ranking */}
       {activeSubTab === "produtividade" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px", padding: "10px" }}>
-          {/* Left Pane: Ranking and Productivity list */}
-          <div className="section-box" style={{ height: "auto" }}>
-            <div className="section-box-header">
-              <h3 className="section-box-title">
-                <Users size={16} style={{ color: "var(--accent)" }} />
-                Ranking Interno de Produtividade (Montagem de Stands)
-              </h3>
+        <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: "24px", padding: "10px" }}>
+          {/* Left Pane: Leaderboard Podium + List */}
+          <div className="section-box" style={{ height: "auto", display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div className="section-box-header" style={{ borderBottom: "1px solid var(--border)", paddingBottom: "12px", margin: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                <h3 className="section-box-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Award size={20} style={{ color: "var(--accent)" }} />
+                  Matriz de Desempenho &amp; Produtividade Técnica
+                </h3>
+                <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 10px", borderRadius: "12px", backgroundColor: "var(--accent-glow)", color: "var(--accent)" }}>
+                  {employees.length} Avaliados
+                </span>
+              </div>
             </div>
-            
+
+            {/* ⭐️ TOP PERFORMANCE CARDS (Top 1, 2, 3) */}
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {[...employees]
-                .sort((a, b) => {
-                  const aScore = a.productivity?.notaMedia || 4.2;
-                  const bScore = b.productivity?.notaMedia || 4.2;
-                  return bScore - aScore;
-                })
-                .map((emp, index) => {
-                  const prod = emp.productivity || {
-                    horasTrabalhadas: 80 + (index * 8),
-                    eventosAtendidos: 2 + index,
-                    pontualidade: 92 + index,
-                    tarefasConcluidas: 8 + (index * 2),
-                    notaMedia: 4.2 + (index * 0.2)
-                  };
+              <span style={{ fontSize: "11px", fontWeight: "800", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <Zap size={14} style={{ color: "#f59e0b" }} /> DESTAQUES DE MAIOR PRODUTIVIDADE &amp; EFICIÊNCIA
+              </span>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
+                {[...employees]
+                  .sort((a, b) => (b.productivity?.notaMedia || 4.2) - (a.productivity?.notaMedia || 4.2))
+                  .slice(0, 3)
+                  .map((emp, idx) => {
+                    const rank = (idx + 1) as 1 | 2 | 3;
+                    const prod = emp.productivity || {
+                      horasTrabalhadas: rank === 1 ? 120 : rank === 2 ? 104 : 96,
+                      eventosAtendidos: rank === 1 ? 6 : rank === 2 ? 5 : 4,
+                      pontualidade: rank === 1 ? 98 : rank === 2 ? 95 : 92,
+                      notaMedia: rank === 1 ? 5.0 : rank === 2 ? 4.7 : 4.5
+                    };
 
-                  return (
-                    <div key={emp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg-card)", color: "var(--text-primary)" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <div style={{ 
-                          width: "24px", 
-                          height: "24px", 
-                          background: index === 0 ? "#f59e0b" : index === 1 ? "#94a3b8" : index === 2 ? "#b45309" : "var(--border)", 
-                          color: "white", 
-                          borderRadius: "50%", 
-                          display: "flex", 
-                          alignItems: "center", 
-                          justifyContent: "center", 
-                          fontSize: "11px", 
-                          fontWeight: "700" 
-                        }}>
-                          {index + 1}
-                        </div>
-                        <div>
-                          <strong className="text-sm" style={{ display: "block" }}>{emp.name}</strong>
-                          <span className="text-xs text-muted">
-                            {emp.role} | <strong>{prod.horasTrabalhadas}h</strong> operadas | <strong>{prod.eventosAtendidos} OSs</strong> atendidas
+                    const isFirst = rank === 1;
+                    const isSecond = rank === 2;
+
+                    const borderColor = isFirst ? "#f59e0b" : isSecond ? "#94a3b8" : "#d97706";
+                    const bgColor = isFirst 
+                      ? "linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.05) 100%)"
+                      : isSecond 
+                      ? "linear-gradient(135deg, rgba(148, 163, 184, 0.15) 0%, rgba(203, 213, 225, 0.05) 100%)"
+                      : "linear-gradient(135deg, rgba(217, 119, 6, 0.15) 0%, rgba(245, 158, 11, 0.05) 100%)";
+
+                    const badgeTitle = isFirst ? "🥇 1º LUGAR — LÍDER DE PRODUTIVIDADE & QUALIDADE" : isSecond ? "🥈 2º LUGAR — ALTA PERFORMANCE TÉCNICA" : "🥉 3º LUGAR — EXCELÊNCIA EM EXECUÇÃO DE CAMPO";
+                    const badgeColor = isFirst ? "#f59e0b" : isSecond ? "#475569" : "#b45309";
+
+                    return (
+                      <div 
+                        key={emp.id}
+                        style={{ 
+                          background: bgColor, 
+                          border: `2px solid ${borderColor}`, 
+                          borderRadius: "16px", 
+                          padding: isFirst ? "20px" : "16px",
+                          boxShadow: isFirst ? "0 10px 25px -5px rgba(245, 158, 11, 0.25)" : "var(--shadow-sm)",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "12px",
+                          position: "relative",
+                          transition: "var(--transition)"
+                        }}
+                      >
+                        {/* Badge Rank Top */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ 
+                            fontSize: "10px", 
+                            fontWeight: "800", 
+                            color: badgeColor, 
+                            backgroundColor: borderColor + "25", 
+                            padding: "4px 10px", 
+                            borderRadius: "12px",
+                            letterSpacing: "0.5px"
+                          }}>
+                            {badgeTitle}
                           </span>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#f59e0b", fontWeight: "800", fontSize: "15px" }}>
+                            <Star size={16} fill="#f59e0b" /> {prod.notaMedia.toFixed(1)}
+                          </div>
+                        </div>
+
+                        {/* Avatar + Member Details */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <div style={{ 
+                            width: isFirst ? "52px" : "44px", 
+                            height: isFirst ? "52px" : "44px", 
+                            borderRadius: "50%", 
+                            border: `3px solid ${borderColor}`, 
+                            backgroundColor: "var(--accent)", 
+                            color: "white", 
+                            display: "flex", 
+                            alignItems: "center", 
+                            justifyContent: "center", 
+                            fontWeight: "800", 
+                            fontSize: isFirst ? "18px" : "14px",
+                            boxShadow: `0 0 12px ${borderColor}50`
+                          }}>
+                            {emp.foto || emp.name.substring(0, 2).toUpperCase()}
+                          </div>
+
+                          <div style={{ flexGrow: 1, minWidth: 0 }}>
+                            <strong style={{ fontSize: isFirst ? "17px" : "15px", color: "var(--text-primary)", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {emp.name}
+                            </strong>
+                            <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                              {emp.role} &bull; <strong style={{ color: "var(--accent)" }}>{emp.tipoContrato || "CLT"}</strong>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Performance Stats Bar */}
+                        <div style={{ backgroundColor: "var(--bg-card)", padding: "10px 14px", borderRadius: "10px", border: "1px solid var(--border)", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", textAlign: "center", fontSize: "11px" }}>
+                          <div>
+                            <span style={{ fontSize: "9px", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Horas Operadas</span>
+                            <strong style={{ fontSize: "13px", color: "var(--text-primary)" }}>{prod.horasTrabalhadas}h</strong>
+                          </div>
+                          <div>
+                            <span style={{ fontSize: "9px", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>OSs Atendidas</span>
+                            <strong style={{ fontSize: "13px", color: "var(--accent)" }}>{prod.eventosAtendidos} OSs</strong>
+                          </div>
+                          <div>
+                            <span style={{ fontSize: "9px", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Pontualidade</span>
+                            <strong style={{ fontSize: "13px", color: "#059669" }}>{prod.pontualidade}%</strong>
+                          </div>
                         </div>
                       </div>
+                    );
+                  })}
+              </div>
+            </div>
 
-                      <div style={{ textAlign: "right" }}>
-                        <strong className="text-sm block" style={{ color: "var(--accent)" }}>★ {prod.notaMedia.toFixed(1)}</strong>
-                        <span className="text-xs text-muted block" style={{ fontSize: "10px" }}>Pontualidade: {prod.pontualidade}%</span>
+            {/* 📜 LEADERBOARD LIST (Lugares 4º em diante) */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <span style={{ fontSize: "11px", fontWeight: "800", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <Award size={14} style={{ color: "var(--accent)" }} /> CLASSIFICAÇÃO GERAL DE DESEMPENHO
+              </span>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {[...employees]
+                  .sort((a, b) => (b.productivity?.notaMedia || 4.2) - (a.productivity?.notaMedia || 4.2))
+                  .slice(3)
+                  .map((emp, index) => {
+                    const rankPos = index + 4;
+                    const prod = emp.productivity || {
+                      horasTrabalhadas: 80 + (index * 6),
+                      eventosAtendidos: 2 + index,
+                      pontualidade: 90 - index,
+                      tarefasConcluidas: 6,
+                      notaMedia: 4.2 - (index * 0.1)
+                    };
+
+                    return (
+                      <div 
+                        key={emp.id} 
+                        style={{ 
+                          display: "flex", 
+                          justifyContent: "space-between", 
+                          alignItems: "center", 
+                          padding: "12px 14px", 
+                          border: "1px solid var(--border)", 
+                          borderRadius: "12px", 
+                          background: "var(--bg-card)", 
+                          color: "var(--text-primary)",
+                          transition: "var(--transition)"
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <div style={{ 
+                            width: "30px", 
+                            height: "30px", 
+                            background: "var(--bg-main)", 
+                            border: "1px solid var(--border)", 
+                            color: "var(--text-secondary)", 
+                            borderRadius: "50%", 
+                            display: "flex", 
+                            alignItems: "center", 
+                            justifyContent: "center", 
+                            fontSize: "11px", 
+                            fontWeight: "800" 
+                          }}>
+                            #{rankPos}
+                          </div>
+                          
+                          <div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <strong className="text-sm">{emp.name}</strong>
+                              <span style={{ fontSize: "9px", fontWeight: "700", padding: "1px 6px", borderRadius: "8px", backgroundColor: "var(--bg-main)", border: "1px solid var(--border)" }}>
+                                {emp.tipoContrato || "CLT"}
+                              </span>
+                            </div>
+                            <span className="text-xs text-muted" style={{ fontSize: "11px" }}>
+                              {emp.role} &bull; <strong>{prod.horasTrabalhadas}h</strong> &bull; <strong>{prod.eventosAtendidos} OSs</strong>
+                            </span>
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: "right", display: "flex", alignItems: "center", gap: "14px" }}>
+                          <div>
+                            <span style={{ fontSize: "10px", color: "var(--text-muted)", display: "block" }}>Pontualidade</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                              <div style={{ width: "40px", height: "6px", backgroundColor: "var(--border)", borderRadius: "3px", overflow: "hidden" }}>
+                                <div style={{ width: `${prod.pontualidade}%`, height: "100%", backgroundColor: prod.pontualidade >= 90 ? "#059669" : "#d97706" }}></div>
+                              </div>
+                              <strong style={{ fontSize: "11px", color: "var(--text-primary)" }}>{prod.pontualidade}%</strong>
+                            </div>
+                          </div>
+
+                          <div style={{ backgroundColor: "var(--accent-glow)", padding: "4px 8px", borderRadius: "8px", border: "1px solid var(--accent-border)", textAlign: "center" }}>
+                            <span style={{ fontSize: "12px", fontWeight: "800", color: "var(--accent)", display: "flex", alignItems: "center", gap: "2px" }}>
+                              <Star size={12} fill="var(--accent)" /> {prod.notaMedia.toFixed(1)}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+              </div>
             </div>
           </div>
 

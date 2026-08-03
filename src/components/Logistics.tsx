@@ -300,7 +300,7 @@ export default function Logistics({
                       <Hotel size={14} />
                     </div>
                     <div>
-                      <strong style={{ display: "block", color: "var(--text-primary)" }}>Hospedagem:</strong>
+                      <strong style={{ display: "block", color: "var(--text-primary)" }}>Hospedagem &amp; Reserva:</strong>
                       <span style={{ color: "var(--text-secondary)" }}>{evt.hotelName || "Não definida"}</span>
                       {evt.hotelCheckin && <span style={{ display: "block", color: "var(--text-muted)", fontSize: "11px" }}>Check-in: {evt.hotelCheckin}</span>}
                     </div>
@@ -315,6 +315,24 @@ export default function Logistics({
                       <span style={{ color: "var(--text-secondary)", display: "block" }}>{evt.flightDetails || "Não definidas"}</span>
                     </div>
                   </div>
+                </div>
+
+                {/* Montadores Escalados Vinculados */}
+                <div style={{ backgroundColor: "var(--bg-main)", padding: "8px 12px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "11px" }}>
+                  <span style={{ fontWeight: "700", color: "var(--accent)", display: "block", marginBottom: "4px" }}>
+                    👷 Montadores Escalados nesta Viagem ({evt.assignedEmployees?.length || 0}):
+                  </span>
+                  {evt.assignedEmployees && evt.assignedEmployees.length > 0 ? (
+                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                      {evt.assignedEmployees.map(emp => (
+                        <span key={emp.id} style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", padding: "2px 8px", borderRadius: "12px", color: "var(--text-primary)", fontWeight: "600" }}>
+                          👤 {emp.name} ({emp.role})
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span style={{ color: "var(--text-muted)", fontStyle: "italic" }}>Nenhum colaborador escalado explicitamente.</span>
+                  )}
                 </div>
 
                 {/* Render Uploaded Documents/Comprovantes Badge Section */}

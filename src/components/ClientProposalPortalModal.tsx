@@ -28,6 +28,7 @@ export const ClientProposalPortalModal: React.FC<ClientProposalPortalModalProps>
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [signatureType, setSignatureType] = useState<"typed" | "drawn">("typed");
   const [isApprovedSuccess, setIsApprovedSuccess] = useState(false);
+  const [selectedOptionalServices, setSelectedOptionalServices] = useState<{ [key: string]: boolean }>({});
 
   const publicUrl = `https://controllall.jceventos.com.br/proposta/${orcamento.codigo.toLowerCase()}?token=sec_${Math.random().toString(36).substring(7)}`;
 
@@ -252,6 +253,40 @@ export const ClientProposalPortalModal: React.FC<ClientProposalPortalModalProps>
                   </p>
                 </div>
 
+                {/* Simulação Interativa da Proposta (Opcionais e Personalizações) */}
+                <div style={{ backgroundColor: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "16px" }}>
+                  <h4 style={{ fontSize: "13px", fontWeight: "700", color: "#144580", margin: "0 0 8px 0", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <Sparkles style={{ width: "16px", height: "16px", color: "#144580" }} /> Simulação Interativa de Itens Opcionais &amp; Adicionais
+                  </h4>
+                  <p style={{ fontSize: "11px", color: "#64748b", margin: "0 0 12px 0" }}>
+                    Personalize sua proposta marcando os opcionais desejados antes do aceite final:
+                  </p>
+                  
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {[
+                      { id: "iluminacao_extra", name: "💡 Kit Spots Led HQ Adicional (4 unidades)", price: 650 },
+                      { id: "tv_led_55", name: "📺 Suporte + TV LED 55\" 4K para Vídeo Institucional", price: 1200 },
+                      { id: "limpeza_diaria", name: "🧹 Serviço de Limpeza Fina Diária Pré-Feira", price: 800 }
+                    ].map(opt => {
+                      const isChecked = selectedOptionalServices[opt.id] ?? false;
+                      return (
+                        <label key={opt.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: isChecked ? "#eff6ff" : "#ffffff", border: isChecked ? "1px solid #3b82f6" : "1px solid #e2e8f0", padding: "8px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <input 
+                              type="checkbox" 
+                              checked={isChecked} 
+                              onChange={e => setSelectedOptionalServices(prev => ({ ...prev, [opt.id]: e.target.checked }))}
+                              style={{ cursor: "pointer" }}
+                            />
+                            <span style={{ fontWeight: isChecked ? "700" : "500", color: "#1e293b" }}>{opt.name}</span>
+                          </div>
+                          <span style={{ fontWeight: "700", color: "#059669" }}>+ R$ {opt.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Items & Values Table */}
                 <div>
                   <h4 style={{ fontSize: "13px", fontWeight: "700", color: "#1e293b", margin: "0 0 10px 0" }}>RESUMO FINANCEIRO</h4>
@@ -269,9 +304,27 @@ export const ClientProposalPortalModal: React.FC<ClientProposalPortalModalProps>
                           <td style={{ padding: "10px 14px", border: "1px solid #cbd5e1", textAlign: "right" }}>R$ {(p.precoVenda * p.qty).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
                         </tr>
                       ))}
+                      {Object.entries(selectedOptionalServices).map(([key, val]) => {
+                        if (!val) return null;
+                        const itemMap: Record<string, { name: string; price: number }> = {
+                          iluminacao_extra: { name: "Kit Spots Led HQ Adicional", price: 650 },
+                          tv_led_55: { name: "Suporte + TV LED 55\" 4K", price: 1200 },
+                          limpeza_diaria: { name: "Serviço de Limpeza Fina Diária", price: 800 }
+                        };
+                        const optItem = itemMap[key];
+                        if (!optItem) return null;
+                        return (
+                          <tr key={key} style={{ backgroundColor: "#eff6ff", borderTop: "1px solid #cbd5e1" }}>
+                            <td style={{ padding: "10px 14px", border: "1px solid #cbd5e1", fontWeight: "600", color: "#1d4ed8" }}>[Opcional Selecionado] {optItem.name}</td>
+                            <td style={{ padding: "10px 14px", border: "1px solid #cbd5e1", textAlign: "right", fontWeight: "700", color: "#1d4ed8" }}>R$ {optItem.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                          </tr>
+                        );
+                      })}
                       <tr style={{ backgroundColor: "#f1f5f9", fontWeight: "800" }}>
-                        <td style={{ padding: "12px 14px", border: "1px solid #cbd5e1", textAlign: "right" }}>TOTAL DA PROPOSTA:</td>
-                        <td style={{ padding: "12px 14px", border: "1px solid #cbd5e1", textAlign: "right", color: "#144580", fontSize: "15px" }}>R$ {orcamento.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                        <td style={{ padding: "12px 14px", border: "1px solid #cbd5e1", textAlign: "right" }}>TOTAL DA PROPOSTA SIMULADA:</td>
+                        <td style={{ padding: "12px 14px", border: "1px solid #cbd5e1", textAlign: "right", color: "#144580", fontSize: "16px" }}>
+                          R$ {(orcamento.total + (selectedOptionalServices.iluminacao_extra ? 650 : 0) + (selectedOptionalServices.tv_led_55 ? 1200 : 0) + (selectedOptionalServices.limpeza_diaria ? 800 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </td>
                       </tr>
                     </tbody>
                   </table>

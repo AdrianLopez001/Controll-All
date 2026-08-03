@@ -83,14 +83,15 @@ export default function KanbanBoards({
     return matchesSearch && matchesDate;
   });
 
-  // Group events into 3 Kanban Columns according to operational phase
-  const noEventPhases = ["no_event", "Briefing", "Orçamento", "Pré-Evento", "Planejamento"];
-  const duringPhases = ["during", "Produção", "Montagem", "Evento", "Aprovado", "Execução"];
-  const postPhases = ["post", "Desmontagem", "Finalizado", "Pós-Evento"];
-
-  const colPlanejamentoList = displayedEvents.filter((e) => noEventPhases.includes(e.phase));
-  const colDuranteList = displayedEvents.filter((e) => duringPhases.includes(e.phase));
-  const colPosEventoList = displayedEvents.filter((e) => postPhases.includes(e.phase) || (!noEventPhases.includes(e.phase) && !duringPhases.includes(e.phase)));
+  // Define 6 Discrete Kanban Phases as per Requirement 3
+  const SIX_PHASES = [
+    { key: "Pré-Evento", name: "1. Pré-Evento", color: "#2563eb", match: ["no_event", "Briefing", "Orçamento", "Pré-Evento", "Planejamento"] },
+    { key: "Produção", name: "2. Produção", color: "#d97706", match: ["Produção", "Em Produção"] },
+    { key: "Montagem", name: "3. Montagem", color: "#dc2626", match: ["Montagem", "Em Montagem"] },
+    { key: "Evento", name: "4. Evento", color: "#16a34a", match: ["Evento", "Em Evento", "during", "Aprovado", "Execução"] },
+    { key: "Desmontagem", name: "5. Desmontagem", color: "#ea580c", match: ["Desmontagem"] },
+    { key: "Finalizado", name: "6. Finalizado", color: "#475569", match: ["Finalizado", "post", "Pós-Evento", "Concluído"] }
+  ] as const;
 
   // Drag and Drop handlers
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -330,108 +331,47 @@ export default function KanbanBoards({
         </div>
       </div>
 
-      {/* 3-COLUMN KANBAN BOARD */}
-      <div className="responsive-layout-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px", alignItems: "start" }}>
-        
-        {/* COLUMN 1: PLANEJAMENTO & DEPÓSITO */}
-        <div 
-          className="kanban-col"
-          onDragOver={(e) => handleDragOver(e, "no_event")}
-          onDrop={(e) => handleDrop(e, "no_event")}
-          style={{
-            backgroundColor: dragOverColumn === "no_event" ? "var(--accent-glow)" : "var(--bg-kanban-col)",
-            borderRadius: "16px",
-            padding: "16px",
-            border: "1px solid var(--border)",
-            minHeight: "500px",
-            transition: "background-color 0.2s ease"
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-            <h3 style={{ fontSize: "14px", fontWeight: "800", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#2563eb" }}></span>
-              PLANEJAMENTO &amp; DEPÓSITO
-            </h3>
-            <span style={{ fontSize: "12px", fontWeight: "800", color: "#2563eb", backgroundColor: "rgba(37,99,235,0.1)", padding: "2px 8px", borderRadius: "12px" }}>
-              {colPlanejamentoList.length}
-            </span>
-          </div>
+      {/* 6-COLUMN KANBAN BOARD */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px", alignItems: "start", overflowX: "auto", paddingBottom: "16px" }}>
+        {SIX_PHASES.map((col) => {
+          const colList = displayedEvents.filter((e) => (col.match as readonly string[]).includes(e.phase));
+          return (
+            <div 
+              key={col.key}
+              className="kanban-col"
+              onDragOver={(e) => handleDragOver(e, col.key)}
+              onDrop={(e) => handleDrop(e, col.key)}
+              style={{
+                backgroundColor: dragOverColumn === col.key ? "var(--accent-glow)" : "var(--bg-kanban-col)",
+                borderRadius: "16px",
+                padding: "16px",
+                border: "1px solid var(--border)",
+                minHeight: "500px",
+                display: "flex",
+                flexDirection: "column",
+                transition: "background-color 0.2s ease"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                <h3 style={{ fontSize: "13px", fontWeight: "800", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: col.color }}></span>
+                  {col.name}
+                </h3>
+                <span style={{ fontSize: "12px", fontWeight: "800", color: col.color, backgroundColor: col.color + "20", padding: "2px 8px", borderRadius: "12px" }}>
+                  {colList.length}
+                </span>
+              </div>
 
-          {colPlanejamentoList.length === 0 ? (
-            <div style={{ padding: "30px 10px", textAlign: "center", color: "var(--text-muted)", fontSize: "12px", border: "1px dashed var(--border)", borderRadius: "12px" }}>
-              Nenhum evento nesta fase
+              {colList.length === 0 ? (
+                <div style={{ padding: "30px 10px", textAlign: "center", color: "var(--text-muted)", fontSize: "12px", border: "1px dashed var(--border)", borderRadius: "12px" }}>
+                  Nenhum estande nesta fase
+                </div>
+              ) : (
+                colList.map((evt, idx) => renderCard(evt, idx, colList, col.key))
+              )}
             </div>
-          ) : (
-            colPlanejamentoList.map((evt, idx) => renderCard(evt, idx, colPlanejamentoList, "no_event"))
-          )}
-        </div>
-
-        {/* COLUMN 2: DURANTE (MONTAGEM & EXECUÇÃO) */}
-        <div 
-          className="kanban-col"
-          onDragOver={(e) => handleDragOver(e, "during")}
-          onDrop={(e) => handleDrop(e, "during")}
-          style={{
-            backgroundColor: dragOverColumn === "during" ? "var(--accent-glow)" : "var(--bg-kanban-col)",
-            borderRadius: "16px",
-            padding: "16px",
-            border: "1px solid var(--border)",
-            minHeight: "500px",
-            transition: "background-color 0.2s ease"
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-            <h3 style={{ fontSize: "14px", fontWeight: "800", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#d97706" }}></span>
-              DURANTE (MONTAGEM &amp; EXECUÇÃO)
-            </h3>
-            <span style={{ fontSize: "12px", fontWeight: "800", color: "#d97706", backgroundColor: "rgba(217,119,6,0.1)", padding: "2px 8px", borderRadius: "12px" }}>
-              {colDuranteList.length}
-            </span>
-          </div>
-
-          {colDuranteList.length === 0 ? (
-            <div style={{ padding: "30px 10px", textAlign: "center", color: "var(--text-muted)", fontSize: "12px", border: "1px dashed var(--border)", borderRadius: "12px" }}>
-              Nenhum evento em montagem
-            </div>
-          ) : (
-            colDuranteList.map((evt, idx) => renderCard(evt, idx, colDuranteList, "during"))
-          )}
-        </div>
-
-        {/* COLUMN 3: PÓS-EVENTO (DESMONTAGEM / RETORNO) */}
-        <div 
-          className="kanban-col"
-          onDragOver={(e) => handleDragOver(e, "post")}
-          onDrop={(e) => handleDrop(e, "post")}
-          style={{
-            backgroundColor: dragOverColumn === "post" ? "var(--accent-glow)" : "var(--bg-kanban-col)",
-            borderRadius: "16px",
-            padding: "16px",
-            border: "1px solid var(--border)",
-            minHeight: "500px",
-            transition: "background-color 0.2s ease"
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-            <h3 style={{ fontSize: "14px", fontWeight: "800", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#059669" }}></span>
-              PÓS-EVENTO (DESMONTAGEM / RETORNO)
-            </h3>
-            <span style={{ fontSize: "12px", fontWeight: "800", color: "#059669", backgroundColor: "rgba(5,150,105,0.1)", padding: "2px 8px", borderRadius: "12px" }}>
-              {colPosEventoList.length}
-            </span>
-          </div>
-
-          {colPosEventoList.length === 0 ? (
-            <div style={{ padding: "30px 10px", textAlign: "center", color: "var(--text-muted)", fontSize: "12px", border: "1px dashed var(--border)", borderRadius: "12px" }}>
-              Nenhum evento em desmontagem
-            </div>
-          ) : (
-            colPosEventoList.map((evt, idx) => renderCard(evt, idx, colPosEventoList, "post"))
-          )}
-        </div>
-
+          );
+        })}
       </div>
 
       {/* MODAL: ADICIONAR NOVO ESTANDE / EVENTO */}

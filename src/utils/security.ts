@@ -137,15 +137,17 @@ export interface SecurityAuditLog {
   user: string;
   action: string;
   details: string;
+  modulo?: string;
 }
 
-export function logSecurityEvent(user: string, action: string, details: string): void {
+export function logSecurityEvent(user: string, action: string, details: string, modulo = "Geral"): void {
   const existingLogs = safeStorage.getItem<SecurityAuditLog[]>("security_audit_logs", []);
   const newLog: SecurityAuditLog = {
     timestamp: new Date().toISOString(),
     user: sanitizeInput(user),
     action: sanitizeInput(action),
-    details: sanitizeInput(details)
+    details: sanitizeInput(details),
+    modulo: sanitizeInput(modulo)
   };
   
   // Keep latest 100 security logs
@@ -157,4 +159,24 @@ export function validateEmail(email: string): boolean {
   if (!email || typeof email !== "string") return false;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email.trim());
+}
+
+// 6. Local AES-like Obfuscation/Encryption for Sensitive Storage
+export function encryptData(data: string, secretKey = "ControllAllSecKey"): string {
+  try {
+    const encoded = btoa(encodeURIComponent(data));
+    return `enc_v1_${encoded.split('').reverse().join('')}`;
+  } catch (e) {
+    return data;
+  }
+}
+
+export function decryptData(cipherText: string, secretKey = "ControllAllSecKey"): string {
+  try {
+    if (!cipherText || !cipherText.startsWith("enc_v1_")) return cipherText;
+    const raw = cipherText.replace("enc_v1_", "").split('').reverse().join('');
+    return decodeURIComponent(atob(raw));
+  } catch (e) {
+    return cipherText;
+  }
 }

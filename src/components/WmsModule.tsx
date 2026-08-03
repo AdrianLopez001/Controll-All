@@ -92,6 +92,15 @@ export default function WmsModule({
   const [formModelo, setFormModelo] = useState("Padrão");
   const [formValorCompra, setFormValorCompra] = useState(150);
   const [formValorLocacao, setFormValorLocacao] = useState(45);
+  const [formValorVenda, setFormValorVenda] = useState(300);
+  const [formOrigem, setFormOrigem] = useState<WarehouseItem["origem"]>("proprio");
+  const [formEstado, setFormEstado] = useState<WarehouseItem["estadoConservacao"]>("excelente");
+  const [formGalpao, setFormGalpao] = useState("Galpão Principal JC");
+  const [formCorredor, setFormCorredor] = useState("A1");
+  const [formRua, setFormRua] = useState("R1");
+  const [formPrateleira, setFormPrateleira] = useState("P2");
+  const [formAndar, setFormAndar] = useState("1");
+  const [formPosicao, setFormPosicao] = useState("10");
 
   const handleOpenCreateModal = () => {
     setFormName("");
@@ -105,6 +114,15 @@ export default function WmsModule({
     setFormModelo("Padrão");
     setFormValorCompra(150);
     setFormValorLocacao(45);
+    setFormValorVenda(300);
+    setFormOrigem("proprio");
+    setFormEstado("excelente");
+    setFormGalpao("Galpão Principal JC");
+    setFormCorredor("A1");
+    setFormRua("R1");
+    setFormPrateleira("P2");
+    setFormAndar("1");
+    setFormPosicao("10");
     setIsCreateModalOpen(true);
   };
 
@@ -121,6 +139,15 @@ export default function WmsModule({
     setFormModelo(item.modelo);
     setFormValorCompra(item.valorCompra);
     setFormValorLocacao(item.valorLocacao);
+    setFormValorVenda(item.valorVenda || item.valorLocacao * 2);
+    setFormOrigem(item.origem || "proprio");
+    setFormEstado(item.estadoConservacao || "excelente");
+    setFormGalpao(item.localizacaoFisica?.galpao || "Galpão Principal JC");
+    setFormCorredor(item.localizacaoFisica?.corredor || "A1");
+    setFormRua(item.localizacaoFisica?.rua || "R1");
+    setFormPrateleira(item.localizacaoFisica?.prateleira || "P2");
+    setFormAndar(item.localizacaoFisica?.andar || "1");
+    setFormPosicao(item.localizacaoFisica?.posicao || "10");
   };
 
   const handleSaveMaterialSubmit = (e: React.FormEvent) => {
@@ -140,7 +167,18 @@ export default function WmsModule({
         marca: formMarca,
         modelo: formModelo,
         valorCompra: formValorCompra,
-        valorLocacao: formValorLocacao
+        valorLocacao: formValorLocacao,
+        valorVenda: formValorVenda,
+        origem: formOrigem,
+        estadoConservacao: formEstado,
+        localizacaoFisica: {
+          galpao: formGalpao,
+          corredor: formCorredor,
+          rua: formRua,
+          prateleira: formPrateleira,
+          andar: formAndar,
+          posicao: formPosicao
+        }
       };
       onUpdateWarehouseItem(updated);
       setEditingItem(null);
@@ -158,12 +196,19 @@ export default function WmsModule({
         marca: formMarca,
         modelo: formModelo,
         patrimonio: `PAT-${Math.floor(100 + Math.random() * 900)}`,
-        estadoConservacao: "excelente",
+        estadoConservacao: formEstado,
         valorCompra: formValorCompra,
-        valorVenda: formValorLocacao * 2,
+        valorVenda: formValorVenda,
         valorLocacao: formValorLocacao,
-        origem: "proprio",
-        localizacaoFisica: { galpao: "Galpão Principal JC", corredor: "A1", rua: "R1", prateleira: "P2", andar: "1", posicao: "10" }
+        origem: formOrigem,
+        localizacaoFisica: {
+          galpao: formGalpao,
+          corredor: formCorredor,
+          rua: formRua,
+          prateleira: formPrateleira,
+          andar: formAndar,
+          posicao: formPosicao
+        }
       };
       onAddWarehouseItem(newItem);
       setIsCreateModalOpen(false);
@@ -1270,6 +1315,67 @@ export default function WmsModule({
                 <div className="field">
                   <label>Locação Diária (R$)</label>
                   <input type="number" min="0" step="0.01" value={formValorLocacao} onChange={(e) => setFormValorLocacao(parseFloat(e.target.value) || 0)} />
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginTop: "10px" }}>
+                <div className="field">
+                  <label>Valor Venda / Reposição (R$)</label>
+                  <input type="number" min="0" step="0.01" value={formValorVenda} onChange={(e) => setFormValorVenda(parseFloat(e.target.value) || 0)} />
+                </div>
+
+                <div className="field">
+                  <label>Origem do Ativo</label>
+                  <select value={formOrigem} onChange={(e) => setFormOrigem(e.target.value as any)}>
+                    <option value="proprio">📦 Próprio</option>
+                    <option value="alugado">🏢 Alugado (Terceiro)</option>
+                    <option value="terceirizado">🤝 Terceirizado</option>
+                    <option value="emprestado">🔄 Emprestado</option>
+                    <option value="consignado">📑 Consignado</option>
+                  </select>
+                </div>
+
+                <div className="field">
+                  <label>Estado de Conservação</label>
+                  <select value={formEstado} onChange={(e) => setFormEstado(e.target.value as any)}>
+                    <option value="excelente">🟢 Excelente (Novo)</option>
+                    <option value="bom">🔵 Bom</option>
+                    <option value="regular">🟡 Regular</option>
+                    <option value="manutencao">🔴 Em Manutenção</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Endereçamento Físico em 6 Níveis WMS */}
+              <div style={{ backgroundColor: "var(--bg-main)", padding: "12px", borderRadius: "8px", border: "1px solid var(--border)", marginTop: "12px" }}>
+                <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--accent-secondary)", display: "block", marginBottom: "8px" }}>
+                  📍 ENDEREÇAMENTO FÍSICO HIERÁRQUICO (6 NÍVEIS)
+                </span>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                  <div className="field">
+                    <label style={{ fontSize: "10px" }}>1. Galpão / Setor</label>
+                    <input type="text" value={formGalpao} onChange={(e) => setFormGalpao(e.target.value)} placeholder="Ex: Galpão A" />
+                  </div>
+                  <div className="field">
+                    <label style={{ fontSize: "10px" }}>2. Corredor</label>
+                    <input type="text" value={formCorredor} onChange={(e) => setFormCorredor(e.target.value)} placeholder="Ex: C01" />
+                  </div>
+                  <div className="field">
+                    <label style={{ fontSize: "10px" }}>3. Rua</label>
+                    <input type="text" value={formRua} onChange={(e) => setFormRua(e.target.value)} placeholder="Ex: R12" />
+                  </div>
+                  <div className="field">
+                    <label style={{ fontSize: "10px" }}>4. Prateleira</label>
+                    <input type="text" value={formPrateleira} onChange={(e) => setFormPrateleira(e.target.value)} placeholder="Ex: P03" />
+                  </div>
+                  <div className="field">
+                    <label style={{ fontSize: "10px" }}>5. Andar</label>
+                    <input type="text" value={formAndar} onChange={(e) => setFormAndar(e.target.value)} placeholder="Ex: 2" />
+                  </div>
+                  <div className="field">
+                    <label style={{ fontSize: "10px" }}>6. Posição / Caixa</label>
+                    <input type="text" value={formPosicao} onChange={(e) => setFormPosicao(e.target.value)} placeholder="Ex: 15" />
+                  </div>
                 </div>
               </div>
 

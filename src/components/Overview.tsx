@@ -114,6 +114,16 @@ export default function Overview({
   const pendingChecklistItems = events.filter(isActive)
     .reduce((acc, curr) => acc + curr.checklist.filter(c => !c.done).length, 0);
 
+  // KPIs Adicionais Requeridos
+  const activeEventsList = events.filter(isActive);
+  const avgCompletion = activeEventsList.length > 0 
+    ? Math.round(activeEventsList.reduce((acc, curr) => acc + (curr.completionRate || 0), 0) / activeEventsList.length) 
+    : 0;
+  const totalReceitasPagas = invoices.filter(i => i.tipo === "receita" && i.status === "pago").reduce((acc, i) => acc + i.value, 0);
+  const totalDespesasPagas = invoices.filter(i => i.tipo === "despesa" && i.status === "pago").reduce((acc, i) => acc + i.value, 0);
+  const saldoEmCaixa = 148500 + totalReceitasPagas - totalDespesasPagas;
+  const activeOsCount = activeEventsList.length;
+
   const upcoming = [...events]
     .filter(isActive)
     .sort((a, b) => new Date(a.dataMontagem).getTime() - new Date(b.dataMontagem).getTime())
@@ -124,6 +134,38 @@ export default function Overview({
     alerts.push({ type: "warn", msg: `${lowStockItemsCount} item(ns) no depósito abaixo do estoque mínimo.`, targetTab: "warehouse" });
   if (pendingDocsCount > 0)
     alerts.push({ type: "warn", msg: `${pendingDocsCount} documento(s) pendente(s) em projetos ativos.`, targetTab: "os" });
+
+  // Alertas de Licenças NR-10 / NR-35 prestes a vencer ou vencidas
+  const todayStr = new Date().toISOString().split("T")[0];
+  const thirtyDaysLater = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  (employees || []).forEach(emp => {
+    if (emp.nr10Vencimento && emp.nr10Vencimento <= thirtyDaysLater) {
+      alerts.push({
+        type: emp.nr10Vencimento < todayStr ? "danger" : "warn",
+        msg: `Licença NR-10 de ${emp.name} ${emp.nr10Vencimento < todayStr ? 'VENCIDA' : 'vence em breve'} (${emp.nr10Vencimento}).`,
+        targetTab: "employees"
+      });
+    }
+    if (emp.nr35Vencimento && emp.nr35Vencimento <= thirtyDaysLater) {
+      alerts.push({
+        type: emp.nr35Vencimento < todayStr ? "danger" : "warn",
+        msg: `Licença NR-35 de ${emp.name} ${emp.nr35Vencimento < todayStr ? 'VENCIDA' : 'vence em breve'} (${emp.nr35Vencimento}).`,
+        targetTab: "employees"
+      });
+    }
+  });
+
+  // Alertas de Contas a Pagar / Receber Vencidas
+  (invoices || []).forEach(inv => {
+    if (inv.status === "atrasado" || (inv.status === "pendente" && inv.date < todayStr)) {
+      alerts.push({
+        type: "danger",
+        msg: `Fatura ${inv.tipo === "despesa" ? "a pagar" : "a receber"} VENCIDA: ${inv.description || inv.invoiceNumber} (R$ ${inv.value.toLocaleString("pt-BR")}).`,
+        targetTab: "financial",
+        targetSubTab: inv.tipo === "despesa" ? "pagar" : "receber"
+      });
+    }
+  });
   
   events.filter(isActive).forEach(e => {
     const docs = e.docs?.filter(d => d.status === "pending") || [];
@@ -137,21 +179,39 @@ export default function Overview({
   const kpis = [
     {
       icon: <Briefcase size={22} />,
-      label: "Stands em Andamento",
-      value: String(activeStands),
-      unit: "projetos ativos",
+      label: "Total de Projetos / OS",
+      value: String(activeOsCount),
+      unit: "OS ativas no momento",
       bgGradient: "linear-gradient(135deg, #144580 0%, #1e3a8a 100%)",
       color: "#ffffff",
-      action: () => onNavigateToTab("kanban"),
+      action: () => onNavigateToTab("os"),
     },
     {
       icon: <DollarSign size={22} />,
       label: "Faturamento Comercial",
       value: fmt(totalContratado),
-      unit: "projetos em 2026",
+      unit: "projetos contratados em 2026",
       bgGradient: "linear-gradient(135deg, #059669 0%, #047857 100%)",
       color: "#ffffff",
       action: () => onNavigateToTab("financial", "faturamento"),
+    },
+    {
+      icon: <DollarSign size={22} />,
+      label: "Saldo em Caixa",
+      value: fmt(saldoEmCaixa),
+      unit: "disponível em contas",
+      bgGradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+      color: "#ffffff",
+      action: () => onNavigateToTab("financial", "fluxo"),
+    },
+    {
+      icon: <CheckSquare size={22} />,
+      label: "Taxa Conclusão Média",
+      value: `${avgCompletion}%`,
+      unit: "progresso médio das obras",
+      bgGradient: "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
+      color: "#ffffff",
+      action: () => onNavigateToTab("kanban"),
     },
     {
       icon: <TrendingUp size={22} />,
@@ -161,15 +221,6 @@ export default function Overview({
       bgGradient: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
       color: "#ffffff",
       action: () => onNavigateToTab("financial", "receber"),
-    },
-    {
-      icon: <Activity size={22} />,
-      label: "Custo Previsto de Obras",
-      value: fmt(totalCustoPrevisto),
-      unit: "margem líquida ~60%",
-      bgGradient: "linear-gradient(135deg, #144580 0%, #1e3a8a 100%)",
-      color: "#ffffff",
-      action: () => onNavigateToTab("financial", "centro_custo"),
     },
     {
       icon: <Users size={22} />,
@@ -234,6 +285,26 @@ export default function Overview({
 
         {/* Quick Shortcut Buttons */}
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <button
+            onClick={() => onNavigateToTab("kanban")}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              backgroundColor: "#144580",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "8px",
+              padding: "8px 14px",
+              fontSize: "12px",
+              fontWeight: "700",
+              cursor: "pointer",
+              boxShadow: "var(--shadow-sm)"
+            }}
+          >
+            <Plus size={14} /> Novo Evento
+          </button>
+
           <button
             onClick={() => onNavigateToTab("orcamentos")}
             style={{

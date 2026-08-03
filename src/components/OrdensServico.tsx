@@ -1238,17 +1238,33 @@ export default function OrdensServico({
 
             {activeTab === "photos" && (
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                  <h4 className="text-sm font-semibold">Registro de Fotos e Provas de Entrega</h4>
-                  <label className="btn-secondary btn-sm" style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
-                    <Camera size={14} /> Anexar Foto
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handlePhotoUpload} 
-                      style={{ display: "none" }}
-                    />
-                  </label>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "10px" }}>
+                  <div>
+                    <h4 className="text-sm font-semibold" style={{ margin: 0 }}>Galeria de Fotos da Montagem (Antes / Depois)</h4>
+                    <span className="text-xs text-muted">Evidências de estado do pavilhão antes e após a montagem</span>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <label className="btn-secondary btn-sm" style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", backgroundColor: "#eff6ff", color: "#1d4ed8", border: "1px solid #93c5fd" }}>
+                      <Camera size={14} /> + Foto Antes
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => handlePhotoUpload(e, "Foto Pré-Montagem (Antes)", "antes")} 
+                        style={{ display: "none" }}
+                      />
+                    </label>
+
+                    <label className="btn-primary btn-sm" style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <Camera size={14} /> + Foto Depois
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => handlePhotoUpload(e, "Foto Pós-Montagem (Depois)", "depois")} 
+                        style={{ display: "none" }}
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
@@ -1259,6 +1275,13 @@ export default function OrdensServico({
                   ) : (
                     selectedOS.fotos.map((photo) => (
                       <div key={photo.id} style={{ border: "1px solid var(--border)", borderRadius: "8px", overflow: "hidden", position: "relative", background: "var(--bg-card)", color: "var(--text-primary)" }}>
+                        <span style={{
+                          position: "absolute", top: "6px", left: "6px", zIndex: 2,
+                          fontSize: "9px", fontWeight: "800", textTransform: "uppercase", padding: "2px 6px", borderRadius: "4px",
+                          backgroundColor: photo.categoria === "antes" ? "#d97706" : "#059669", color: "#ffffff"
+                        }}>
+                          {photo.categoria === "antes" ? "📸 Antes da Montagem" : "✨ Depois da Montagem"}
+                        </span>
                         <img 
                           src={photo.url} 
                           alt={photo.name} 

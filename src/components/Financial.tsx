@@ -800,6 +800,25 @@ export default function Financial({
             <TrendingDown size={18} /> Contas a Pagar
           </button>
           <button 
+            className={`btn-tab ${activeMainTab === "caixinha_obra" ? "active" : ""}`}
+            onClick={() => setActiveMainTab("caixinha_obra" as any)}
+            style={{
+              padding: "10px 18px",
+              borderRadius: "10px",
+              border: "none",
+              backgroundColor: activeMainTab === ("caixinha_obra" as any) ? "var(--accent)" : "var(--bg-card)",
+              color: activeMainTab === ("caixinha_obra" as any) ? "#fff" : "var(--text-primary)",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              boxShadow: "var(--shadow-sm)"
+            }}
+          >
+            <Wallet size={18} /> Caixinha de Obra
+          </button>
+          <button 
             className={`btn-tab ${activeMainTab === "servicos_avulsos" ? "active" : ""}`}
             onClick={() => setActiveMainTab("servicos_avulsos")}
             style={{
@@ -2604,6 +2623,120 @@ export default function Financial({
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* TAB: CAIXINHA DE OBRA (PRESTAÇÃO DE CONTAS EM ESPÉCIE)      */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {activeMainTab === ("caixinha_obra" as any) && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "var(--bg-card)", padding: "20px 24px", borderRadius: "16px", border: "1px solid var(--border)" }}>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: "800", margin: 0, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px" }}>
+                <Wallet size={20} style={{ color: "var(--accent)" }} /> Caixinha de Obra &amp; Adiantamentos de Montagem
+              </h3>
+              <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "4px 0 0 0" }}>
+                Gestão e prestação de contas de dinheiro em espécie entregue aos montadores no campo por evento.
+              </p>
+            </div>
+
+            <button 
+              className="btn-primary" 
+              onClick={() => {
+                const adv = prompt("Informe o nome do evento para adiantamento:");
+                if (adv) {
+                  alert(`Caixinha de obra aberta com sucesso para o evento "${adv}".`);
+                }
+              }}
+              style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", padding: "10px 18px", fontWeight: "700" }}
+            >
+              <Plus size={16} /> Novo Adiantamento de Obra
+            </button>
+          </div>
+
+          {/* Cards & Summary Table */}
+          <div style={{ backgroundColor: "var(--bg-card)", borderRadius: "16px", border: "1px solid var(--border)", padding: "20px" }}>
+            <h4 style={{ fontSize: "14px", fontWeight: "700", marginBottom: "16px", color: "var(--text-primary)" }}>Prestação de Contas Ativa por Evento</h4>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {[
+                {
+                  id: "cx-1",
+                  eventoNome: "Congresso de Odontologia 2026 (Expo Center Norte)",
+                  responsavel: "Carlos Eduardo (Líder da Montagem)",
+                  data: "15/07/2026",
+                  adiantado: 2500,
+                  gasto: 950,
+                  saldo: 1550,
+                  status: "Prestado / Em Análise",
+                  comprovantes: [
+                    { desc: "Abastecimento Diesel Caminhão Baú", cat: "Combustível", valor: 450, data: "15/07/2026" },
+                    { desc: "Refeição da Equipe em Campo (6 montadores)", cat: "Alimentação", valor: 320, data: "16/07/2026" },
+                    { desc: "Parafusos Extras & Fita Dupla Face 3M", cat: "Insumos", valor: 180, data: "16/07/2026" }
+                  ]
+                },
+                {
+                  id: "cx-2",
+                  eventoNome: "Bienal do Livro SP 2026 (Anhembi)",
+                  responsavel: "Marcos Andrade (Coordenador Cenográfico)",
+                  data: "20/07/2026",
+                  adiantado: 4000,
+                  gasto: 2800,
+                  saldo: 1200,
+                  status: "Aberto em Campo",
+                  comprovantes: [
+                    { desc: "Pedágio Carreta Anhembi (Ida e Volta)", cat: "Pedágio", valor: 380, data: "20/07/2026" },
+                    { desc: "Jantar Tático Montagem Noturna", cat: "Alimentação", valor: 620, data: "21/07/2026" },
+                    { desc: "Locação Gerador Emergência 15kVA", cat: "Equipamento", valor: 1800, data: "21/07/2026" }
+                  ]
+                }
+              ].map(item => (
+                <div key={item.id} style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", backgroundColor: "var(--bg-main)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>
+                    <div>
+                      <h4 style={{ fontSize: "15px", fontWeight: "800", color: "var(--accent)", margin: 0 }}>{item.eventoNome}</h4>
+                      <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Responsável em Campo: <strong>{item.responsavel}</strong> &bull; Data: {item.data}</span>
+                    </div>
+                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 10px", borderRadius: "12px", backgroundColor: item.status.includes("Aberto") ? "#fef3c7" : "#d1fae5", color: item.status.includes("Aberto") ? "#b45309" : "#065f46" }}>
+                      {item.status}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "16px", fontSize: "12px" }}>
+                    <div style={{ backgroundColor: "var(--bg-card)", padding: "10px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                      <span style={{ fontSize: "10px", color: "var(--text-muted)", display: "block" }}>TOTAL ADIANTADO</span>
+                      <strong style={{ fontSize: "14px", color: "var(--text-primary)" }}>R$ {item.adiantado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+                    </div>
+                    <div style={{ backgroundColor: "var(--bg-card)", padding: "10px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                      <span style={{ fontSize: "10px", color: "var(--text-muted)", display: "block" }}>GASTO COMPROVADO</span>
+                      <strong style={{ fontSize: "14px", color: "#dc2626" }}>R$ {item.gasto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+                    </div>
+                    <div style={{ backgroundColor: "var(--bg-card)", padding: "10px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                      <span style={{ fontSize: "10px", color: "var(--text-muted)", display: "block" }}>SALDO A DEVOLVER/REEMBOLSAR</span>
+                      <strong style={{ fontSize: "14px", color: "#059669" }}>R$ {item.saldo.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+                    </div>
+                  </div>
+
+                  {/* Comprovantes detalhados */}
+                  <strong style={{ fontSize: "11px", color: "var(--text-primary)", display: "block", marginBottom: "8px" }}>COMPROVANTES E NOTAS LANÇADAS DA OBRA:</strong>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {item.comprovantes.map((c, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "var(--bg-card)", padding: "8px 12px", borderRadius: "6px", fontSize: "11px", border: "1px solid var(--border)" }}>
+                        <div>
+                          <strong style={{ color: "var(--text-primary)" }}>{c.desc}</strong>
+                          <span style={{ color: "var(--text-muted)", marginLeft: "8px" }}>[{c.cat}] &bull; {c.data}</span>
+                        </div>
+                        <span style={{ fontWeight: "700", color: "#dc2626" }}>- R$ {c.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
       )}
 

@@ -63,6 +63,7 @@ export interface OSFoto {
   name: string;
   url: string;
   date: string;
+  categoria?: "antes" | "depois";
 }
 
 export interface OSAssinaturas {
@@ -188,6 +189,7 @@ export interface Employee {
   hasSafetyCert: boolean; // Keep for compatibility
   
   // JC Eventos 2.0 fields
+  tipoContrato?: "CLT" | "PJ" | "Freelancer" | "Terceirizado";
   foto: string;
   cpf: string;
   dataNascimento?: string;
@@ -419,6 +421,7 @@ export interface AuditoriaLog {
   usuario: string;
   acao: string;
   detalhes: string;
+  modulo?: string;
   date: string;
   hora: string;
   ip: string;
@@ -455,8 +458,8 @@ export interface LeadCRM {
   telefone: string;
   valorEstimado: number;
   origem: string;
-  // Estágios do pipeline JC Eventos: Briefing → Orçamento → Aprovado → Encerrado/Perdido
-  estagio: "briefing" | "orcamento" | "aprovado" | "perdido";
+  // Estágios do pipeline JC Eventos: Novo Lead → Briefing → Orçamento → Aprovado → Perdido
+  estagio: "novo_lead" | "briefing" | "orcamento" | "aprovado" | "perdido";
   dataCriacao: string;
   observacoes: string;
 
