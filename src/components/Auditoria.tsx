@@ -22,7 +22,7 @@ interface AuditoriaProps {
   rolePermissions?: Record<string, string[]>;
   setRolePermissions?: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
   userRole?: string;
-  setUserRole?: React.Dispatch<React.SetStateAction<"admin" | "comercial" | "estoque" | "operador">>;
+  setUserRole?: (role: any) => void;
 }
 
 export default function Auditoria({ 
