@@ -297,7 +297,7 @@ export default function OrdensServico({
   };
 
   // Real Photo Upload Handler with FileReader (Base64)
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>, itemLabel?: string) => {
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>, itemLabel?: string, categoria?: "antes" | "depois") => {
     if (!selectedOS || !e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -310,7 +310,8 @@ export default function OrdensServico({
         id: `photo-${Date.now()}`,
         name: photoName,
         url: dataUrl,
-        date: new Date().toLocaleString("pt-BR")
+        date: new Date().toLocaleString("pt-BR"),
+        categoria
       };
 
       const log = {

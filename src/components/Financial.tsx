@@ -349,7 +349,7 @@ export default function Financial({
   invoices, events, fornecedores, onAddInvoice, onUpdateInvoice, onUpdateEvent, initialSubTab 
 }: FinancialProps) {
 
-  const [activeMainTab, setActiveMainTab] = useState<"dashboard" | "receber" | "pagar" | "servicos_avulsos" | "faturamento" | "conciliacao" | "relatorios" | "configuracoes">(
+  const [activeMainTab, setActiveMainTab] = useState<"dashboard" | "receber" | "pagar" | "servicos_avulsos" | "faturamento" | "conciliacao" | "relatorios" | "configuracoes" | "caixinha_obra">(
     initialSubTab === "centro_custo" ? "configuracoes" : ((initialSubTab as any) || "dashboard")
   );
 
